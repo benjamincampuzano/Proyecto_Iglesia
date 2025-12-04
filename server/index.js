@@ -13,10 +13,14 @@ app.use(express.json());
 const authRoutes = require('./routes/authRoutes');
 const userRoutes = require('./routes/userRoutes');
 const guestRoutes = require('./routes/guestRoutes');
+const networkRoutes = require('./routes/networkRoutes');
+const consolidarRoutes = require('./routes/consolidarRoutes');
 
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/guests', guestRoutes);
+app.use('/api/network', networkRoutes);
+app.use('/api/consolidar', consolidarRoutes);
 
 app.get('/', (req, res) => {
     res.send('API is running...');

@@ -9,7 +9,9 @@ import UserManagementModal from '../components/UserManagementModal';
 const SidebarItem = ({ to, icon: Icon, label, active }) => (
     <Link
         to={to}
-        className={`flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors ${active ? 'bg-blue-600 text-white' : 'text-gray-300 hover:bg-gray-800 hover:text-white'
+        className={`flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors ${active
+                ? 'bg-blue-600 text-white'
+                : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white'
             }`}
     >
         <Icon size={20} />
@@ -36,12 +38,12 @@ const Layout = () => {
     ];
 
     return (
-        <div className="flex h-screen bg-gray-900 text-gray-100">
+        <div className="flex h-screen bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100">
             {/* Sidebar */}
-            <aside className="w-64 bg-gray-950 border-r border-gray-800 flex flex-col">
-                <div className="p-6 border-b border-gray-800">
-                    <h1 className="text-2xl font-bold text-blue-500">CRM Iglesia</h1>
-                    <p className="text-sm text-gray-500 mt-1">Bienvenido, {user.fullName}</p>
+            <aside className="w-64 bg-white dark:bg-gray-950 border-r border-gray-200 dark:border-gray-800 flex flex-col">
+                <div className="p-6 border-b border-gray-200 dark:border-gray-800">
+                    <h1 className="text-2xl font-bold text-blue-600 dark:text-blue-500">CRM Iglesia</h1>
+                    <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Bienvenido, {user.fullName}</p>
                 </div>
 
                 <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
@@ -56,10 +58,10 @@ const Layout = () => {
                     ))}
                 </nav>
 
-                <div className="p-4 border-t border-gray-800">
+                <div className="p-4 border-t border-gray-200 dark:border-gray-800">
                     <button
                         onClick={logout}
-                        className="flex items-center space-x-3 px-4 py-3 w-full rounded-lg text-red-400 hover:bg-red-900/20 transition-colors"
+                        className="flex items-center space-x-3 px-4 py-3 w-full rounded-lg text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
                     >
                         <LogOut size={20} />
                         <span className="font-medium">Cerrar Sesión</span>
@@ -68,10 +70,10 @@ const Layout = () => {
             </aside>
 
             {/* Main Content */}
-            <main className="flex-1 overflow-auto bg-gray-900 flex flex-col">
+            <main className="flex-1 overflow-auto bg-gray-50 dark:bg-gray-900 flex flex-col">
                 {/* Header Bar */}
-                <header className="bg-gray-950 border-b border-gray-800 px-8 py-4 flex items-center justify-between">
-                    <h2 className="text-2xl font-bold text-white">Dashboard</h2>
+                <header className="bg-white dark:bg-gray-950 border-b border-gray-200 dark:border-gray-800 px-8 py-4 flex items-center justify-between">
+                    <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Dashboard</h2>
                     <UserMenu
                         onOpenProfile={() => setShowProfileModal(true)}
                         onOpenUserManagement={() => setShowUserManagementModal(true)}

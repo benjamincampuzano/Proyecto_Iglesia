@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { User, Settings, Users, LogOut } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import ThemeToggle from './ThemeToggle';
 
 const UserMenu = ({ onOpenProfile, onOpenUserManagement }) => {
     const [isOpen, setIsOpen] = useState(false);
@@ -70,6 +71,13 @@ const UserMenu = ({ onOpenProfile, onOpenUserManagement }) => {
                             <span className="text-sm text-gray-200">Gestionar Usuarios</span>
                         </button>
                     )}
+
+                    <div className="px-4 py-2">
+                        <div className="flex items-center justify-between">
+                            <span className="text-sm text-gray-200">Tema</span>
+                            <ThemeToggle />
+                        </div>
+                    </div>
 
                     <div className="border-t border-gray-700 mt-2 pt-2">
                         <button
