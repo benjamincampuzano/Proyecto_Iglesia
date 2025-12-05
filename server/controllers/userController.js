@@ -123,7 +123,24 @@ const getAllUsers = async (req, res) => {
                     select: {
                         id: true,
                         fullName: true,
-                        role: true
+                        role: true,
+                        _count: {
+                            select: {
+                                invitedGuests: true
+                            }
+                        },
+                        disciples: {
+                            select: {
+                                id: true,
+                                fullName: true,
+                                role: true,
+                                _count: {
+                                    select: {
+                                        invitedGuests: true
+                                    }
+                                }
+                            }
+                        }
                     }
                 },
                 _count: {
