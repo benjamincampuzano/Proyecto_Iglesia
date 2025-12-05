@@ -15,12 +15,14 @@ const userRoutes = require('./routes/userRoutes');
 const guestRoutes = require('./routes/guestRoutes');
 const networkRoutes = require('./routes/networkRoutes');
 const consolidarRoutes = require('./routes/consolidarRoutes');
+const seminarRoutes = require('./routes/seminarRoutes');
 
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/guests', guestRoutes);
 app.use('/api/network', networkRoutes);
 app.use('/api/consolidar', consolidarRoutes);
+app.use('/api/seminar', seminarRoutes);
 
 app.get('/', (req, res) => {
     res.send('API is running...');

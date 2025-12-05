@@ -6,6 +6,7 @@ const {
     updateGuest,
     deleteGuest,
     assignGuest,
+    convertGuestToMember,
 } = require('../controllers/guestController');
 const { authenticate } = require('../middleware/auth');
 
@@ -18,5 +19,6 @@ router.get('/:id', authenticate, getGuestById);
 router.put('/:id', authenticate, updateGuest);
 router.delete('/:id', authenticate, deleteGuest);
 router.put('/:id/assign', authenticate, assignGuest);
+router.post('/:id/convert-to-member', authenticate, convertGuestToMember);
 
 module.exports = router;

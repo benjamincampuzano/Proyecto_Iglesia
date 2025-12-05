@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Search, Filter, Edit2, Trash2, UserPlus, Loader, X, Save } from 'lucide-react';
+import { Search, Filter, Edit2, Trash2, UserPlus, Loader, X, Save, UserCheck } from 'lucide-react';
 import UserSearchSelect from './UserSearchSelect';
 import axios from 'axios';
 
@@ -12,6 +12,15 @@ const GuestList = ({ refreshTrigger }) => {
     const [invitedByFilter, setInvitedByFilter] = useState(null);
     const [editingGuest, setEditingGuest] = useState(null);
     const [assigningGuest, setAssigningGuest] = useState(null);
+    const [currentUser, setCurrentUser] = useState(null);
+    const [convertingGuest, setConvertingGuest] = useState(null);
+    const [conversionEmail, setConversionEmail] = useState('');
+    const [conversionPassword, setConversionPassword] = useState('');
+
+    useEffect(() => {
+        const user = JSON.parse(localStorage.getItem('user'));
+        setCurrentUser(user);
+    }, []);
 
     useEffect(() => {
         fetchGuests();
@@ -88,6 +97,30 @@ const GuestList = ({ refreshTrigger }) => {
         }
     };
 
+    const handleConvertToMember = async () => {
+        if (!conversionEmail || !conversionPassword) {
+            setError('Email y contraseña son requeridos');
+            return;
+        }
+
+        try {
+            const token = localStorage.getItem('token');
+            await axios.post(
+                `http://localhost:5000/api/guests/${convertingGuest.id}/convert-to-member`,
+                { email: conversionEmail, password: conversionPassword },
+                { headers: { Authorization: `Bearer ${token}` } }
+            );
+
+            setConvertingGuest(null);
+            setConversionEmail('');
+            setConversionPassword('');
+            fetchGuests();
+            alert('Invitado convertido a miembro exitosamente');
+        } catch (err) {
+            setError(err.response?.data?.message || 'Error al convertir invitado');
+        }
+    };
+
     const getStatusBadgeColor = (status) => {
         const colors = {
             NUEVO: 'bg-blue-900/30 text-blue-400',
@@ -106,6 +139,19 @@ const GuestList = ({ refreshTrigger }) => {
             CONVERTIDO: 'Convertido',
         };
         return labels[status] || status;
+    };
+
+    // Permission helper functions
+    const canEditAllFields = (guest) => {
+        return currentUser?.role === 'SUPER_ADMIN' || currentUser?.role === 'LIDER_DOCE';
+    };
+
+    const canDelete = (guest) => {
+        if (currentUser?.role === 'SUPER_ADMIN' || currentUser?.role === 'LIDER_DOCE') {
+            return true;
+        }
+        // LIDER_CELULA/MIEMBRO can only delete guests they invited
+        return guest.invitedBy?.id === currentUser?.id;
     };
 
     return (
@@ -201,7 +247,8 @@ const GuestList = ({ refreshTrigger }) => {
                                                     onChange={(e) =>
                                                         setEditingGuest({ ...editingGuest, name: e.target.value })
                                                     }
-                                                    className="w-full px-2 py-1 bg-gray-600 border border-gray-500 rounded text-white text-sm"
+                                                    disabled={!canEditAllFields(guest)}
+                                                    className="w-full px-2 py-1 bg-gray-600 border border-gray-500 rounded text-white text-sm disabled:opacity-50 disabled:cursor-not-allowed"
                                                     placeholder="Nombre"
                                                 />
                                                 <input
@@ -210,7 +257,8 @@ const GuestList = ({ refreshTrigger }) => {
                                                     onChange={(e) =>
                                                         setEditingGuest({ ...editingGuest, address: e.target.value })
                                                     }
-                                                    className="w-full px-2 py-1 bg-gray-600 border border-gray-500 rounded text-white text-xs"
+                                                    disabled={!canEditAllFields(guest)}
+                                                    className="w-full px-2 py-1 bg-gray-600 border border-gray-500 rounded text-white text-xs disabled:opacity-50 disabled:cursor-not-allowed"
                                                     placeholder="Dirección"
                                                 />
                                             </div>
@@ -231,7 +279,8 @@ const GuestList = ({ refreshTrigger }) => {
                                                 onChange={(e) =>
                                                     setEditingGuest({ ...editingGuest, phone: e.target.value })
                                                 }
-                                                className="w-full px-2 py-1 bg-gray-600 border border-gray-500 rounded text-white text-sm"
+                                                disabled={!canEditAllFields(guest)}
+                                                className="w-full px-2 py-1 bg-gray-600 border border-gray-500 rounded text-white text-sm disabled:opacity-50 disabled:cursor-not-allowed"
                                             />
                                         ) : (
                                             <span className="text-gray-300 text-sm">{guest.phone}</span>
@@ -259,11 +308,15 @@ const GuestList = ({ refreshTrigger }) => {
                                     </td>
                                     <td className="px-4 py-3">
                                         {editingGuest?.id === guest.id ? (
-                                            <UserSearchSelect
-                                                value={editingGuest.invitedById}
-                                                onChange={(userId) => setEditingGuest({ ...editingGuest, invitedById: userId })}
-                                                placeholder="Invitado por..."
-                                            />
+                                            canEditAllFields(guest) ? (
+                                                <UserSearchSelect
+                                                    value={editingGuest.invitedById}
+                                                    onChange={(userId) => setEditingGuest({ ...editingGuest, invitedById: userId })}
+                                                    placeholder="Invitado por..."
+                                                />
+                                            ) : (
+                                                <p className="text-white text-sm">{guest.invitedBy?.fullName || 'N/A'}</p>
+                                            )
                                         ) : (
                                             <p className="text-white text-sm">{guest.invitedBy?.fullName || 'N/A'}</p>
                                         )}
@@ -357,12 +410,21 @@ const GuestList = ({ refreshTrigger }) => {
                                                     >
                                                         <Edit2 size={18} />
                                                     </button>
+                                                    {canDelete(guest) && (
+                                                        <button
+                                                            onClick={() => handleDeleteGuest(guest.id)}
+                                                            className="p-1 text-red-400 hover:text-red-300"
+                                                            title="Eliminar"
+                                                        >
+                                                            <Trash2 size={18} />
+                                                        </button>
+                                                    )}
                                                     <button
-                                                        onClick={() => handleDeleteGuest(guest.id)}
-                                                        className="p-1 text-red-400 hover:text-red-300"
-                                                        title="Eliminar"
+                                                        onClick={() => setConvertingGuest(guest)}
+                                                        className="p-1 text-green-400 hover:text-green-300"
+                                                        title="Convertir a Miembro"
                                                     >
-                                                        <Trash2 size={18} />
+                                                        <UserCheck size={18} />
                                                     </button>
                                                 </>
                                             )}
@@ -374,6 +436,61 @@ const GuestList = ({ refreshTrigger }) => {
                     </tbody>
                 </table>
             </div>
+
+            {/* Convert to Member Modal */}
+            {convertingGuest && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                    <div className="bg-gray-800 rounded-lg p-6 max-w-md w-full border border-gray-700">
+                        <h3 className="text-xl font-bold text-white mb-4">
+                            Convertir a Miembro: {convertingGuest.name}
+                        </h3>
+                        <div className="space-y-4">
+                            <div>
+                                <label className="block text-sm font-medium text-gray-300 mb-1">
+                                    Email
+                                </label>
+                                <input
+                                    type="email"
+                                    value={conversionEmail}
+                                    onChange={(e) => setConversionEmail(e.target.value)}
+                                    className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white focus:outline-none focus:border-blue-500"
+                                    placeholder="correo@ejemplo.com"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-300 mb-1">
+                                    Contraseña
+                                </label>
+                                <input
+                                    type="password"
+                                    value={conversionPassword}
+                                    onChange={(e) => setConversionPassword(e.target.value)}
+                                    className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white focus:outline-none focus:border-blue-500"
+                                    placeholder="Contraseña"
+                                />
+                            </div>
+                            <div className="flex justify-end space-x-2 mt-6">
+                                <button
+                                    onClick={() => {
+                                        setConvertingGuest(null);
+                                        setConversionEmail('');
+                                        setConversionPassword('');
+                                    }}
+                                    className="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded transition-colors"
+                                >
+                                    Cancelar
+                                </button>
+                                <button
+                                    onClick={handleConvertToMember}
+                                    className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded transition-colors"
+                                >
+                                    Convertir
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

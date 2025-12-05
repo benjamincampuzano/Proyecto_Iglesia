@@ -8,6 +8,7 @@ import Ganar from './pages/Ganar';
 import Home from './pages/Home';
 import Consolidar from './pages/Consolidar';
 import Discipular from './pages/Discipular';
+import NetworkAssignment from './components/NetworkAssignment';
 
 // Placeholder components for now
 const Enviar = () => <h1 className="text-3xl font-bold">Enviar</h1>;
@@ -37,6 +38,7 @@ function App() {
               <Route path="enviar" element={<Enviar />} />
               <Route path="encuentros" element={<Encuentros />} />
               <Route path="convenciones" element={<Convenciones />} />
+              <Route path="network" element={<NetworkAssignment />} />
             </Route>
           </Routes>
         </AuthProvider>

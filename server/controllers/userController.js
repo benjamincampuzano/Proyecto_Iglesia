@@ -3,10 +3,35 @@ const bcrypt = require('bcryptjs');
 
 const prisma = new PrismaClient();
 
+// Helper function to get all users in a leader's network (disciples and sub-disciples)
+const getUserNetwork = async (userId) => {
+    const network = [];
+    const queue = [userId];
+    const visited = new Set();
+
+    while (queue.length > 0) {
+        const currentId = queue.shift();
+
+        if (visited.has(currentId)) continue;
+        visited.add(currentId);
+        network.push(currentId);
+
+        const disciples = await prisma.user.findMany({
+            where: { leaderId: currentId },
+            select: { id: true }
+        });
+
+        queue.push(...disciples.map(d => d.id));
+    }
+
+    // Filter out any undefined/null values as safety measure
+    return network.filter(id => id != null);
+};
+
 // Update own profile (name, email)
 const updateProfile = async (req, res) => {
     try {
-        const userId = req.user.userId;
+        const userId = req.user.id;
         const { fullName, email } = req.body;
 
         // Check if email is already taken by another user
@@ -42,7 +67,7 @@ const updateProfile = async (req, res) => {
 // Change own password
 const changePassword = async (req, res) => {
     try {
-        const userId = req.user.userId;
+        const userId = req.user.id;
         const { currentPassword, newPassword } = req.body;
 
         if (!currentPassword || !newPassword) {
@@ -84,9 +109,30 @@ const getAllUsers = async (req, res) => {
                 email: true,
                 fullName: true,
                 role: true,
+                leaderId: true,
                 createdAt: true,
                 updatedAt: true,
+                leader: {
+                    select: {
+                        id: true,
+                        fullName: true,
+                        role: true
+                    }
+                },
+                disciples: {
+                    select: {
+                        id: true,
+                        fullName: true,
+                        role: true
+                    }
+                },
+                _count: {
+                    select: {
+                        invitedGuests: true
+                    }
+                }
             },
+            orderBy: { fullName: 'asc' }
         });
 
         res.status(200).json({ users });
@@ -129,6 +175,26 @@ const updateUser = async (req, res) => {
     try {
         const { id } = req.params;
         const { fullName, email, role } = req.body;
+
+        // Get the user being updated
+        const userToUpdate = await prisma.user.findUnique({
+            where: { id: parseInt(id) }
+        });
+
+        if (!userToUpdate) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+
+        // If LIDER_DOCE, validate they can only update users in their network
+        if (req.user.role === 'LIDER_DOCE') {
+            const networkUserIds = await getUserNetwork(req.user.id);
+
+            if (!networkUserIds.includes(userToUpdate.id)) {
+                return res.status(403).json({
+                    message: 'You can only update users in your network'
+                });
+            }
+        }
 
         // Check if email is already taken by another user
         if (email) {
@@ -205,8 +271,15 @@ const deleteUser = async (req, res) => {
     try {
         const { id } = req.params;
 
+        // LIDER_DOCE cannot delete users
+        if (req.user.role === 'LIDER_DOCE') {
+            return res.status(403).json({
+                message: 'LIDER_DOCE role cannot delete users'
+            });
+        }
+
         // Prevent deleting yourself
-        if (parseInt(id) === req.user.userId) {
+        if (parseInt(id) === req.user.id) {
             return res.status(400).json({ message: 'Cannot delete your own account' });
         }
 
@@ -221,6 +294,89 @@ const deleteUser = async (req, res) => {
     }
 };
 
+// Admin: Assign leader to user (establish discipleship relationship)
+const assignLeader = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { leaderId } = req.body;
+
+        // Get the user to validate role
+        const user = await prisma.user.findUnique({
+            where: { id: parseInt(id) },
+            select: { id: true, role: true, fullName: true }
+        });
+
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+
+        // Validate: cannot assign leader to SUPER_ADMIN or LIDER_DOCE
+        if (user.role === 'SUPER_ADMIN' || user.role === 'LIDER_DOCE') {
+            return res.status(400).json({
+                message: 'Cannot assign leader to SUPER_ADMIN or LIDER_DOCE roles'
+            });
+        }
+
+        // If leaderId is provided, validate it exists and has appropriate role
+        if (leaderId) {
+            const leader = await prisma.user.findUnique({
+                where: { id: parseInt(leaderId) },
+                select: { id: true, role: true, fullName: true }
+            });
+
+            if (!leader) {
+                return res.status(404).json({ message: 'Leader not found' });
+            }
+
+            // Leader must be LIDER_DOCE or LIDER_CELULA
+            if (leader.role !== 'LIDER_DOCE' && leader.role !== 'LIDER_CELULA') {
+                return res.status(400).json({
+                    message: 'Leader must have LIDER_DOCE or LIDER_CELULA role'
+                });
+            }
+
+            // Only LIDER_DOCE can assign LIDER_CELULA as leader
+            if (leader.role === 'LIDER_CELULA' && req.user.role !== 'LIDER_DOCE' && req.user.role !== 'SUPER_ADMIN') {
+                return res.status(403).json({
+                    message: 'Only LIDER_DOCE or SUPER_ADMIN can assign LIDER_CELULA as leader'
+                });
+            }
+
+            // MIEMBRO can only be assigned to LIDER_CELULA or LIDER_DOCE
+            // LIDER_CELULA can only be assigned to LIDER_DOCE
+            if (user.role === 'LIDER_CELULA' && leader.role !== 'LIDER_DOCE') {
+                return res.status(400).json({
+                    message: 'LIDER_CELULA can only be assigned to LIDER_DOCE'
+                });
+            }
+        }
+
+        // Update the user's leaderId
+        const updatedUser = await prisma.user.update({
+            where: { id: parseInt(id) },
+            data: { leaderId: leaderId ? parseInt(leaderId) : null },
+            include: {
+                leader: {
+                    select: { id: true, fullName: true, role: true }
+                }
+            }
+        });
+
+        res.status(200).json({
+            message: leaderId ? 'Leader assigned successfully' : 'Leader removed successfully',
+            user: {
+                id: updatedUser.id,
+                fullName: updatedUser.fullName,
+                role: updatedUser.role,
+                leader: updatedUser.leader
+            }
+        });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Server error' });
+    }
+};
+
 module.exports = {
     updateProfile,
     changePassword,
@@ -229,4 +385,5 @@ module.exports = {
     updateUser,
     createUser,
     deleteUser,
+    assignLeader,
 };

@@ -1,7 +1,7 @@
 import { Outlet, Link, useLocation } from 'react-router-dom';
 import { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { Home, Users, UserPlus, Heart, Send, Calendar, BookOpen, LogOut } from 'lucide-react';
+import { Home, Users, UserPlus, Heart, Send, Calendar, BookOpen, LogOut, Network } from 'lucide-react';
 import UserMenu from '../components/UserMenu';
 import UserProfileModal from '../components/UserProfileModal';
 import UserManagementModal from '../components/UserManagementModal';
@@ -10,8 +10,8 @@ const SidebarItem = ({ to, icon: Icon, label, active }) => (
     <Link
         to={to}
         className={`flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors ${active
-                ? 'bg-blue-600 text-white'
-                : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white'
+            ? 'bg-blue-600 text-white'
+            : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white'
             }`}
     >
         <Icon size={20} />
@@ -56,6 +56,17 @@ const Layout = () => {
                             active={location.pathname === item.to}
                         />
                     ))}
+
+
+                    {/* Network assignment - for SUPER_ADMIN and LIDER_DOCE */}
+                    {(user.role === 'SUPER_ADMIN' || user.role === 'LIDER_DOCE') && (
+                        <SidebarItem
+                            to="/network"
+                            icon={Network}
+                            label="Red de Discipulado"
+                            active={location.pathname === '/network'}
+                        />
+                    )}
                 </nav>
 
                 <div className="p-4 border-t border-gray-200 dark:border-gray-800">

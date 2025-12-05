@@ -10,12 +10,18 @@ const UserManagementModal = ({ isOpen, onClose }) => {
     const [searchTerm, setSearchTerm] = useState('');
     const [editingUser, setEditingUser] = useState(null);
     const [showCreateForm, setShowCreateForm] = useState(false);
+    const [currentUser, setCurrentUser] = useState(null);
     const [formData, setFormData] = useState({
         fullName: '',
         email: '',
         password: '',
         role: 'MIEMBRO',
     });
+
+    useEffect(() => {
+        const user = JSON.parse(localStorage.getItem('user'));
+        setCurrentUser(user);
+    }, []);
 
     useEffect(() => {
         if (isOpen) {
@@ -104,7 +110,31 @@ const UserManagementModal = ({ isOpen, onClose }) => {
         }
     };
 
-    const filteredUsers = users.filter(
+    // Filter users by network for LIDER_DOCE
+    const getUserNetworkIds = (userId, allUsers) => {
+        const network = new Set([userId]);
+        const queue = [userId];
+
+        while (queue.length > 0) {
+            const currentId = queue.shift();
+            const userDisciples = allUsers.filter(u => u.leaderId === currentId);
+            userDisciples.forEach(d => {
+                if (!network.has(d.id)) {
+                    network.add(d.id);
+                    queue.push(d.id);
+                }
+            });
+        }
+        return Array.from(network);
+    };
+
+    let displayUsers = users;
+    if (currentUser?.role === 'LIDER_DOCE') {
+        const networkIds = getUserNetworkIds(currentUser.id, users);
+        displayUsers = users.filter(u => networkIds.includes(u.id));
+    }
+
+    const filteredUsers = displayUsers.filter(
         (user) =>
             user.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
             user.email.toLowerCase().includes(searchTerm.toLowerCase())
@@ -353,13 +383,15 @@ const UserManagementModal = ({ isOpen, onClose }) => {
                                                             >
                                                                 <Edit2 size={18} />
                                                             </button>
-                                                            <button
-                                                                onClick={() => handleDeleteUser(user.id)}
-                                                                className="p-1 text-red-400 hover:text-red-300"
-                                                                title="Eliminar"
-                                                            >
-                                                                <Trash2 size={18} />
-                                                            </button>
+                                                            {currentUser?.role !== 'LIDER_DOCE' && (
+                                                                <button
+                                                                    onClick={() => handleDeleteUser(user.id)}
+                                                                    className="p-1 text-red-400 hover:text-red-300"
+                                                                    title="Eliminar"
+                                                                >
+                                                                    <Trash2 size={18} />
+                                                                </button>
+                                                            )}
                                                         </>
                                                     )}
                                                 </div>

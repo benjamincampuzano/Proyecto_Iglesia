@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Save, Loader, X } from 'lucide-react';
 import UserSearchSelect from './UserSearchSelect';
 import axios from 'axios';
@@ -14,6 +14,17 @@ const GuestRegistrationForm = ({ onGuestCreated }) => {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
     const [success, setSuccess] = useState('');
+    const [currentUser, setCurrentUser] = useState(null);
+
+    useEffect(() => {
+        const user = JSON.parse(localStorage.getItem('user'));
+        setCurrentUser(user);
+
+        // Auto-set invitedById for LIDER_CELULA and MIEMBRO
+        if (user && (user.role === 'LIDER_CELULA' || user.role === 'MIEMBRO')) {
+            setFormData(prev => ({ ...prev, invitedById: user.id }));
+        }
+    }, []);
 
     const handleChange = (e) => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -27,7 +38,8 @@ const GuestRegistrationForm = ({ onGuestCreated }) => {
         setError('');
         setSuccess('');
 
-        if (!formData.invitedById) {
+        // Validation is handled by backend for LIDER_CELULA/MIEMBRO
+        if ((currentUser?.role === 'SUPER_ADMIN' || currentUser?.role === 'LIDER_DOCE') && !formData.invitedById) {
             setError('Debe seleccionar quién invitó al invitado');
             setLoading(false);
             return;
@@ -133,14 +145,16 @@ const GuestRegistrationForm = ({ onGuestCreated }) => {
                     />
                 </div>
 
-                <div>
-                    <UserSearchSelect
-                        label={<>Invitado Por <span className="text-red-400">*</span></>}
-                        value={formData.invitedById}
-                        onChange={(userId) => setFormData({ ...formData, invitedById: userId })}
-                        placeholder="Seleccionar miembro que invitó..."
-                    />
-                </div>
+                {currentUser && (currentUser.role === 'SUPER_ADMIN' || currentUser.role === 'LIDER_DOCE') && (
+                    <div>
+                        <UserSearchSelect
+                            label={<>Invitado Por <span className="text-red-400">*</span></>}
+                            value={formData.invitedById}
+                            onChange={(userId) => setFormData({ ...formData, invitedById: userId })}
+                            placeholder="Seleccionar miembro que invitó..."
+                        />
+                    </div>
+                )}
 
                 <div>
                     <label className="block text-sm font-medium text-gray-300 mb-2">

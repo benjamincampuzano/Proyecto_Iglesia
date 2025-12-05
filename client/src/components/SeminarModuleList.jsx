@@ -18,7 +18,7 @@ const SeminarModuleList = () => {
     const fetchModules = async () => {
         try {
             const token = localStorage.getItem('token');
-            const response = await fetch('http://localhost:5000/api/consolidar/seminar/modules', {
+            const response = await fetch('http://localhost:5000/api/seminar', {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             const data = await response.json();
@@ -33,8 +33,8 @@ const SeminarModuleList = () => {
         try {
             const token = localStorage.getItem('token');
             const url = editingModule
-                ? `http://localhost:5000/api/consolidar/seminar/modules/${editingModule.id}`
-                : 'http://localhost:5000/api/consolidar/seminar/modules';
+                ? `http://localhost:5000/api/seminar/${editingModule.id}`
+                : 'http://localhost:5000/api/seminar';
 
             const response = await fetch(url, {
                 method: editingModule ? 'PUT' : 'POST',
@@ -45,7 +45,15 @@ const SeminarModuleList = () => {
                 body: JSON.stringify(formData)
             });
 
-            const data = await response.json();
+            let data;
+            const contentType = response.headers.get("content-type");
+            if (contentType && contentType.indexOf("application/json") !== -1) {
+                data = await response.json();
+            } else {
+                // If not JSON, probably an HTML error page or empty
+                const text = await response.text();
+                throw new Error(text || `Error ${response.status}: ${response.statusText}`);
+            }
 
             if (response.ok) {
                 alert(editingModule ? 'Módulo actualizado exitosamente' : 'Módulo creado exitosamente');
@@ -54,12 +62,11 @@ const SeminarModuleList = () => {
                 setEditingModule(null);
                 setFormData({ name: '', description: '', moduleNumber: '' });
             } else {
-                alert(`Error: ${data.error || 'No se pudo guardar el módulo'}`);
-                console.error('Server error:', data);
+                throw new Error(data.error || data.message || 'No se pudo guardar el módulo');
             }
         } catch (error) {
             console.error('Error saving module:', error);
-            alert('Error de conexión al guardar el módulo. Por favor, verifica tu conexión.');
+            alert(`Error: ${error.message}`);
         }
     };
 
@@ -78,7 +85,7 @@ const SeminarModuleList = () => {
 
         try {
             const token = localStorage.getItem('token');
-            const response = await fetch(`http://localhost:5000/api/consolidar/seminar/modules/${id}`, {
+            const response = await fetch(`http://localhost:5000/api/seminar/${id}`, {
                 method: 'DELETE',
                 headers: { 'Authorization': `Bearer ${token}` }
             });

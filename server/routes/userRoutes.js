@@ -7,6 +7,7 @@ const {
     updateUser,
     createUser,
     deleteUser,
+    assignLeader,
 } = require('../controllers/userController');
 const { authenticate, isAdmin } = require('../middleware/auth');
 
@@ -22,5 +23,6 @@ router.get('/:id', authenticate, isAdmin, getUserById);
 router.put('/:id', authenticate, isAdmin, updateUser);
 router.post('/', authenticate, isAdmin, createUser);
 router.delete('/:id', authenticate, isAdmin, deleteUser);
+router.put('/:id/assign-leader', authenticate, isAdmin, assignLeader);
 
 module.exports = router;
