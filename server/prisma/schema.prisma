@@ -62,6 +62,7 @@ model User {
   cellId         Int?
   cell           Cell?    @relation("CellMembers", fields: [cellId], references: [id])
   ledCells       Cell[]   @relation("CellLeader")
+  hostedCells    Cell[]   @relation("CellHost")
 
   churchAttendances ChurchAttendance[]
   cellAttendances   CellAttendance[]
@@ -87,12 +88,18 @@ model Guest {
   updatedAt     DateTime    @updatedAt
 }
 
-model Cell {
+  model Cell {
   id          Int      @id @default(autoincrement())
   name        String
   description String?
   leaderId    Int
   leader      User     @relation("CellLeader", fields: [leaderId], references: [id])
+  hostId      Int?
+  host        User?    @relation("CellHost", fields: [hostId], references: [id])
+  address     String?
+  city        String?
+  dayOfWeek   String?
+  time        String?
   members     User[]   @relation("CellMembers")
   attendances CellAttendance[]
   createdAt   DateTime @default(now())

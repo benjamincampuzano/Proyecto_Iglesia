@@ -24,7 +24,7 @@ const CellAttendance = () => {
     const fetchCells = async () => {
         try {
             const token = localStorage.getItem('token');
-            const response = await fetch('http://localhost:5000/api/consolidar/cells', {
+            const response = await fetch('http://localhost:5000/api/enviar/cells', {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             const data = await response.json();
@@ -41,7 +41,7 @@ const CellAttendance = () => {
         try {
             setLoading(true);
             const token = localStorage.getItem('token');
-            const response = await fetch(`http://localhost:5000/api/consolidar/cells/${selectedCell}/members`, {
+            const response = await fetch(`http://localhost:5000/api/enviar/cells/${selectedCell}/members`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             const data = await response.json();
@@ -56,7 +56,7 @@ const CellAttendance = () => {
     const fetchCellAttendance = async () => {
         try {
             const token = localStorage.getItem('token');
-            const response = await fetch(`http://localhost:5000/api/consolidar/cell-attendance/${selectedCell}/${date}`, {
+            const response = await fetch(`http://localhost:5000/api/enviar/cell-attendance/${selectedCell}/${date}`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             const data = await response.json();
@@ -71,23 +71,39 @@ const CellAttendance = () => {
         }
     };
 
-    const toggleAttendance = (userId) => {
-        setAttendances(prev => ({
-            ...prev,
-            [userId]: prev[userId] === 'PRESENTE' ? 'AUSENTE' : 'PRESENTE'
-        }));
+    const handleAttendanceChange = (userId, status) => {
+        setAttendances(prev => {
+            const currentStatus = prev[userId];
+            // Si hace click en el mismo estado, lo desmarca (vuelve a vacío)
+            if (currentStatus === status) {
+                const newState = { ...prev };
+                delete newState[userId];
+                return newState;
+            }
+            return {
+                ...prev,
+                [userId]: status
+            };
+        });
     };
 
     const handleSubmit = async () => {
         try {
             setSaving(true);
             const token = localStorage.getItem('token');
+
+            // Solo enviar registros que tengan estado definido
             const attendanceData = Object.entries(attendances).map(([userId, status]) => ({
                 userId: parseInt(userId),
                 status
             }));
 
-            await fetch('http://localhost:5000/api/consolidar/cell-attendance', {
+            if (attendanceData.length === 0) {
+                alert('No hay registros de asistencia para guardar');
+                return;
+            }
+
+            await fetch('http://localhost:5000/api/enviar/cell-attendance', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -162,8 +178,7 @@ const CellAttendance = () => {
                         </thead>
                         <tbody className="bg-white divide-y divide-gray-200">
                             {members.map((member) => {
-                                const status = attendances[member.id] || 'AUSENTE';
-                                const isPresent = status === 'PRESENTE';
+                                const status = attendances[member.id]; // undefined, 'PRESENTE', 'AUSENTE'
 
                                 return (
                                     <tr key={member.id} className="hover:bg-gray-50">
@@ -174,28 +189,34 @@ const CellAttendance = () => {
                                             {member.email}
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap text-center">
-                                            <button
-                                                onClick={() => toggleAttendance(member.id)}
-                                                className={`
-                          inline-flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors
-                          ${isPresent
-                                                        ? 'bg-green-100 text-green-800 hover:bg-green-200'
-                                                        : 'bg-red-100 text-red-800 hover:bg-red-200'
-                                                    }
-                        `}
-                                            >
-                                                {isPresent ? (
-                                                    <>
-                                                        <Check className="w-4 h-4" />
-                                                        Presente
-                                                    </>
-                                                ) : (
-                                                    <>
-                                                        <X className="w-4 h-4" />
-                                                        Ausente
-                                                    </>
-                                                )}
-                                            </button>
+                                            <div className="flex justify-center gap-2">
+                                                <button
+                                                    onClick={() => handleAttendanceChange(member.id, 'PRESENTE')}
+                                                    className={`
+                                                      inline-flex items-center gap-2 px-3 py-1.5 rounded-lg font-medium transition-colors
+                                                      ${status === 'PRESENTE'
+                                                            ? 'bg-green-100 text-green-800 ring-2 ring-green-500'
+                                                            : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                                                        }
+                                                    `}
+                                                >
+                                                    <Check className="w-4 h-4" />
+                                                    Presente
+                                                </button>
+                                                <button
+                                                    onClick={() => handleAttendanceChange(member.id, 'AUSENTE')}
+                                                    className={`
+                                                      inline-flex items-center gap-2 px-3 py-1.5 rounded-lg font-medium transition-colors
+                                                      ${status === 'AUSENTE'
+                                                            ? 'bg-red-100 text-red-800 ring-2 ring-red-500'
+                                                            : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                                                        }
+                                                    `}
+                                                >
+                                                    <X className="w-4 h-4" />
+                                                    Ausente
+                                                </button>
+                                            </div>
                                         </td>
                                     </tr>
                                 );

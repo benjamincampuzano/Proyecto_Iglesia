@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import LosDoceGrid from '../components/LosDoceGrid';
 import NetworkTree from '../components/NetworkTree';
+import ConsolidatedStatsReport from '../components/ConsolidatedStatsReport';
 
 const Home = () => {
     const { user } = useAuth();
@@ -13,8 +14,16 @@ const Home = () => {
     const [error, setError] = useState(null);
 
     useEffect(() => {
-        fetchLosDoce();
-    }, []);
+        if (user?.role === 'SUPER_ADMIN') {
+            fetchLosDoce();
+        } else if (user?.role === 'LIDER_DOCE' || user?.role === 'LIDER_CELULA') {
+            // Automatically load their own network
+            handleSelectLeader(user);
+            setLoading(false);
+        } else {
+            setLoading(false);
+        }
+    }, [user]);
 
     const fetchLosDoce = async () => {
         try {
@@ -79,6 +88,9 @@ const Home = () => {
         );
     }
 
+    const canViewNetwork = ['SUPER_ADMIN', 'LIDER_DOCE', 'LIDER_CELULA'].includes(user?.role);
+    const canViewReport = ['SUPER_ADMIN', 'LIDER_DOCE'].includes(user?.role);
+
     return (
         <div className="space-y-8">
             <div>
@@ -90,24 +102,53 @@ const Home = () => {
                 </p>
             </div>
 
-            <div>
-                <h2 className="text-2xl font-semibold text-gray-800 mb-4">
-                    Los Doce
-                </h2>
-                <LosDoceGrid losDoce={losDoce} onSelectLeader={handleSelectLeader} />
-            </div>
+            <div className="space-y-12">
+                {/* Network & Structure */}
+                <div className="space-y-8">
+                    {canViewNetwork ? (
+                        <>
+                            {user?.role === 'SUPER_ADMIN' && (
+                                <div>
+                                    <h2 className="text-2xl font-semibold text-gray-800 mb-4">
+                                        Los Doce
+                                    </h2>
+                                    <LosDoceGrid losDoce={losDoce} onSelectLeader={handleSelectLeader} />
+                                </div>
+                            )}
 
-            {networkLoading ? (
-                <div className="flex items-center justify-center h-32">
-                    <div className="text-gray-500">Cargando red de discipulado...</div>
+                            {networkLoading ? (
+                                <div className="flex items-center justify-center h-32">
+                                    <div className="text-gray-500">Cargando red de discipulado...</div>
+                                </div>
+                            ) : (
+                                network && (
+                                    <div>
+                                        <h2 className="text-2xl font-semibold text-gray-800 mb-4">
+                                            {user?.role === 'SUPER_ADMIN'
+                                                ? `Red de ${selectedLeader?.fullName}`
+                                                : 'Mi Red'
+                                            }
+                                        </h2>
+                                        <NetworkTree network={network} />
+                                    </div>
+                                )
+                            )}
+                        </>
+                    ) : (
+                        <div className="bg-white p-6 rounded-lg shadow">
+                            <h3 className="text-lg font-medium text-gray-800 mb-2">Panel de Miembro</h3>
+                            <p className="text-gray-600">Bienvenido al sistema de gestión.</p>
+                        </div>
+                    )}
                 </div>
-            ) : (
-                network && (
+
+                {/* Bottom Section: Consolidated Report & Stats */}
+                {canViewReport && (
                     <div>
-                        <NetworkTree network={network} />
+                        <ConsolidatedStatsReport simpleMode={false} />
                     </div>
-                )
-            )}
+                )}
+            </div>
         </div>
     );
 };

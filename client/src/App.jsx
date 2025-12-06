@@ -8,10 +8,10 @@ import Ganar from './pages/Ganar';
 import Home from './pages/Home';
 import Consolidar from './pages/Consolidar';
 import Discipular from './pages/Discipular';
+import Enviar from './pages/Enviar';
 import NetworkAssignment from './components/NetworkAssignment';
 
 // Placeholder components for now
-const Enviar = () => <h1 className="text-3xl font-bold">Enviar</h1>;
 const Encuentros = () => <h1 className="text-3xl font-bold">Encuentros</h1>;
 const Convenciones = () => <h1 className="text-3xl font-bold">Convenciones</h1>;
 

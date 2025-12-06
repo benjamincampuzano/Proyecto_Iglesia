@@ -30,8 +30,13 @@ const getLosDoce = async (req, res) => {
 const getNetwork = async (req, res) => {
     try {
         const { userId } = req.params;
+        const requesterRole = req.user.role;
+        // Check if the user is a cell leader, to apply restrictions
+        const isCellLeaderView = requesterRole === 'LIDER_CELULA';
 
         // Fetch the user with their complete network
+        // Note: This static include fetches 2 levels deep. 
+        // For deep networks, this might need recursion or raw queries in future.
         const user = await prisma.user.findUnique({
             where: { id: parseInt(userId) },
             include: {
@@ -56,16 +61,35 @@ const getNetwork = async (req, res) => {
             return res.status(404).json({ error: 'User not found' });
         }
 
-        // Build hierarchical structure
-        const buildHierarchy = (user) => {
+        // Build hierarchical structure with pruning
+        const buildHierarchy = (currentUser) => {
+            // Restriction Rule: 
+            // If the view is for a Cell Leader, and we encounter ANOTHER Cell Leader (who is not the root/requested user),
+            // we must hide their detailed info (disciples/guests). We only show their basic "node".
+            const isTargetAnotherLeader = currentUser.role === 'LIDER_CELULA' && currentUser.id !== parseInt(userId);
+
+            // If we are restricted, return the pruned node
+            if (isCellLeaderView && isTargetAnotherLeader) {
+                return {
+                    id: currentUser.id,
+                    fullName: currentUser.fullName,
+                    email: currentUser.email,
+                    role: currentUser.role,
+                    assignedGuests: [], // Hidden
+                    invitedGuests: [],  // Hidden
+                    disciples: []       // Hidden
+                };
+            }
+
+            // Otherwise, return full node and recurse
             return {
-                id: user.id,
-                fullName: user.fullName,
-                email: user.email,
-                role: user.role,
-                assignedGuests: user.assignedGuests || [],
-                invitedGuests: user.invitedGuests || [],
-                disciples: (user.disciples || []).map(disciple => buildHierarchy(disciple))
+                id: currentUser.id,
+                fullName: currentUser.fullName,
+                email: currentUser.email,
+                role: currentUser.role,
+                assignedGuests: currentUser.assignedGuests || [],
+                invitedGuests: currentUser.invitedGuests || [],
+                disciples: (currentUser.disciples || []).map(disciple => buildHierarchy(disciple))
             };
         };
 

@@ -4,25 +4,25 @@ const { authenticate } = require('../middleware/auth');
 
 // Import controllers
 const churchAttendanceController = require('../controllers/churchAttendanceController');
-const cellAttendanceController = require('../controllers/cellAttendanceController');
 const seminarController = require('../controllers/seminarController');
 const enrollmentController = require('../controllers/enrollmentController');
 const classAttendanceController = require('../controllers/classAttendanceController');
+const consolidarStatsController = require('../controllers/consolidarStatsController');
 
 // All routes require authentication
 router.use(authenticate);
 
 // Church Attendance Routes
+// Church Attendance Routes
 router.post('/church-attendance', churchAttendanceController.recordAttendance);
-router.get('/church-attendance/:date', churchAttendanceController.getAttendanceByDate);
 router.get('/church-attendance/members/all', churchAttendanceController.getAllMembers);
 router.get('/church-attendance/stats', churchAttendanceController.getAttendanceStats);
+router.get('/church-attendance/daily-stats', churchAttendanceController.getDailyStats);
+router.get('/church-attendance/:date', churchAttendanceController.getAttendanceByDate);
 
-// Cell Attendance Routes
-router.post('/cell-attendance', cellAttendanceController.recordCellAttendance);
-router.get('/cell-attendance/:cellId/:date', cellAttendanceController.getCellAttendance);
-router.get('/cells', cellAttendanceController.getCells);
-router.get('/cells/:cellId/members', cellAttendanceController.getCellMembers);
+// Consolidated Stats Routes
+router.get('/stats/general', consolidarStatsController.getGeneralStats);
+
 
 // Seminar Module Routes
 router.get('/seminar/modules', seminarController.getAllModules);

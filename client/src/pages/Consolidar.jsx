@@ -1,13 +1,14 @@
 import { useState } from 'react';
 import ChurchAttendance from '../components/ChurchAttendance';
-import CellAttendance from '../components/CellAttendance';
+import ChurchAttendanceChart from '../components/ChurchAttendanceChart';
+
 
 const Consolidar = () => {
-    const [activeTab, setActiveTab] = useState('church');
+    const [activeTab, setActiveTab] = useState('attendance');
 
     const tabs = [
-        { id: 'church', label: 'Asistencia a la Iglesia', component: ChurchAttendance },
-        { id: 'cell', label: 'Asistencia a la Célula', component: CellAttendance }
+        { id: 'attendance', label: 'Asistencia a la Iglesia', component: ChurchAttendance },
+        { id: 'stats', label: 'Estadísticas', component: ChurchAttendanceChart }
     ];
 
     const ActiveComponent = tabs.find(tab => tab.id === activeTab)?.component;
@@ -16,7 +17,7 @@ const Consolidar = () => {
         <div className="space-y-6">
             <div>
                 <h1 className="text-3xl font-bold text-gray-800 dark:text-gray-100">Consolidar</h1>
-                <p className="text-gray-600 dark:text-gray-400 mt-1">Gestión de asistencias a la iglesia y células</p>
+                <p className="text-gray-600 dark:text-gray-400 mt-1">Gestión de asistencia a la iglesia y estadísticas</p>
             </div>
 
             {/* Tab Navigation */}
