@@ -10,10 +10,10 @@ import Consolidar from './pages/Consolidar';
 import Discipular from './pages/Discipular';
 import Enviar from './pages/Enviar';
 import NetworkAssignment from './components/NetworkAssignment';
+import Convenciones from './pages/Convenciones';
+import Encuentros from './pages/Encuentros';
 
 // Placeholder components for now
-const Encuentros = () => <h1 className="text-3xl font-bold">Encuentros</h1>;
-const Convenciones = () => <h1 className="text-3xl font-bold">Convenciones</h1>;
 
 const PrivateRoute = ({ children }) => {
   const { user, loading } = useAuth();

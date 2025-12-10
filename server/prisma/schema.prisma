@@ -70,6 +70,7 @@ model User {
   cellAttendances   CellAttendance[]
   seminarEnrollments SeminarEnrollment[]
   classAttendances  ClassAttendance[]
+  conventionRegistrations ConventionRegistration[]
 }
 
 model Guest {
@@ -86,6 +87,8 @@ model Guest {
   assignedToId  Int?
   assignedTo    User?       @relation("AssignedTo", fields: [assignedToId], references: [id])
   
+  encuentroRegistrations EncuentroRegistration[]
+
   createdAt     DateTime    @default(now())
   updatedAt     DateTime    @updatedAt
 }
@@ -177,3 +180,117 @@ model ClassAttendance {
 
   @@unique([enrollmentId, classNumber])
 }
+
+enum ConventionType {
+  FAMILIAS
+  MUJERES
+  JOVENES
+  HOMBRES
+}
+
+enum RegistrationStatus {
+  REGISTERED
+  CANCELLED
+  ATTENDED
+}
+
+model Convention {
+  id          Int      @id @default(autoincrement())
+  type        ConventionType
+  year        Int
+  theme       String?
+  cost        Float
+  startDate   DateTime
+  endDate     DateTime
+  registrations ConventionRegistration[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([type, year])
+}
+
+model ConventionRegistration {
+  id                 Int                @id @default(autoincrement())
+  userId             Int
+  user               User               @relation(fields: [userId], references: [id])
+  conventionId       Int
+  convention         Convention         @relation(fields: [conventionId], references: [id], onDelete: Cascade)
+  status             RegistrationStatus @default(REGISTERED)
+  discountPercentage Float              @default(0)
+  payments           ConventionPayment[]
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+
+  @@unique([userId, conventionId])
+}
+
+model ConventionPayment {
+  id             Int                    @id @default(autoincrement())
+  registrationId Int
+  registration   ConventionRegistration @relation(fields: [registrationId], references: [id], onDelete: Cascade)
+  amount         Float
+  date           DateTime               @default(now())
+  notes          String?
+  createdAt      DateTime               @default(now())
+  updatedAt      DateTime               @updatedAt
+}
+
+enum EncuentroType {
+  MUJERES
+  HOMBRES
+  JOVENES
+}
+
+model Encuentro {
+  id          Int      @id @default(autoincrement())
+  type        EncuentroType
+  name        String
+  description String?
+  cost        Float
+  startDate   DateTime
+  endDate     DateTime
+  registrations EncuentroRegistration[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model EncuentroRegistration {
+  id                 Int                @id @default(autoincrement())
+  guestId            Int
+  guest              Guest              @relation(fields: [guestId], references: [id])
+  encuentroId        Int
+  encuentro          Encuentro          @relation(fields: [encuentroId], references: [id], onDelete: Cascade)
+  status             RegistrationStatus @default(REGISTERED)
+  discountPercentage Float              @default(0)
+  payments           EncuentroPayment[]
+  classAttendances   EncuentroClassAttendance[]
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+
+  @@unique([guestId, encuentroId])
+}
+
+model EncuentroPayment {
+  id             Int                    @id @default(autoincrement())
+  registrationId Int
+  registration   EncuentroRegistration  @relation(fields: [registrationId], references: [id], onDelete: Cascade)
+  amount         Float
+  date           DateTime               @default(now())
+  notes          String?
+  createdAt      DateTime               @default(now())
+  updatedAt      DateTime               @updatedAt
+}
+
+model EncuentroClassAttendance {
+  id             Int                    @id @default(autoincrement())
+  registrationId Int
+  registration   EncuentroRegistration  @relation(fields: [registrationId], references: [id], onDelete: Cascade)
+  classNumber    Int                    // 1-5 (Pre), 6-10 (Post)
+  attended       Boolean                @default(false)
+  date           DateTime               @default(now())
+  createdAt      DateTime               @default(now())
+  updatedAt      DateTime               @updatedAt
+
+  @@unique([registrationId, classNumber])
+}
+

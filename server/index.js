@@ -17,6 +17,8 @@ const networkRoutes = require('./routes/networkRoutes');
 const consolidarRoutes = require('./routes/consolidarRoutes');
 const seminarRoutes = require('./routes/seminarRoutes');
 const enviarRoutes = require('./routes/enviarRoutes');
+const conventionRoutes = require('./routes/conventionRoutes');
+const encuentroRoutes = require('./routes/encuentroRoutes');
 
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
@@ -25,6 +27,8 @@ app.use('/api/network', networkRoutes);
 app.use('/api/consolidar', consolidarRoutes);
 app.use('/api/seminar', seminarRoutes);
 app.use('/api/enviar', enviarRoutes);
+app.use('/api/convenciones', conventionRoutes);
+app.use('/api/encuentros', encuentroRoutes);
 
 app.get('/', (req, res) => {
     res.send('API is running...');
