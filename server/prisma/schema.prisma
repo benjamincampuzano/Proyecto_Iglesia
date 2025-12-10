@@ -21,7 +21,7 @@ enum GuestStatus {
   NUEVO
   CONTACTADO
   EN_CONSOLIDACION
-  CONVERTIDO
+  GANADO
 }
 
 enum AttendanceStatus {

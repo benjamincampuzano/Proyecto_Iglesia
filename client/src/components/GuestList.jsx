@@ -115,7 +115,7 @@ const GuestList = ({ refreshTrigger }) => {
             setConversionEmail('');
             setConversionPassword('');
             fetchGuests();
-            alert('Invitado convertido a miembro exitosamente');
+            alert('Invitado ganado a miembro exitosamente');
         } catch (err) {
             setError(err.response?.data?.message || 'Error al convertir invitado');
         }
@@ -126,7 +126,7 @@ const GuestList = ({ refreshTrigger }) => {
             NUEVO: 'bg-blue-900/30 text-blue-400',
             CONTACTADO: 'bg-yellow-900/30 text-yellow-400',
             EN_CONSOLIDACION: 'bg-purple-900/30 text-purple-400',
-            CONVERTIDO: 'bg-green-900/30 text-green-400',
+            GANADO: 'bg-green-900/30 text-green-400',
         };
         return colors[status] || 'bg-gray-900/30 text-gray-400';
     };
@@ -136,7 +136,7 @@ const GuestList = ({ refreshTrigger }) => {
             NUEVO: 'Nuevo',
             CONTACTADO: 'Contactado',
             EN_CONSOLIDACION: 'En Consolidación',
-            CONVERTIDO: 'Convertido',
+            GANADO: 'Ganado',
         };
         return labels[status] || status;
     };
@@ -188,7 +188,7 @@ const GuestList = ({ refreshTrigger }) => {
                         <option value="NUEVO">Nuevo</option>
                         <option value="CONTACTADO">Contactado</option>
                         <option value="EN_CONSOLIDACION">En Consolidación</option>
-                        <option value="CONVERTIDO">Convertido</option>
+                        <option value="GANADO">Ganado</option>
                     </select>
                 </div>
 
@@ -298,7 +298,7 @@ const GuestList = ({ refreshTrigger }) => {
                                                 <option value="NUEVO">Nuevo</option>
                                                 <option value="CONTACTADO">Contactado</option>
                                                 <option value="EN_CONSOLIDACION">En Consolidación</option>
-                                                <option value="CONVERTIDO">Convertido</option>
+                                                <option value="GANADO">Ganado</option>
                                             </select>
                                         ) : (
                                             <span className={`inline-block px-2 py-1 rounded text-xs ${getStatusBadgeColor(guest.status)}`}>
