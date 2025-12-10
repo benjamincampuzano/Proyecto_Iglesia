@@ -49,6 +49,8 @@ model User {
   password       String
   fullName       String
   role           Role     @default(MIEMBRO)
+  phone          String?
+  address        String?
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
   
@@ -136,7 +138,9 @@ model SeminarModule {
   id          Int                 @id @default(autoincrement())
   name        String
   description String?
-  moduleNumber Int                @unique
+  moduleNumber Int?               
+  code        String?             @unique
+  type        String              @default("SEMINARIO") // SEMINARIO, CAPACITACION_DESTINO
   enrollments SeminarEnrollment[]
   createdAt   DateTime            @default(now())
   updatedAt   DateTime            @updatedAt
@@ -149,6 +153,8 @@ model SeminarEnrollment {
   moduleId        Int
   module          SeminarModule      @relation(fields: [moduleId], references: [id])
   status          EnrollmentStatus   @default(INSCRITO)
+  assignmentsDone Int                @default(0)
+  finalProjectGrade Float?
   classAttendances ClassAttendance[]
   createdAt       DateTime           @default(now())
   updatedAt       DateTime           @updatedAt
@@ -164,6 +170,7 @@ model ClassAttendance {
   user         User                  @relation(fields: [userId], references: [id])
   classNumber  Int
   status       ClassAttendanceStatus @default(ASISTE)
+  grade        Float?
   notes        String?
   createdAt    DateTime              @default(now())
   updatedAt    DateTime              @updatedAt

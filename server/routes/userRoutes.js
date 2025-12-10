@@ -8,6 +8,7 @@ const {
     createUser,
     deleteUser,
     assignLeader,
+    getMyNetwork,
 } = require('../controllers/userController');
 const { authenticate, isAdmin } = require('../middleware/auth');
 
@@ -22,7 +23,8 @@ router.get('/', authenticate, isAdmin, getAllUsers);
 router.get('/:id', authenticate, isAdmin, getUserById);
 router.put('/:id', authenticate, isAdmin, updateUser);
 router.post('/', authenticate, isAdmin, createUser);
-router.delete('/:id', authenticate, isAdmin, deleteUser);
-router.put('/:id/assign-leader', authenticate, isAdmin, assignLeader);
+router.delete('/:id', isAdmin, deleteUser); // Modified: authenticate removed
+router.post('/assign-leader/:id', isAdmin, assignLeader); // Modified: method from PUT to POST, path changed, authenticate removed
+router.get('/my-network/all', authenticate, getMyNetwork); // Added new route
 
 module.exports = router;

@@ -4,7 +4,11 @@ const prisma = new PrismaClient();
 // Get all seminar modules
 const getAllModules = async (req, res) => {
     try {
+        const { type } = req.query;
+        const whereClause = type ? { type } : {};
+
         const modules = await prisma.seminarModule.findMany({
+            where: whereClause,
             include: {
                 _count: {
                     select: {
@@ -27,39 +31,36 @@ const getAllModules = async (req, res) => {
 // Create a new module
 const createModule = async (req, res) => {
     try {
-        const { name, description, moduleNumber } = req.body;
+        const { name, description, moduleNumber, code, type } = req.body;
 
-        if (!name || moduleNumber === undefined || moduleNumber === null || moduleNumber === '') {
-            return res.status(400).json({ error: 'Name and module number are required' });
+        if (!name) {
+            return res.status(400).json({ error: 'Name is required' });
         }
 
-        const parsedModuleNumber = parseInt(moduleNumber);
-        if (isNaN(parsedModuleNumber)) {
-            return res.status(400).json({ error: 'Module number must be a valid number' });
-        }
+        const moduleData = {
+            name,
+            description,
+            type: type || 'SEMINARIO',
+            code
+        };
 
-        // Check if module number already exists
-        const existingModule = await prisma.seminarModule.findUnique({
-            where: { moduleNumber: parsedModuleNumber }
-        });
-
-        if (existingModule) {
-            return res.status(400).json({ error: 'Module number already exists' });
+        if (moduleNumber !== undefined && moduleNumber !== null && moduleNumber !== '') {
+            const parsedModuleNumber = parseInt(moduleNumber);
+            if (isNaN(parsedModuleNumber)) {
+                return res.status(400).json({ error: 'Module number must be a valid number' });
+            }
+            moduleData.moduleNumber = parsedModuleNumber;
         }
 
         const module = await prisma.seminarModule.create({
-            data: {
-                name,
-                description,
-                moduleNumber: parsedModuleNumber
-            }
+            data: moduleData
         });
 
         res.status(201).json(module);
     } catch (error) {
         console.error('Error creating module:', error);
         if (error.code === 'P2002') {
-            return res.status(400).json({ error: 'Module number already exists' });
+            return res.status(400).json({ error: 'Module code or number already exists' });
         }
         res.status(500).json({ error: 'Error creating module' });
     }
@@ -69,7 +70,7 @@ const createModule = async (req, res) => {
 const updateModule = async (req, res) => {
     try {
         const { id } = req.params;
-        const { name, description, moduleNumber } = req.body;
+        const { name, description, moduleNumber, code, type } = req.body;
 
         // Check if module exists
         const existingModule = await prisma.seminarModule.findUnique({
@@ -80,34 +81,53 @@ const updateModule = async (req, res) => {
             return res.status(404).json({ error: 'Module not found' });
         }
 
-        // If updating moduleNumber, check uniqueness
-        if (moduleNumber !== undefined && parseInt(moduleNumber) !== existingModule.moduleNumber) {
-            const duplicate = await prisma.seminarModule.findUnique({
-                where: { moduleNumber: parseInt(moduleNumber) }
-            });
-            if (duplicate) {
-                return res.status(400).json({ error: 'Module number already exists' });
-            }
-        }
+        const updateData = {
+            ...(name && { name }),
+            ...(description && { description }),
+            ...(code && { code }),
+            ...(type && { type }),
+            ...(moduleNumber !== undefined && { moduleNumber: parseInt(moduleNumber) })
+        };
 
         const module = await prisma.seminarModule.update({
             where: { id: parseInt(id) },
-            data: {
-                ...(name && { name }),
-                ...(description && { description }),
-                ...(moduleNumber && { moduleNumber: parseInt(moduleNumber) })
-            }
+            data: updateData
         });
 
         res.json(module);
     } catch (error) {
         console.error('Error updating module:', error);
         if (error.code === 'P2002') {
-            return res.status(400).json({ error: 'Module number already exists' });
+            return res.status(400).json({ error: 'Module code or number already exists' });
         }
         res.status(500).json({ error: 'Error updating module' });
     }
 };
+
+// Update enrollment progress (assignments, status, finalProjectGrade)
+const updateProgress = async (req, res) => {
+    try {
+        const { enrollmentId } = req.params;
+        const { assignmentsDone, status, finalProjectGrade } = req.body;
+
+        const updateData = {};
+        if (assignmentsDone !== undefined) updateData.assignmentsDone = parseInt(assignmentsDone);
+        if (status) updateData.status = status;
+        if (finalProjectGrade !== undefined) updateData.finalProjectGrade = parseFloat(finalProjectGrade);
+
+        const enrollment = await prisma.seminarEnrollment.update({
+            where: { id: parseInt(enrollmentId) },
+            data: updateData
+        });
+
+        res.json(enrollment);
+    } catch (error) {
+        console.error('Error updating progress:', error);
+        res.status(500).json({ error: 'Error updating progress' });
+    }
+};
+
+// ... existing deleteModule, enrollStudent, getModuleEnrollments ...
 
 // Delete a module
 const deleteModule = async (req, res) => {
@@ -125,14 +145,62 @@ const deleteModule = async (req, res) => {
     }
 };
 
+// Helper to get network
+const getUserNetwork = async (leaderId) => {
+    const network = [];
+    const queue = [leaderId];
+    const visited = new Set();
+    while (queue.length > 0) {
+        const currentId = queue.shift();
+        if (visited.has(currentId)) continue;
+        visited.add(currentId);
+        network.push(currentId);
+        const disciples = await prisma.user.findMany({
+            where: { leaderId: currentId },
+            select: { id: true }
+        });
+        queue.push(...disciples.map(d => d.id));
+    }
+    return network;
+};
+
 // Enroll a user in a module
 const enrollStudent = async (req, res) => {
     try {
         const { moduleId } = req.params;
-        const { userId } = req.body;
+        const { userId, phone, address } = req.body;
+        const requestingUser = req.user;
 
         if (!userId) {
             return res.status(400).json({ error: 'User ID is required' });
+        }
+
+        // --- Refinement: Role and Network Check ---
+        // "Solo los lideres de 12 pueden inscribir"
+        // Also allow SUPER_ADMIN for testing/management
+        if (requestingUser.role !== 'LIDER_DOCE' && requestingUser.role !== 'SUPER_ADMIN') {
+            return res.status(403).json({ error: 'Solo los Líderes de 12 pueden inscribir estudiantes.' });
+        }
+
+        // "Personas de su red"
+        // If SUPER_ADMIN, bypass check.
+        if (requestingUser.role === 'LIDER_DOCE') {
+            const networkIds = await getUserNetwork(requestingUser.id);
+            if (!networkIds.includes(parseInt(userId))) {
+                return res.status(403).json({ error: 'Solo puedes inscribir a personas de tu red.' });
+            }
+        }
+        // -------------------------------------------
+
+        // Update User info if provided
+        if (phone || address) {
+            await prisma.user.update({
+                where: { id: parseInt(userId) },
+                data: {
+                    ...(phone && { phone }),
+                    ...(address && { address })
+                }
+            });
         }
 
         // Check if already enrolled
@@ -178,6 +246,11 @@ const getModuleEnrollments = async (req, res) => {
                         fullName: true,
                         email: true
                     }
+                },
+                classAttendances: {
+                    orderBy: {
+                        classNumber: 'asc'
+                    }
                 }
             }
         });
@@ -195,5 +268,6 @@ module.exports = {
     updateModule,
     deleteModule,
     enrollStudent,
-    getModuleEnrollments
+    getModuleEnrollments,
+    updateProgress
 };

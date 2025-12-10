@@ -28,6 +28,7 @@ const recordClassAttendance = async (req, res) => {
             },
             update: {
                 status,
+                grade: req.body.grade !== undefined ? parseFloat(req.body.grade) : undefined,
                 notes: notes || null
             },
             create: {
@@ -35,6 +36,7 @@ const recordClassAttendance = async (req, res) => {
                 userId: enrollment.userId,
                 classNumber: parseInt(classNumber),
                 status,
+                grade: req.body.grade !== undefined ? parseFloat(req.body.grade) : null,
                 notes: notes || null
             }
         });

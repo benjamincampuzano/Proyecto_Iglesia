@@ -394,6 +394,38 @@ const assignLeader = async (req, res) => {
     }
 };
 
+// Get users in my network (for leaders)
+const getMyNetwork = async (req, res) => {
+    try {
+        const userId = req.user.id;
+        const networkIds = await getUserNetwork(userId);
+
+        if (networkIds.length === 0) {
+            return res.json([]);
+        }
+
+        const users = await prisma.user.findMany({
+            where: {
+                id: { in: networkIds }
+            },
+            select: {
+                id: true,
+                fullName: true,
+                email: true,
+                phone: true,
+                address: true,
+                role: true
+            },
+            orderBy: { fullName: 'asc' }
+        });
+
+        res.json(users);
+    } catch (error) {
+        console.error('Error fetching my network:', error);
+        res.status(500).json({ error: 'Error fetching network' });
+    }
+};
+
 module.exports = {
     updateProfile,
     changePassword,
@@ -403,4 +435,5 @@ module.exports = {
     createUser,
     deleteUser,
     assignLeader,
+    getMyNetwork
 };
