@@ -2,7 +2,7 @@ const { PrismaClient } = require('@prisma/client');
 
 const prisma = new PrismaClient();
 
-// Create new guest
+// Crear nuevo invitado
 const createGuest = async (req, res) => {
     try {
         let { name, phone, address, prayerRequest, invitedById } = req.body;
@@ -12,11 +12,11 @@ const createGuest = async (req, res) => {
             return res.status(400).json({ message: 'Name and phone are required' });
         }
 
-        // LIDER_CELULA and MIEMBRO can only create guests with themselves as invitedBy
+        // LIDER_CELULA y MIEMBRO solo pueden crear invitados con ellos mismos como invitedBy
         if (user.role === 'LIDER_CELULA' || user.role === 'MIEMBRO') {
             invitedById = user.id;
         } else {
-            // SUPER_ADMIN and LIDER_DOCE can specify invitedById
+            // SUPER_ADMIN y LIDER_DOCE pueden especificar invitedById
             if (!invitedById) {
                 return res.status(400).json({ message: 'invitedById is required' });
             }
@@ -47,7 +47,7 @@ const createGuest = async (req, res) => {
     }
 };
 
-// Helper function to get all users in a leader's network (disciples and sub-disciples)
+// Función auxiliar para obtener todos los usuarios en la red de un líder (discípulos y sub-discípulos)
 const getUserNetwork = async (userId) => {
     const network = [];
     const queue = [userId];
@@ -72,20 +72,20 @@ const getUserNetwork = async (userId) => {
     return network.filter(id => id != null);
 };
 
-// Get all guests with optional filters
+// Obtener todos los invitados con filtros opcionales
 const getAllGuests = async (req, res) => {
     try {
         const { status, invitedById, assignedToId, search } = req.query;
-        const user = req.user; // Get authenticated user from request
+        const user = req.user; // Obtener usuario autenticado de la petición
 
         let securityFilter = {};
 
-        // Apply role-based visibility
+        // Aplicar visibilidad basada en roles
         if (user.role === 'SUPER_ADMIN') {
-            // Super admin can see all guests
+            // Super admin puede ver todos los invitados
             securityFilter = {};
         } else if (user.role === 'LIDER_DOCE') {
-            // LIDER_DOCE can see guests invited/assigned to anyone in their network
+            // LIDER_DOCE puede ver invitados invitados/asignados a cualquiera en su red
             const networkUserIds = await getUserNetwork(user.id);
             securityFilter = {
                 OR: [
@@ -94,9 +94,9 @@ const getAllGuests = async (req, res) => {
                 ]
             };
         } else {
-            // LIDER_CELULA and MIEMBRO can only see:
-            // 1. Guests they invited AND are not assigned to someone else
-            // 2. Guests assigned to them
+            // LIDER_CELULA y MIEMBRO solo pueden ver:
+            // 1. Invitados que ellos invitaron Y no están asignados a alguien más
+            // 2. Invitados asignados a ellos
             securityFilter = {
                 OR: [
                     {
@@ -115,13 +115,13 @@ const getAllGuests = async (req, res) => {
             };
         }
 
-        // DEBUG: Log the filter being applied
+        // DEBUG: Log del filtro siendo aplicado
         console.log('=== GUEST FILTER DEBUG ===');
         console.log('User:', { id: user.id, role: user.role });
         console.log('Security Filter:', JSON.stringify(securityFilter, null, 2));
         console.log('========================');
 
-        // Build query filters
+        // Construir filtros de consulta
         const queryFilters = {};
         if (status) queryFilters.status = status;
         if (invitedById) queryFilters.invitedById = parseInt(invitedById);
@@ -133,7 +133,7 @@ const getAllGuests = async (req, res) => {
             ];
         }
 
-        // Combine security filter and query filters
+        // Combinar filtro de seguridad y filtros de consulta
         const finalWhere = Object.keys(securityFilter).length > 0
             ? { AND: [securityFilter, queryFilters] }
             : queryFilters;
@@ -158,7 +158,7 @@ const getAllGuests = async (req, res) => {
     }
 };
 
-// Get specific guest by ID
+// Obtener invitado específico por ID
 const getGuestById = async (req, res) => {
     try {
         const { id } = req.params;
@@ -186,14 +186,14 @@ const getGuestById = async (req, res) => {
     }
 };
 
-// Update guest
+// Actualizar invitado
 const updateGuest = async (req, res) => {
     try {
         const { id } = req.params;
         const { name, phone, address, prayerRequest, status, invitedById, assignedToId } = req.body;
         const user = req.user;
 
-        // Get the guest first to check permissions
+        // Obtener el invitado primero para verificar permisos
         const existingGuest = await prisma.guest.findUnique({
             where: { id: parseInt(id) }
         });
@@ -202,11 +202,11 @@ const updateGuest = async (req, res) => {
             return res.status(404).json({ message: 'Guest not found' });
         }
 
-        // Prepare update data based on role
+        // Preparar datos de actualización basados en rol
         let updateData = {};
 
         if (user.role === 'SUPER_ADMIN') {
-            // Super admin can update all fields
+            // Super admin puede actualizar todos los campos
             updateData = {
                 ...(name && { name }),
                 ...(phone && { phone }),
@@ -217,7 +217,7 @@ const updateGuest = async (req, res) => {
                 ...(assignedToId !== undefined && { assignedToId: assignedToId ? parseInt(assignedToId) : null }),
             };
         } else if (user.role === 'LIDER_DOCE') {
-            // LIDER_DOCE can update all fields for guests in their network
+            // LIDER_DOCE puede actualizar todos los campos para invitados en su red
             const networkUserIds = await getUserNetwork(user.id);
             const isInNetwork = networkUserIds.includes(existingGuest.invitedById) ||
                 (existingGuest.assignedToId && networkUserIds.includes(existingGuest.assignedToId));
@@ -236,15 +236,15 @@ const updateGuest = async (req, res) => {
                 ...(assignedToId !== undefined && { assignedToId: assignedToId ? parseInt(assignedToId) : null }),
             };
         } else {
-            // LIDER_CELULA and MIEMBRO can only update status field
-            // And only for guests they invited or were assigned to them
+            // LIDER_CELULA y MIEMBRO solo pueden actualizar campo de estado
+            // Y solo para invitados que ellos invitaron o les fueron asignados
             const canEdit = existingGuest.invitedById === user.id || existingGuest.assignedToId === user.id;
 
             if (!canEdit) {
                 return res.status(403).json({ message: 'You can only update guests you invited or assigned to you' });
             }
 
-            // Only allow status updates
+            // Solo permitir actualizaciones de estado
             if (status) {
                 updateData = { status };
             } else {
@@ -272,13 +272,13 @@ const updateGuest = async (req, res) => {
     }
 };
 
-// Delete guest
+// Eliminar invitado
 const deleteGuest = async (req, res) => {
     try {
         const { id } = req.params;
         const user = req.user;
 
-        // Get the guest first to check permissions
+        // Obtener el invitado primero para verificar permisos
         const existingGuest = await prisma.guest.findUnique({
             where: { id: parseInt(id) }
         });
@@ -287,11 +287,11 @@ const deleteGuest = async (req, res) => {
             return res.status(404).json({ message: 'Guest not found' });
         }
 
-        // Check delete permissions based on role
+        // Verificar permisos de eliminación basados en rol
         if (user.role === 'SUPER_ADMIN') {
-            // Super admin can delete any guest
+            // Super admin puede eliminar cualquier invitado
         } else if (user.role === 'LIDER_DOCE') {
-            // LIDER_DOCE can delete guests in their network
+            // LIDER_DOCE puede eliminar invitados en su red
             const networkUserIds = await getUserNetwork(user.id);
             const isInNetwork = networkUserIds.includes(existingGuest.invitedById) ||
                 (existingGuest.assignedToId && networkUserIds.includes(existingGuest.assignedToId));
@@ -300,7 +300,7 @@ const deleteGuest = async (req, res) => {
                 return res.status(403).json({ message: 'You can only delete guests in your network' });
             }
         } else {
-            // LIDER_CELULA and MIEMBRO can only delete guests they invited (not assigned)
+            // LIDER_CELULA y MIEMBRO solo pueden eliminar invitados que ellos invitaron (no asignados)
             if (existingGuest.invitedById !== user.id) {
                 return res.status(403).json({ message: 'You can only delete guests you invited' });
             }
@@ -317,7 +317,7 @@ const deleteGuest = async (req, res) => {
     }
 };
 
-// Assign guest to a leader
+// Asignar invitado a un líder
 const assignGuest = async (req, res) => {
     try {
         const { id } = req.params;
@@ -349,7 +349,7 @@ const assignGuest = async (req, res) => {
     }
 };
 
-// Convert guest to member (create user account)
+// Convertir invitado a miembro (crear cuenta de usuario)
 const convertGuestToMember = async (req, res) => {
     try {
         const { id } = req.params;
@@ -359,7 +359,7 @@ const convertGuestToMember = async (req, res) => {
             return res.status(400).json({ message: 'Email and password are required' });
         }
 
-        // Get the guest
+        // Obtener el invitado
         const guest = await prisma.guest.findUnique({
             where: { id: parseInt(id) }
         });
@@ -368,7 +368,7 @@ const convertGuestToMember = async (req, res) => {
             return res.status(404).json({ message: 'Guest not found' });
         }
 
-        // Check if email already exists
+        // Verificar si el correo ya existe
         const existingUser = await prisma.user.findUnique({
             where: { email }
         });
@@ -377,23 +377,23 @@ const convertGuestToMember = async (req, res) => {
             return res.status(400).json({ message: 'Email already in use' });
         }
 
-        // Hash password
+        // Hashear contraseña
         const bcrypt = require('bcryptjs');
         const hashedPassword = await bcrypt.hash(password, 10);
 
-        // Create user from guest data
+        // Crear usuario con datos del invitado
         const newUser = await prisma.user.create({
             data: {
                 email,
                 password: hashedPassword,
                 fullName: guest.name,
                 role: 'MIEMBRO',
-                // Assign to the person who invited them
+                // Asignar a la persona que los invitó
                 leaderId: guest.invitedById
             }
         });
 
-        // Delete the guest record
+        // Eliminar el registro del invitado
         await prisma.guest.delete({
             where: { id: parseInt(id) }
         });

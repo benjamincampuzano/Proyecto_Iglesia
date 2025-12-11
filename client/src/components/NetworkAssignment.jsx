@@ -30,13 +30,13 @@ const NetworkAssignment = () => {
             const allUsers = res.data.users;
             const user = JSON.parse(localStorage.getItem('user'));
 
-            // Filter based on role
+            // Filtrar basado en rol
             let filteredUsers = allUsers;
-            // Include both LIDER_DOCE and LIDER_CELULA as potential leaders
+            // Incluir tanto LIDER_DOCE como LIDER_CELULA como líderes potenciales
             let filteredLeaders = allUsers.filter(u => u.role === 'LIDER_DOCE' || u.role === 'LIDER_CELULA');
 
             if (user.role === 'LIDER_DOCE') {
-                // For LIDER_DOCE, show only their network
+                // Para LIDER_DOCE, mostrar solo su red
                 const getUserNetworkIds = (userId) => {
                     const network = new Set([userId]);
                     const queue = [userId];
@@ -56,7 +56,7 @@ const NetworkAssignment = () => {
 
                 const networkIds = getUserNetworkIds(user.id);
                 filteredUsers = allUsers.filter(u => networkIds.includes(u.id));
-                // For LIDER_DOCE, show themselves and their LIDER_CELULA disciples as potential leaders
+                // Para LIDER_DOCE, mostrarse a sí mismos y sus discípulos LIDER_CELULA como líderes potenciales
                 filteredLeaders = allUsers.filter(u =>
                     networkIds.includes(u.id) && (u.role === 'LIDER_DOCE' || u.role === 'LIDER_CELULA')
                 );
@@ -145,7 +145,7 @@ const NetworkAssignment = () => {
                                     )}
                                 </div>
 
-                                {/* Show sub-disciples if LIDER_CELULA has disciples */}
+                                {/* Mostrar sub-discípulos si LIDER_CELULA tiene discípulos */}
                                 {disciple.role === 'LIDER_CELULA' && disciple.disciples && disciple.disciples.length > 0 && (
                                     <div className="ml-12 mt-2 space-y-2">
                                         {disciple.disciples.map(subDisciple => (
@@ -203,7 +203,7 @@ const NetworkAssignment = () => {
                 </div>
             )}
 
-            {/* Users without leader - for SUPER_ADMIN and LIDER_DOCE */}
+            {/* Usuarios sin líder - para SUPER_ADMIN y LIDER_DOCE */}
             {(currentUser?.role === 'SUPER_ADMIN' || currentUser?.role === 'LIDER_DOCE') && (
                 <div className="bg-gray-800 rounded-lg p-6 border border-gray-700">
                     <h2 className="text-xl font-bold text-white mb-4">Usuarios sin Líder Asignado</h2>
@@ -270,7 +270,7 @@ const NetworkAssignment = () => {
                 </div>
             )}
 
-            {/* Network tree */}
+            {/* Árbol de red */}
             <div className="bg-gray-800 rounded-lg p-6 border border-gray-700">
                 <h2 className="text-xl font-bold text-white mb-4">Estructura de Red</h2>
                 {loading ? (

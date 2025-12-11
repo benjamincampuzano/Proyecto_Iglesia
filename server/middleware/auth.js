@@ -1,6 +1,6 @@
 const jwt = require('jsonwebtoken');
 
-// Middleware to verify JWT token
+// Middleware para verificar token JWT
 const authenticate = (req, res, next) => {
     try {
         const token = req.headers.authorization?.split(' ')[1];
@@ -10,7 +10,7 @@ const authenticate = (req, res, next) => {
         }
 
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
-        // Normalize: ensure we have 'id' field (token might have 'userId')
+        // Normalizar: asegurar que tenemos el campo 'id' (el token podría tener 'userId')
         req.user = {
             id: decoded.id || decoded.userId,
             role: decoded.role
@@ -21,7 +21,7 @@ const authenticate = (req, res, next) => {
     }
 };
 
-// Middleware to check if user is admin (SUPER_ADMIN or LIDER_DOCE)
+// Middleware para verificar si el usuario es administrador (SUPER_ADMIN o LIDER_DOCE)
 const isAdmin = (req, res, next) => {
     if (!req.user) {
         return res.status(401).json({ message: 'Authentication required' });

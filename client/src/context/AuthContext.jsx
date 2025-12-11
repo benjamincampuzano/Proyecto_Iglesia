@@ -10,9 +10,9 @@ export const AuthProvider = ({ children }) => {
     useEffect(() => {
         const token = localStorage.getItem('token');
         if (token) {
-            // In a real app, you'd verify the token with the backend here
-            // For now, we'll just decode it or assume it's valid if present
-            // Ideally, fetch user profile
+            // En una app real, verificarías el token con el backend aquí
+            // Por ahora, solo lo decodificamos o asumimos que es válido si está presente
+            // Idealmente, obtener perfil de usuario
             const storedUser = JSON.parse(localStorage.getItem('user'));
             if (storedUser) setUser(storedUser);
         }

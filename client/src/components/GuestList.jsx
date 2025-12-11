@@ -141,7 +141,7 @@ const GuestList = ({ refreshTrigger }) => {
         return labels[status] || status;
     };
 
-    // Permission helper functions
+    // Funciones auxiliares de permisos
     const canEditAllFields = (guest) => {
         return currentUser?.role === 'SUPER_ADMIN' || currentUser?.role === 'LIDER_DOCE';
     };
@@ -150,7 +150,7 @@ const GuestList = ({ refreshTrigger }) => {
         if (currentUser?.role === 'SUPER_ADMIN' || currentUser?.role === 'LIDER_DOCE') {
             return true;
         }
-        // LIDER_CELULA/MIEMBRO can only delete guests they invited
+        // LIDER_CELULA/MIEMBRO solo pueden eliminar invitados que invitaron
         return guest.invitedBy?.id === currentUser?.id;
     };
 
@@ -164,7 +164,7 @@ const GuestList = ({ refreshTrigger }) => {
                 </div>
             )}
 
-            {/* Filters */}
+            {/* Filtros */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
                 <div className="relative">
                     <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
@@ -209,7 +209,7 @@ const GuestList = ({ refreshTrigger }) => {
                 <span>Aplicar Filtros</span>
             </button>
 
-            {/* Guest Table */}
+            {/* Tabla de Invitados */}
             <div className="overflow-x-auto">
                 <table className="w-full">
                     <thead className="bg-gray-700">
@@ -437,7 +437,7 @@ const GuestList = ({ refreshTrigger }) => {
                 </table>
             </div>
 
-            {/* Convert to Member Modal */}
+            {/* Modal para convertir a Miembro */}
             {convertingGuest && (
                 <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
                     <div className="bg-gray-800 rounded-lg p-6 max-w-md w-full border border-gray-700">

@@ -3,7 +3,7 @@ const bcrypt = require('bcryptjs');
 
 const prisma = new PrismaClient();
 
-// Helper function to get all users in a leader's network (disciples and sub-disciples)
+// Función auxiliar para obtener todos los usuarios en la red de un líder (discípulos y sub-discípulos)
 const getUserNetwork = async (userId) => {
     const network = [];
     const queue = [userId];
@@ -28,13 +28,13 @@ const getUserNetwork = async (userId) => {
     return network.filter(id => id != null);
 };
 
-// Update own profile (name, email)
+// Actualizar perfil propio (nombre, email)
 const updateProfile = async (req, res) => {
     try {
         const userId = req.user.id;
         const { fullName, email } = req.body;
 
-        // Check if email is already taken by another user
+        // Verificar si el correo ya está siendo usado por otro usuario
         if (email) {
             const existingUser = await prisma.user.findUnique({ where: { email } });
             if (existingUser && existingUser.id !== userId) {
@@ -64,7 +64,7 @@ const updateProfile = async (req, res) => {
     }
 };
 
-// Change own password
+// Cambiar contraseña propia
 const changePassword = async (req, res) => {
     try {
         const userId = req.user.id;
@@ -79,13 +79,13 @@ const changePassword = async (req, res) => {
             return res.status(404).json({ message: 'User not found' });
         }
 
-        // Verify current password
+        // Verificar contraseña actual
         const isMatch = await bcrypt.compare(currentPassword, user.password);
         if (!isMatch) {
             return res.status(400).json({ message: 'Current password is incorrect' });
         }
 
-        // Hash new password
+        // Hashear nueva contraseña
         const hashedPassword = await bcrypt.hash(newPassword, 10);
 
         await prisma.user.update({
@@ -100,7 +100,7 @@ const changePassword = async (req, res) => {
     }
 };
 
-// Admin: Get all users
+// Admin: Obtener todos los usuarios
 const getAllUsers = async (req, res) => {
     try {
         const users = await prisma.user.findMany({
@@ -159,7 +159,7 @@ const getAllUsers = async (req, res) => {
     }
 };
 
-// Admin: Get specific user
+// Admin: Obtener usuario específico
 const getUserById = async (req, res) => {
     try {
         const { id } = req.params;
@@ -187,13 +187,13 @@ const getUserById = async (req, res) => {
     }
 };
 
-// Admin: Update user (role, details)
+// Admin: Actualizar usuario (rol, detalles)
 const updateUser = async (req, res) => {
     try {
         const { id } = req.params;
         const { fullName, email, role } = req.body;
 
-        // Get the user being updated
+        // Obtener el usuario que se está actualizando
         const userToUpdate = await prisma.user.findUnique({
             where: { id: parseInt(id) }
         });
@@ -202,7 +202,7 @@ const updateUser = async (req, res) => {
             return res.status(404).json({ message: 'User not found' });
         }
 
-        // If LIDER_DOCE, validate they can only update users in their network
+        // Si es LIDER_DOCE, validar que solo pueda actualizar usuarios en su red
         if (req.user.role === 'LIDER_DOCE') {
             const networkUserIds = await getUserNetwork(req.user.id);
 
@@ -213,7 +213,7 @@ const updateUser = async (req, res) => {
             }
         }
 
-        // Check if email is already taken by another user
+        // Verificar si el correo ya cuenta con otro usuario
         if (email) {
             const existingUser = await prisma.user.findUnique({ where: { email } });
             if (existingUser && existingUser.id !== parseInt(id)) {
@@ -244,7 +244,7 @@ const updateUser = async (req, res) => {
     }
 };
 
-// Admin: Create new user
+// Admin: Crear nuevo usuario
 const createUser = async (req, res) => {
     try {
         const { email, password, fullName, role } = req.body;
@@ -283,19 +283,19 @@ const createUser = async (req, res) => {
     }
 };
 
-// Admin: Delete user
+// Admin: Eliminar usuario
 const deleteUser = async (req, res) => {
     try {
         const { id } = req.params;
 
-        // LIDER_DOCE cannot delete users
+        // LIDER_DOCE no puede eliminar usuarios
         if (req.user.role === 'LIDER_DOCE') {
             return res.status(403).json({
                 message: 'LIDER_DOCE role cannot delete users'
             });
         }
 
-        // Prevent deleting yourself
+        // Prevenir eliminarse a sí mismo
         if (parseInt(id) === req.user.id) {
             return res.status(400).json({ message: 'Cannot delete your own account' });
         }
@@ -311,13 +311,13 @@ const deleteUser = async (req, res) => {
     }
 };
 
-// Admin: Assign leader to user (establish discipleship relationship)
+// Admin: Asignar líder a usuario (establecer relación de discipulado)
 const assignLeader = async (req, res) => {
     try {
         const { id } = req.params;
         const { leaderId } = req.body;
 
-        // Get the user to validate role
+        // Obtener el usuario para validar rol
         const user = await prisma.user.findUnique({
             where: { id: parseInt(id) },
             select: { id: true, role: true, fullName: true }
@@ -327,14 +327,14 @@ const assignLeader = async (req, res) => {
             return res.status(404).json({ message: 'User not found' });
         }
 
-        // Validate: cannot assign leader to SUPER_ADMIN or LIDER_DOCE
+        // Validar: no se puede asignar líder a roles SUPER_ADMIN o LIDER_DOCE
         if (user.role === 'SUPER_ADMIN' || user.role === 'LIDER_DOCE') {
             return res.status(400).json({
                 message: 'Cannot assign leader to SUPER_ADMIN or LIDER_DOCE roles'
             });
         }
 
-        // If leaderId is provided, validate it exists and has appropriate role
+        // Si se proporciona leaderId, validar que exista y tenga el rol apropiado
         if (leaderId) {
             const leader = await prisma.user.findUnique({
                 where: { id: parseInt(leaderId) },
@@ -345,22 +345,22 @@ const assignLeader = async (req, res) => {
                 return res.status(404).json({ message: 'Leader not found' });
             }
 
-            // Leader must be LIDER_DOCE or LIDER_CELULA
+            // El líder debe ser LIDER_DOCE o LIDER_CELULA
             if (leader.role !== 'LIDER_DOCE' && leader.role !== 'LIDER_CELULA') {
                 return res.status(400).json({
                     message: 'Leader must have LIDER_DOCE or LIDER_CELULA role'
                 });
             }
 
-            // Only LIDER_DOCE can assign LIDER_CELULA as leader
+            // Solo LIDER_DOCE puede asignar a LIDER_CELULA como líder
             if (leader.role === 'LIDER_CELULA' && req.user.role !== 'LIDER_DOCE' && req.user.role !== 'SUPER_ADMIN') {
                 return res.status(403).json({
                     message: 'Only LIDER_DOCE or SUPER_ADMIN can assign LIDER_CELULA as leader'
                 });
             }
 
-            // MIEMBRO can only be assigned to LIDER_CELULA or LIDER_DOCE
-            // LIDER_CELULA can only be assigned to LIDER_DOCE
+            // MIEMBRO solo puede ser asignado a LIDER_CELULA o LIDER_DOCE
+            // LIDER_CELULA solo puede ser asignado a LIDER_DOCE
             if (user.role === 'LIDER_CELULA' && leader.role !== 'LIDER_DOCE') {
                 return res.status(400).json({
                     message: 'LIDER_CELULA can only be assigned to LIDER_DOCE'
@@ -368,7 +368,7 @@ const assignLeader = async (req, res) => {
             }
         }
 
-        // Update the user's leaderId
+        // Actualizar el leaderId del usuario
         const updatedUser = await prisma.user.update({
             where: { id: parseInt(id) },
             data: { leaderId: leaderId ? parseInt(leaderId) : null },
@@ -394,7 +394,7 @@ const assignLeader = async (req, res) => {
     }
 };
 
-// Get users in my network (for leaders)
+// Obtener usuarios en mi red (para líderes)
 const getMyNetwork = async (req, res) => {
     try {
         const userId = req.user.id;
