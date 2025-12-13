@@ -1,0 +1,1093 @@
+{
+  "timestamp": "2025-12-12T14:03:33.503Z",
+  "version": "1.0",
+  "data": {
+    "users": [
+      {
+        "id": 13,
+        "email": "Ministerio_Sergio_y_Ana@gmail.com",
+        "password": "$2b$10$JrAi97ImaVDnpubXmNn83OMB5zuvZ.DEtNz.Ecef3qCa30MGj.rVa",
+        "fullName": "Sergio Rios Nogueira",
+        "role": "LIDER_DOCE",
+        "phone": null,
+        "address": null,
+        "createdAt": "2025-12-04T01:44:18.936Z",
+        "updatedAt": "2025-12-12T13:08:08.697Z",
+        "leaderId": null,
+        "cellId": null,
+        "invitedGuests": [],
+        "assignedGuests": [],
+        "ledCells": [],
+        "hostedCells": [],
+        "churchAttendances": [
+          {
+            "id": 16,
+            "date": "2025-12-05T00:00:00.000Z",
+            "userId": 13,
+            "status": "PRESENTE",
+            "createdAt": "2025-12-05T01:35:51.192Z",
+            "updatedAt": "2025-12-05T23:31:08.842Z"
+          }
+        ],
+        "cellAttendances": [],
+        "seminarEnrollments": [],
+        "classAttendances": [],
+        "conventionRegistrations": []
+      },
+      {
+        "id": 21,
+        "email": "emilio.sarmiento@gmail.com",
+        "password": "$2b$10$vi2rUCB5l8XuFWfj8fzHvePVcPR0lwtMSyBbbtioaXGiSOv/4Da3G",
+        "fullName": "Emilio Sarmiento",
+        "role": "LIDER_CELULA",
+        "phone": null,
+        "address": null,
+        "createdAt": "2025-12-05T02:07:21.707Z",
+        "updatedAt": "2025-12-12T13:08:19.660Z",
+        "leaderId": null,
+        "cellId": 1,
+        "invitedGuests": [],
+        "assignedGuests": [],
+        "ledCells": [
+          {
+            "id": 2,
+            "name": "Celula Centro",
+            "description": null,
+            "leaderId": 21,
+            "hostId": 22,
+            "address": "Calle 18 25 - 69",
+            "city": "Manizales",
+            "dayOfWeek": "Viernes",
+            "time": "19:00",
+            "createdAt": "2025-12-06T15:37:18.491Z",
+            "updatedAt": "2025-12-06T15:37:18.491Z"
+          }
+        ],
+        "hostedCells": [],
+        "churchAttendances": [
+          {
+            "id": 147,
+            "date": "2025-12-04T00:00:00.000Z",
+            "userId": 21,
+            "status": "PRESENTE",
+            "createdAt": "2025-12-05T23:31:22.596Z",
+            "updatedAt": "2025-12-06T02:29:43.261Z"
+          },
+          {
+            "id": 166,
+            "date": "2025-12-06T00:00:00.000Z",
+            "userId": 21,
+            "status": "AUSENTE",
+            "createdAt": "2025-12-06T15:34:58.429Z",
+            "updatedAt": "2025-12-06T15:34:58.429Z"
+          },
+          {
+            "id": 75,
+            "date": "2025-12-05T00:00:00.000Z",
+            "userId": 21,
+            "status": "PRESENTE",
+            "createdAt": "2025-12-05T15:56:06.433Z",
+            "updatedAt": "2025-12-05T23:31:08.842Z"
+          }
+        ],
+        "cellAttendances": [],
+        "seminarEnrollments": [],
+        "classAttendances": [],
+        "conventionRegistrations": []
+      },
+      {
+        "id": 9,
+        "email": "Ministerio_Victor_y_Tereza@gmail.com",
+        "password": "$2b$10$LCIwQedUF9xMKuNh4Lufb.0yQEcjLbdWobDt4wVulJfUAzLXUXTn2",
+        "fullName": "Victor Zamorano Arroyo",
+        "role": "LIDER_DOCE",
+        "phone": null,
+        "address": null,
+        "createdAt": "2025-12-04T01:13:52.619Z",
+        "updatedAt": "2025-12-06T15:16:38.208Z",
+        "leaderId": null,
+        "cellId": 1,
+        "invitedGuests": [],
+        "assignedGuests": [],
+        "ledCells": [],
+        "hostedCells": [],
+        "churchAttendances": [
+          {
+            "id": 14,
+            "date": "2025-12-05T00:00:00.000Z",
+            "userId": 9,
+            "status": "PRESENTE",
+            "createdAt": "2025-12-05T01:35:51.190Z",
+            "updatedAt": "2025-12-05T23:31:08.841Z"
+          }
+        ],
+        "cellAttendances": [
+          {
+            "id": 1,
+            "date": "2025-12-06T00:00:00.000Z",
+            "cellId": 1,
+            "userId": 9,
+            "status": "PRESENTE",
+            "createdAt": "2025-12-06T15:30:32.110Z",
+            "updatedAt": "2025-12-06T15:30:32.110Z"
+          },
+          {
+            "id": 5,
+            "date": "2025-10-28T00:00:00.000Z",
+            "cellId": 1,
+            "userId": 9,
+            "status": "PRESENTE",
+            "createdAt": "2025-12-06T15:32:13.586Z",
+            "updatedAt": "2025-12-06T15:32:13.586Z"
+          },
+          {
+            "id": 7,
+            "date": "2025-11-04T00:00:00.000Z",
+            "cellId": 1,
+            "userId": 9,
+            "status": "PRESENTE",
+            "createdAt": "2025-12-06T15:32:21.133Z",
+            "updatedAt": "2025-12-06T15:32:21.133Z"
+          },
+          {
+            "id": 10,
+            "date": "2025-11-11T00:00:00.000Z",
+            "cellId": 1,
+            "userId": 9,
+            "status": "AUSENTE",
+            "createdAt": "2025-12-06T15:32:31.381Z",
+            "updatedAt": "2025-12-06T15:32:31.381Z"
+          },
+          {
+            "id": 13,
+            "date": "2025-11-18T00:00:00.000Z",
+            "cellId": 1,
+            "userId": 9,
+            "status": "PRESENTE",
+            "createdAt": "2025-12-06T15:32:35.944Z",
+            "updatedAt": "2025-12-06T15:32:35.944Z"
+          },
+          {
+            "id": 16,
+            "date": "2025-11-25T00:00:00.000Z",
+            "cellId": 1,
+            "userId": 9,
+            "status": "PRESENTE",
+            "createdAt": "2025-12-06T15:32:40.867Z",
+            "updatedAt": "2025-12-06T15:32:40.867Z"
+          },
+          {
+            "id": 20,
+            "date": "2025-12-02T00:00:00.000Z",
+            "cellId": 1,
+            "userId": 9,
+            "status": "AUSENTE",
+            "createdAt": "2025-12-06T15:32:46.065Z",
+            "updatedAt": "2025-12-06T15:32:46.065Z"
+          }
+        ],
+        "seminarEnrollments": [],
+        "classAttendances": [],
+        "conventionRegistrations": []
+      },
+      {
+        "id": 3,
+        "email": "Ministerio_Alfonso_y_Eugenia@gmail.com",
+        "password": "$2b$10$C/8I7JNAM/lQKW.D9.B8oussAlv.vz9zQi2/MZf98YBgJLhEyJ5jC",
+        "fullName": "Alfonso Padilla Mendez",
+        "role": "LIDER_DOCE",
+        "phone": null,
+        "address": null,
+        "createdAt": "2025-12-04T01:10:29.113Z",
+        "updatedAt": "2025-12-04T01:10:29.113Z",
+        "leaderId": null,
+        "cellId": null,
+        "invitedGuests": [],
+        "assignedGuests": [],
+        "ledCells": [],
+        "hostedCells": [],
+        "churchAttendances": [
+          {
+            "id": 21,
+            "date": "2025-12-05T00:00:00.000Z",
+            "userId": 3,
+            "status": "PRESENTE",
+            "createdAt": "2025-12-05T01:35:51.192Z",
+            "updatedAt": "2025-12-05T23:31:08.838Z"
+          }
+        ],
+        "cellAttendances": [],
+        "seminarEnrollments": [],
+        "classAttendances": [],
+        "conventionRegistrations": []
+      },
+      {
+        "id": 5,
+        "email": "Ministerio_Esteban_y_Sonia@gmail.com",
+        "password": "$2b$10$h/MjlEYvAtb15fo6E2qxPuvMUfytmocxKgwBjYah1ws/9n5QDKnlm",
+        "fullName": "Esteban Escolano Rivas",
+        "role": "LIDER_DOCE",
+        "phone": null,
+        "address": null,
+        "createdAt": "2025-12-04T01:12:32.396Z",
+        "updatedAt": "2025-12-04T01:12:32.396Z",
+        "leaderId": null,
+        "cellId": null,
+        "invitedGuests": [],
+        "assignedGuests": [],
+        "ledCells": [],
+        "hostedCells": [],
+        "churchAttendances": [
+          {
+            "id": 1,
+            "date": "2025-12-05T00:00:00.000Z",
+            "userId": 5,
+            "status": "PRESENTE",
+            "createdAt": "2025-12-05T01:35:23.040Z",
+            "updatedAt": "2025-12-05T23:31:08.841Z"
+          }
+        ],
+        "cellAttendances": [],
+        "seminarEnrollments": [],
+        "classAttendances": [],
+        "conventionRegistrations": []
+      },
+      {
+        "id": 7,
+        "email": "Ministerio_Francisco_y_Rocio@gmail.com",
+        "password": "$2b$10$CEYp3q.7H2AKj.1j3b.nn.eG5ZIADNLyu.OehNjwGAf.THn4aOp0i",
+        "fullName": "Francisco Batalla Guillen",
+        "role": "LIDER_DOCE",
+        "phone": null,
+        "address": null,
+        "createdAt": "2025-12-04T01:13:16.278Z",
+        "updatedAt": "2025-12-04T01:13:16.278Z",
+        "leaderId": null,
+        "cellId": null,
+        "invitedGuests": [],
+        "assignedGuests": [],
+        "ledCells": [],
+        "hostedCells": [],
+        "churchAttendances": [
+          {
+            "id": 5,
+            "date": "2025-12-05T00:00:00.000Z",
+            "userId": 7,
+            "status": "PRESENTE",
+            "createdAt": "2025-12-05T01:35:23.041Z",
+            "updatedAt": "2025-12-05T23:31:08.842Z"
+          }
+        ],
+        "cellAttendances": [],
+        "seminarEnrollments": [],
+        "classAttendances": [],
+        "conventionRegistrations": []
+      },
+      {
+        "id": 8,
+        "email": "Ministerio_Ivan_y_Matilde@gmail.com",
+        "password": "$2b$10$HjGbr85KpBoNMXVMQk0W1.IWjujqGfOrdl4zWncXlzw5z.u0xW6Qu",
+        "fullName": "Ivan Palomar",
+        "role": "LIDER_DOCE",
+        "phone": null,
+        "address": null,
+        "createdAt": "2025-12-04T01:13:33.770Z",
+        "updatedAt": "2025-12-04T01:13:33.770Z",
+        "leaderId": null,
+        "cellId": null,
+        "invitedGuests": [],
+        "assignedGuests": [],
+        "ledCells": [],
+        "hostedCells": [],
+        "churchAttendances": [
+          {
+            "id": 3,
+            "date": "2025-12-05T00:00:00.000Z",
+            "userId": 8,
+            "status": "PRESENTE",
+            "createdAt": "2025-12-05T01:35:23.041Z",
+            "updatedAt": "2025-12-05T23:31:08.842Z"
+          }
+        ],
+        "cellAttendances": [],
+        "seminarEnrollments": [],
+        "classAttendances": [],
+        "conventionRegistrations": []
+      },
+      {
+        "id": 10,
+        "email": "Ministerio_Edmundo_y_Andrea@gmail.com",
+        "password": "$2b$10$Yl8cG0JNnxVcEs9TtvRC9u7S.fe1R5/PGlSZEF9KkWTFFvm8EROra",
+        "fullName": "Edmundo Zapata",
+        "role": "LIDER_DOCE",
+        "phone": null,
+        "address": null,
+        "createdAt": "2025-12-04T01:14:16.149Z",
+        "updatedAt": "2025-12-04T01:14:16.149Z",
+        "leaderId": null,
+        "cellId": null,
+        "invitedGuests": [],
+        "assignedGuests": [],
+        "ledCells": [],
+        "hostedCells": [],
+        "churchAttendances": [
+          {
+            "id": 10,
+            "date": "2025-12-05T00:00:00.000Z",
+            "userId": 10,
+            "status": "PRESENTE",
+            "createdAt": "2025-12-05T01:35:51.191Z",
+            "updatedAt": "2025-12-05T23:31:08.841Z"
+          }
+        ],
+        "cellAttendances": [],
+        "seminarEnrollments": [],
+        "classAttendances": [],
+        "conventionRegistrations": []
+      },
+      {
+        "id": 11,
+        "email": "Ministerio_Jose_y_Adelaida@gmail.com",
+        "password": "$2b$10$dagnsz5adgkrxIFHPF..hOMC3RKyLeI.JcQGIXsrbi2gXXeij4n5i",
+        "fullName": "Jose Carlos Sarmiento Rico",
+        "role": "LIDER_DOCE",
+        "phone": null,
+        "address": null,
+        "createdAt": "2025-12-04T01:14:30.878Z",
+        "updatedAt": "2025-12-04T01:14:30.878Z",
+        "leaderId": null,
+        "cellId": null,
+        "invitedGuests": [],
+        "assignedGuests": [],
+        "ledCells": [],
+        "hostedCells": [],
+        "churchAttendances": [
+          {
+            "id": 15,
+            "date": "2025-12-05T00:00:00.000Z",
+            "userId": 11,
+            "status": "PRESENTE",
+            "createdAt": "2025-12-05T01:35:51.192Z",
+            "updatedAt": "2025-12-05T23:31:08.842Z"
+          }
+        ],
+        "cellAttendances": [],
+        "seminarEnrollments": [],
+        "classAttendances": [],
+        "conventionRegistrations": []
+      },
+      {
+        "id": 6,
+        "email": "Ministerio_Efrain_y_Tatiana@gmail.com",
+        "password": "$2b$10$ugLRyzR2ENiyRmV3zHxST.0y1DKN/xNqAI9ZWo/JX57Jt1nXUNfHu",
+        "fullName": "Efrain Ruano Gilabert",
+        "role": "LIDER_DOCE",
+        "phone": null,
+        "address": null,
+        "createdAt": "2025-12-04T01:12:58.248Z",
+        "updatedAt": "2025-12-04T01:45:40.407Z",
+        "leaderId": null,
+        "cellId": null,
+        "invitedGuests": [],
+        "assignedGuests": [],
+        "ledCells": [],
+        "hostedCells": [],
+        "churchAttendances": [
+          {
+            "id": 7,
+            "date": "2025-12-05T00:00:00.000Z",
+            "userId": 6,
+            "status": "PRESENTE",
+            "createdAt": "2025-12-05T01:35:23.041Z",
+            "updatedAt": "2025-12-05T23:31:08.841Z"
+          }
+        ],
+        "cellAttendances": [],
+        "seminarEnrollments": [],
+        "classAttendances": [],
+        "conventionRegistrations": []
+      },
+      {
+        "id": 2,
+        "email": "Ministerio_Alex_y_Lina@gmail.com",
+        "password": "$2b$10$xdEANt5TM9V/LorAIuAhReU21jqAsV7DypNUsMjgGn5xNXtw18we6",
+        "fullName": "Alex Cardona Sanchez",
+        "role": "LIDER_DOCE",
+        "phone": null,
+        "address": null,
+        "createdAt": "2025-12-04T01:10:10.528Z",
+        "updatedAt": "2025-12-12T13:25:01.337Z",
+        "leaderId": null,
+        "cellId": null,
+        "invitedGuests": [],
+        "assignedGuests": [],
+        "ledCells": [],
+        "hostedCells": [],
+        "churchAttendances": [
+          {
+            "id": 125,
+            "date": "2025-12-04T00:00:00.000Z",
+            "userId": 2,
+            "status": "PRESENTE",
+            "createdAt": "2025-12-05T23:18:41.289Z",
+            "updatedAt": "2025-12-06T02:29:43.259Z"
+          },
+          {
+            "id": 6,
+            "date": "2025-12-05T00:00:00.000Z",
+            "userId": 2,
+            "status": "PRESENTE",
+            "createdAt": "2025-12-05T01:35:23.041Z",
+            "updatedAt": "2025-12-05T23:31:08.838Z"
+          }
+        ],
+        "cellAttendances": [],
+        "seminarEnrollments": [],
+        "classAttendances": [],
+        "conventionRegistrations": []
+      },
+      {
+        "id": 4,
+        "email": "Ministerio_Ernesto_y_Liliana@gmail.com",
+        "password": "$2b$10$yiLVDiDtHfQDunkkhyy4Lubgv/hPDVap2HlqVA4JXBkH3FWSMfDom",
+        "fullName": "Ernesto Sevilla Andres",
+        "role": "LIDER_DOCE",
+        "phone": null,
+        "address": null,
+        "createdAt": "2025-12-04T01:10:47.628Z",
+        "updatedAt": "2025-12-04T01:46:11.731Z",
+        "leaderId": null,
+        "cellId": null,
+        "invitedGuests": [],
+        "assignedGuests": [],
+        "ledCells": [],
+        "hostedCells": [],
+        "churchAttendances": [
+          {
+            "id": 4,
+            "date": "2025-12-05T00:00:00.000Z",
+            "userId": 4,
+            "status": "PRESENTE",
+            "createdAt": "2025-12-05T01:35:23.041Z",
+            "updatedAt": "2025-12-05T23:31:08.841Z"
+          }
+        ],
+        "cellAttendances": [],
+        "seminarEnrollments": [],
+        "classAttendances": [],
+        "conventionRegistrations": []
+      },
+      {
+        "id": 22,
+        "email": "Esteban.Nogueira@gmail.com",
+        "password": "$2b$10$xj9in6XiFwpqEecsWlbvzuCwcABum.ptL5Ru5wNg/zxdr.G0gnPn2",
+        "fullName": "Esteban Nogueira",
+        "role": "MIEMBRO",
+        "phone": null,
+        "address": null,
+        "createdAt": "2025-12-05T02:26:07.178Z",
+        "updatedAt": "2025-12-12T13:01:36.652Z",
+        "leaderId": null,
+        "cellId": 1,
+        "invitedGuests": [
+          {
+            "id": 14,
+            "name": "Borja Huertas",
+            "phone": "3204237395",
+            "address": "Carrera 39 A 51 F - 15 ",
+            "prayerRequest": "",
+            "status": "GANADO",
+            "invitedById": 22,
+            "assignedToId": null,
+            "createdAt": "2025-12-05T03:25:41.113Z",
+            "updatedAt": "2025-12-06T16:16:39.508Z"
+          }
+        ],
+        "assignedGuests": [],
+        "ledCells": [],
+        "hostedCells": [
+          {
+            "id": 2,
+            "name": "Celula Centro",
+            "description": null,
+            "leaderId": 21,
+            "hostId": 22,
+            "address": "Calle 18 25 - 69",
+            "city": "Manizales",
+            "dayOfWeek": "Viernes",
+            "time": "19:00",
+            "createdAt": "2025-12-06T15:37:18.491Z",
+            "updatedAt": "2025-12-06T15:37:18.491Z"
+          }
+        ],
+        "churchAttendances": [
+          {
+            "id": 153,
+            "date": "2025-12-06T00:00:00.000Z",
+            "userId": 22,
+            "status": "PRESENTE",
+            "createdAt": "2025-12-06T02:27:03.898Z",
+            "updatedAt": "2025-12-06T15:34:58.428Z"
+          },
+          {
+            "id": 154,
+            "date": "2025-12-03T00:00:00.000Z",
+            "userId": 22,
+            "status": "AUSENTE",
+            "createdAt": "2025-12-06T02:29:31.456Z",
+            "updatedAt": "2025-12-06T02:29:31.456Z"
+          },
+          {
+            "id": 149,
+            "date": "2025-12-04T00:00:00.000Z",
+            "userId": 22,
+            "status": "AUSENTE",
+            "createdAt": "2025-12-05T23:31:22.596Z",
+            "updatedAt": "2025-12-06T02:29:43.259Z"
+          },
+          {
+            "id": 78,
+            "date": "2025-12-05T00:00:00.000Z",
+            "userId": 22,
+            "status": "PRESENTE",
+            "createdAt": "2025-12-05T15:56:06.433Z",
+            "updatedAt": "2025-12-05T23:31:08.843Z"
+          }
+        ],
+        "cellAttendances": [
+          {
+            "id": 2,
+            "date": "2025-12-06T00:00:00.000Z",
+            "cellId": 1,
+            "userId": 22,
+            "status": "PRESENTE",
+            "createdAt": "2025-12-06T15:30:32.110Z",
+            "updatedAt": "2025-12-06T15:30:32.110Z"
+          },
+          {
+            "id": 4,
+            "date": "2025-10-28T00:00:00.000Z",
+            "cellId": 1,
+            "userId": 22,
+            "status": "AUSENTE",
+            "createdAt": "2025-12-06T15:32:13.586Z",
+            "updatedAt": "2025-12-06T15:32:13.586Z"
+          },
+          {
+            "id": 9,
+            "date": "2025-11-04T00:00:00.000Z",
+            "cellId": 1,
+            "userId": 22,
+            "status": "PRESENTE",
+            "createdAt": "2025-12-06T15:32:21.133Z",
+            "updatedAt": "2025-12-06T15:32:21.133Z"
+          },
+          {
+            "id": 12,
+            "date": "2025-11-11T00:00:00.000Z",
+            "cellId": 1,
+            "userId": 22,
+            "status": "PRESENTE",
+            "createdAt": "2025-12-06T15:32:31.381Z",
+            "updatedAt": "2025-12-06T15:32:31.381Z"
+          },
+          {
+            "id": 14,
+            "date": "2025-11-18T00:00:00.000Z",
+            "cellId": 1,
+            "userId": 22,
+            "status": "PRESENTE",
+            "createdAt": "2025-12-06T15:32:35.944Z",
+            "updatedAt": "2025-12-06T15:32:35.944Z"
+          },
+          {
+            "id": 18,
+            "date": "2025-11-25T00:00:00.000Z",
+            "cellId": 1,
+            "userId": 22,
+            "status": "PRESENTE",
+            "createdAt": "2025-12-06T15:32:40.867Z",
+            "updatedAt": "2025-12-06T15:32:40.867Z"
+          },
+          {
+            "id": 21,
+            "date": "2025-12-02T00:00:00.000Z",
+            "cellId": 1,
+            "userId": 22,
+            "status": "PRESENTE",
+            "createdAt": "2025-12-06T15:32:46.065Z",
+            "updatedAt": "2025-12-06T15:32:46.065Z"
+          }
+        ],
+        "seminarEnrollments": [],
+        "classAttendances": [],
+        "conventionRegistrations": []
+      },
+      {
+        "id": 20,
+        "email": "AnyiCampuzano@gmail.com",
+        "password": "$2b$10$th92mOqklCWl1epntmLNHeMEJFLMfQJ3WelwwJtH2JcFAARTvJhOy",
+        "fullName": "Anyi Campuzano",
+        "role": "LIDER_CELULA",
+        "phone": null,
+        "address": null,
+        "createdAt": "2025-12-05T01:53:10.874Z",
+        "updatedAt": "2025-12-12T13:01:49.644Z",
+        "leaderId": null,
+        "cellId": 1,
+        "invitedGuests": [],
+        "assignedGuests": [],
+        "ledCells": [
+          {
+            "id": 1,
+            "name": "Celula del Nevado",
+            "description": null,
+            "leaderId": 20,
+            "hostId": 20,
+            "address": "Mirador de las Lomas MZ 26 Casa 9",
+            "city": "Villamaria",
+            "dayOfWeek": "Martes",
+            "time": "18:30",
+            "createdAt": "2025-12-06T15:16:20.409Z",
+            "updatedAt": "2025-12-06T15:16:20.409Z"
+          }
+        ],
+        "hostedCells": [
+          {
+            "id": 1,
+            "name": "Celula del Nevado",
+            "description": null,
+            "leaderId": 20,
+            "hostId": 20,
+            "address": "Mirador de las Lomas MZ 26 Casa 9",
+            "city": "Villamaria",
+            "dayOfWeek": "Martes",
+            "time": "18:30",
+            "createdAt": "2025-12-06T15:16:20.409Z",
+            "updatedAt": "2025-12-06T15:16:20.409Z"
+          }
+        ],
+        "churchAttendances": [
+          {
+            "id": 164,
+            "date": "2025-12-06T00:00:00.000Z",
+            "userId": 20,
+            "status": "PRESENTE",
+            "createdAt": "2025-12-06T15:34:58.429Z",
+            "updatedAt": "2025-12-06T15:34:58.429Z"
+          },
+          {
+            "id": 76,
+            "date": "2025-12-05T00:00:00.000Z",
+            "userId": 20,
+            "status": "PRESENTE",
+            "createdAt": "2025-12-05T15:56:06.433Z",
+            "updatedAt": "2025-12-05T23:31:08.842Z"
+          },
+          {
+            "id": 148,
+            "date": "2025-12-04T00:00:00.000Z",
+            "userId": 20,
+            "status": "PRESENTE",
+            "createdAt": "2025-12-05T23:31:22.596Z",
+            "updatedAt": "2025-12-06T02:29:43.259Z"
+          }
+        ],
+        "cellAttendances": [],
+        "seminarEnrollments": [],
+        "classAttendances": [],
+        "conventionRegistrations": []
+      },
+      {
+        "id": 19,
+        "email": "benjamincampuzano@gmail.com",
+        "password": "$2b$10$mql40lUlkmT8r5hasr4ck.ASYDaFKz1fhNvXvqlpb/276SD.Wasn2",
+        "fullName": "Benjamin Campuzano Castañeda",
+        "role": "MIEMBRO",
+        "phone": null,
+        "address": null,
+        "createdAt": "2025-12-05T01:51:47.540Z",
+        "updatedAt": "2025-12-12T13:33:14.342Z",
+        "leaderId": 2,
+        "cellId": 2,
+        "invitedGuests": [],
+        "assignedGuests": [],
+        "ledCells": [],
+        "hostedCells": [],
+        "churchAttendances": [
+          {
+            "id": 163,
+            "date": "2025-12-06T00:00:00.000Z",
+            "userId": 19,
+            "status": "PRESENTE",
+            "createdAt": "2025-12-06T15:34:58.428Z",
+            "updatedAt": "2025-12-06T15:34:58.428Z"
+          },
+          {
+            "id": 77,
+            "date": "2025-12-05T00:00:00.000Z",
+            "userId": 19,
+            "status": "PRESENTE",
+            "createdAt": "2025-12-05T15:56:06.433Z",
+            "updatedAt": "2025-12-05T23:31:08.842Z"
+          },
+          {
+            "id": 150,
+            "date": "2025-12-04T00:00:00.000Z",
+            "userId": 19,
+            "status": "PRESENTE",
+            "createdAt": "2025-12-05T23:31:22.598Z",
+            "updatedAt": "2025-12-06T02:29:43.262Z"
+          }
+        ],
+        "cellAttendances": [
+          {
+            "id": 3,
+            "date": "2025-12-06T00:00:00.000Z",
+            "cellId": 1,
+            "userId": 19,
+            "status": "PRESENTE",
+            "createdAt": "2025-12-06T15:30:32.110Z",
+            "updatedAt": "2025-12-06T15:30:32.110Z"
+          },
+          {
+            "id": 6,
+            "date": "2025-10-28T00:00:00.000Z",
+            "cellId": 1,
+            "userId": 19,
+            "status": "PRESENTE",
+            "createdAt": "2025-12-06T15:32:13.586Z",
+            "updatedAt": "2025-12-06T15:32:13.586Z"
+          },
+          {
+            "id": 8,
+            "date": "2025-11-04T00:00:00.000Z",
+            "cellId": 1,
+            "userId": 19,
+            "status": "PRESENTE",
+            "createdAt": "2025-12-06T15:32:21.133Z",
+            "updatedAt": "2025-12-06T15:32:21.133Z"
+          },
+          {
+            "id": 11,
+            "date": "2025-11-11T00:00:00.000Z",
+            "cellId": 1,
+            "userId": 19,
+            "status": "AUSENTE",
+            "createdAt": "2025-12-06T15:32:31.381Z",
+            "updatedAt": "2025-12-06T15:32:31.381Z"
+          },
+          {
+            "id": 15,
+            "date": "2025-11-18T00:00:00.000Z",
+            "cellId": 1,
+            "userId": 19,
+            "status": "PRESENTE",
+            "createdAt": "2025-12-06T15:32:35.944Z",
+            "updatedAt": "2025-12-06T15:32:35.944Z"
+          },
+          {
+            "id": 17,
+            "date": "2025-11-25T00:00:00.000Z",
+            "cellId": 1,
+            "userId": 19,
+            "status": "PRESENTE",
+            "createdAt": "2025-12-06T15:32:40.867Z",
+            "updatedAt": "2025-12-06T15:32:40.867Z"
+          },
+          {
+            "id": 19,
+            "date": "2025-12-02T00:00:00.000Z",
+            "cellId": 1,
+            "userId": 19,
+            "status": "PRESENTE",
+            "createdAt": "2025-12-06T15:32:46.065Z",
+            "updatedAt": "2025-12-06T15:32:46.065Z"
+          },
+          {
+            "id": 22,
+            "date": "2025-12-06T00:00:00.000Z",
+            "cellId": 2,
+            "userId": 19,
+            "status": "PRESENTE",
+            "createdAt": "2025-12-06T15:37:51.691Z",
+            "updatedAt": "2025-12-06T15:37:51.691Z"
+          }
+        ],
+        "seminarEnrollments": [],
+        "classAttendances": [],
+        "conventionRegistrations": []
+      },
+      {
+        "id": 1,
+        "email": "admin@iglesia.com",
+        "password": "$2b$10$dyBi/qcZpDeVCyf4ITbAIOC6zvjFG5XEs1ZPeTz5q.SFKNQu2vtVO",
+        "fullName": "Administrador Principal",
+        "role": "SUPER_ADMIN",
+        "phone": null,
+        "address": null,
+        "createdAt": "2025-12-03T21:29:10.319Z",
+        "updatedAt": "2025-12-12T13:02:25.126Z",
+        "leaderId": null,
+        "cellId": null,
+        "invitedGuests": [],
+        "assignedGuests": [],
+        "ledCells": [],
+        "hostedCells": [],
+        "churchAttendances": [
+          {
+            "id": 2,
+            "date": "2025-12-05T00:00:00.000Z",
+            "userId": 1,
+            "status": "PRESENTE",
+            "createdAt": "2025-12-05T01:35:23.040Z",
+            "updatedAt": "2025-12-05T23:31:08.838Z"
+          },
+          {
+            "id": 124,
+            "date": "2025-12-04T00:00:00.000Z",
+            "userId": 1,
+            "status": "PRESENTE",
+            "createdAt": "2025-12-05T23:18:41.289Z",
+            "updatedAt": "2025-12-06T02:29:43.262Z"
+          }
+        ],
+        "cellAttendances": [],
+        "seminarEnrollments": [],
+        "classAttendances": [],
+        "conventionRegistrations": []
+      },
+      {
+        "id": 18,
+        "email": "saracampuzanoarias@gmail.com",
+        "password": "$2b$10$NNvBnwIasNKrlznU5IdcVuPQ3aU0FI.uJnoZntFZGdGuaq8xIqEGW",
+        "fullName": "Sara Campuzano Arias",
+        "role": "LIDER_CELULA",
+        "phone": null,
+        "address": null,
+        "createdAt": "2025-12-04T23:37:39.653Z",
+        "updatedAt": "2025-12-05T02:46:39.846Z",
+        "leaderId": 3,
+        "cellId": null,
+        "invitedGuests": [],
+        "assignedGuests": [],
+        "ledCells": [],
+        "hostedCells": [],
+        "churchAttendances": [
+          {
+            "id": 17,
+            "date": "2025-12-05T00:00:00.000Z",
+            "userId": 18,
+            "status": "PRESENTE",
+            "createdAt": "2025-12-05T01:35:51.192Z",
+            "updatedAt": "2025-12-05T23:31:08.842Z"
+          }
+        ],
+        "cellAttendances": [],
+        "seminarEnrollments": [],
+        "classAttendances": [],
+        "conventionRegistrations": []
+      },
+      {
+        "id": 24,
+        "email": "Bárbara.Roma@hotmail.com",
+        "password": "$2b$10$JBE3YCo2vkyp0xyoYk8iCuXSbYFiJNgYSwpJCN8d/eMqDQmA8F4cC",
+        "fullName": "Bárbara Roma",
+        "role": "MIEMBRO",
+        "phone": null,
+        "address": null,
+        "createdAt": "2025-12-05T02:53:16.775Z",
+        "updatedAt": "2025-12-12T13:38:30.657Z",
+        "leaderId": 2,
+        "cellId": 1,
+        "invitedGuests": [],
+        "assignedGuests": [],
+        "ledCells": [],
+        "hostedCells": [],
+        "churchAttendances": [
+          {
+            "id": 152,
+            "date": "2025-12-04T00:00:00.000Z",
+            "userId": 24,
+            "status": "PRESENTE",
+            "createdAt": "2025-12-05T23:31:22.612Z",
+            "updatedAt": "2025-12-06T02:29:43.260Z"
+          },
+          {
+            "id": 80,
+            "date": "2025-12-05T00:00:00.000Z",
+            "userId": 24,
+            "status": "PRESENTE",
+            "createdAt": "2025-12-05T15:56:06.434Z",
+            "updatedAt": "2025-12-05T23:31:08.843Z"
+          },
+          {
+            "id": 165,
+            "date": "2025-12-06T00:00:00.000Z",
+            "userId": 24,
+            "status": "PRESENTE",
+            "createdAt": "2025-12-06T15:34:58.429Z",
+            "updatedAt": "2025-12-06T15:34:58.429Z"
+          }
+        ],
+        "cellAttendances": [],
+        "seminarEnrollments": [],
+        "classAttendances": [],
+        "conventionRegistrations": []
+      },
+      {
+        "id": 23,
+        "email": "Marta.castaneda@gmail.com",
+        "password": "$2b$10$FIln9wh9Qdwr.yPEecJ4H.dmTfkhLCEWV7psJg7DJHgBA8wxPDF8m",
+        "fullName": "Martha Castañeda",
+        "role": "LIDER_CELULA",
+        "phone": null,
+        "address": null,
+        "createdAt": "2025-12-05T02:48:41.805Z",
+        "updatedAt": "2025-12-12T13:05:52.016Z",
+        "leaderId": 2,
+        "cellId": null,
+        "invitedGuests": [
+          {
+            "id": 13,
+            "name": "Paulina Ochoa",
+            "phone": "3072553578",
+            "address": "Carrera 57 D 22 C - 53  Villamaria",
+            "prayerRequest": "",
+            "status": "CONTACTADO",
+            "invitedById": 23,
+            "assignedToId": null,
+            "createdAt": "2025-12-05T03:25:07.273Z",
+            "updatedAt": "2025-12-05T03:32:00.325Z"
+          },
+          {
+            "id": 15,
+            "name": "Sara Campuzano Arias",
+            "phone": "3168048520",
+            "address": "Calle 16 98 7",
+            "prayerRequest": "",
+            "status": "NUEVO",
+            "invitedById": 23,
+            "assignedToId": null,
+            "createdAt": "2025-12-10T18:48:58.950Z",
+            "updatedAt": "2025-12-10T18:48:58.950Z"
+          }
+        ],
+        "assignedGuests": [],
+        "ledCells": [],
+        "hostedCells": [],
+        "churchAttendances": [
+          {
+            "id": 79,
+            "date": "2025-12-05T00:00:00.000Z",
+            "userId": 23,
+            "status": "PRESENTE",
+            "createdAt": "2025-12-05T15:56:06.433Z",
+            "updatedAt": "2025-12-05T23:31:08.842Z"
+          }
+        ],
+        "cellAttendances": [],
+        "seminarEnrollments": [],
+        "classAttendances": [],
+        "conventionRegistrations": []
+      },
+      {
+        "id": 12,
+        "email": "Ministerio_Reinaldo_y_Leticia@gmail.com",
+        "password": "$2b$10$sftDjw3uI/.X3kiFzxotVedIPE6HrInyKuTK9Jo1Pf.3WQxxlim5W",
+        "fullName": "Reinaldo Montes Suarez",
+        "role": "LIDER_DOCE",
+        "phone": null,
+        "address": null,
+        "createdAt": "2025-12-04T01:14:53.518Z",
+        "updatedAt": "2025-12-12T12:41:53.655Z",
+        "leaderId": null,
+        "cellId": null,
+        "invitedGuests": [],
+        "assignedGuests": [],
+        "ledCells": [],
+        "hostedCells": [],
+        "churchAttendances": [
+          {
+            "id": 20,
+            "date": "2025-12-05T00:00:00.000Z",
+            "userId": 12,
+            "status": "PRESENTE",
+            "createdAt": "2025-12-05T01:35:51.192Z",
+            "updatedAt": "2025-12-05T23:31:08.842Z"
+          }
+        ],
+        "cellAttendances": [],
+        "seminarEnrollments": [],
+        "classAttendances": [],
+        "conventionRegistrations": []
+      }
+    ],
+    "guests": [
+      {
+        "id": 13,
+        "name": "Paulina Ochoa",
+        "phone": "3072553578",
+        "address": "Carrera 57 D 22 C - 53  Villamaria",
+        "prayerRequest": "",
+        "status": "CONTACTADO",
+        "invitedById": 23,
+        "assignedToId": null,
+        "createdAt": "2025-12-05T03:25:07.273Z",
+        "updatedAt": "2025-12-05T03:32:00.325Z"
+      },
+      {
+        "id": 14,
+        "name": "Borja Huertas",
+        "phone": "3204237395",
+        "address": "Carrera 39 A 51 F - 15 ",
+        "prayerRequest": "",
+        "status": "GANADO",
+        "invitedById": 22,
+        "assignedToId": null,
+        "createdAt": "2025-12-05T03:25:41.113Z",
+        "updatedAt": "2025-12-06T16:16:39.508Z"
+      },
+      {
+        "id": 15,
+        "name": "Sara Campuzano Arias",
+        "phone": "3168048520",
+        "address": "Calle 16 98 7",
+        "prayerRequest": "",
+        "status": "NUEVO",
+        "invitedById": 23,
+        "assignedToId": null,
+        "createdAt": "2025-12-10T18:48:58.950Z",
+        "updatedAt": "2025-12-10T18:48:58.950Z"
+      }
+    ],
+    "cells": [
+      {
+        "id": 1,
+        "name": "Celula del Nevado",
+        "description": null,
+        "leaderId": 20,
+        "hostId": 20,
+        "address": "Mirador de las Lomas MZ 26 Casa 9",
+        "city": "Villamaria",
+        "dayOfWeek": "Martes",
+        "time": "18:30",
+        "createdAt": "2025-12-06T15:16:20.409Z",
+        "updatedAt": "2025-12-06T15:16:20.409Z"
+      },
+      {
+        "id": 2,
+        "name": "Celula Centro",
+        "description": null,
+        "leaderId": 21,
+        "hostId": 22,
+        "address": "Calle 18 25 - 69",
+        "city": "Manizales",
+        "dayOfWeek": "Viernes",
+        "time": "19:00",
+        "createdAt": "2025-12-06T15:37:18.491Z",
+        "updatedAt": "2025-12-06T15:37:18.491Z"
+      }
+    ]
+  }
+}

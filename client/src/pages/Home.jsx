@@ -6,7 +6,7 @@ import ConsolidatedStatsReport from '../components/ConsolidatedStatsReport';
 
 const Home = () => {
     const { user } = useAuth();
-    const [losDoce, setLosDoce] = useState([]);
+    const [pastores, setPastores] = useState([]);
     const [selectedLeader, setSelectedLeader] = useState(null);
     const [network, setNetwork] = useState(null);
     const [loading, setLoading] = useState(true);
@@ -15,8 +15,8 @@ const Home = () => {
 
     useEffect(() => {
         if (user?.role === 'SUPER_ADMIN') {
-            fetchLosDoce();
-        } else if (user?.role === 'LIDER_DOCE' || user?.role === 'LIDER_CELULA') {
+            fetchPastores();
+        } else if (user?.role === 'PASTOR' || user?.role === 'LIDER_DOCE' || user?.role === 'LIDER_CELULA') {
             // Automatically load their own network
             handleSelectLeader(user);
             setLoading(false);
@@ -25,22 +25,22 @@ const Home = () => {
         }
     }, [user]);
 
-    const fetchLosDoce = async () => {
+    const fetchPastores = async () => {
         try {
             setLoading(true);
             const token = localStorage.getItem('token');
-            const response = await fetch('http://localhost:5000/api/network/los-doce', {
+            const response = await fetch('http://localhost:5000/api/network/pastores', {
                 headers: {
                     'Authorization': `Bearer ${token}`
                 }
             });
 
             if (!response.ok) {
-                throw new Error('Error al cargar Los Doce');
+                throw new Error('Error al cargar Pastores');
             }
 
             const data = await response.json();
-            setLosDoce(data);
+            setPastores(data);
         } catch (err) {
             setError(err.message);
         } finally {
@@ -88,8 +88,8 @@ const Home = () => {
         );
     }
 
-    const canViewNetwork = ['SUPER_ADMIN', 'LIDER_DOCE', 'LIDER_CELULA'].includes(user?.role);
-    const canViewReport = ['SUPER_ADMIN', 'LIDER_DOCE'].includes(user?.role);
+    const canViewNetwork = ['SUPER_ADMIN', 'PASTOR', 'LIDER_DOCE', 'LIDER_CELULA'].includes(user?.role);
+    const canViewReport = ['SUPER_ADMIN', 'PASTOR', 'LIDER_DOCE'].includes(user?.role);
 
     return (
         <div className="space-y-8">
@@ -110,9 +110,9 @@ const Home = () => {
                             {user?.role === 'SUPER_ADMIN' && (
                                 <div>
                                     <h2 className="text-2xl font-semibold text-gray-800 mb-4">
-                                        Los Doce
+                                        Pastores
                                     </h2>
-                                    <LosDoceGrid losDoce={losDoce} onSelectLeader={handleSelectLeader} />
+                                    <LosDoceGrid losDoce={pastores} onSelectLeader={handleSelectLeader} />
                                 </div>
                             )}
 
@@ -129,7 +129,11 @@ const Home = () => {
                                                 : 'Mi Red'
                                             }
                                         </h2>
-                                        <NetworkTree network={network} />
+                                        <NetworkTree
+                                            network={network}
+                                            currentUser={user}
+                                            onNetworkChange={() => handleSelectLeader(selectedLeader || user)}
+                                        />
                                     </div>
                                 )
                             )}

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Plus, Users, MapPin, Clock, Calendar } from 'lucide-react';
+import { Plus, Users, MapPin, Clock, Calendar, Trash2 } from 'lucide-react';
 
 const CellManagement = () => {
     const [cells, setCells] = useState([]);
@@ -94,6 +94,33 @@ const CellManagement = () => {
             setEligibleMembers(data);
         } catch (error) {
             console.error('Error fetching members:', error);
+        }
+    };
+
+    const handleDeleteCell = async (cellId) => {
+        if (!confirm('¿Estás seguro de que deseas eliminar esta célula? Esta acción desvinculará a todos sus miembros.')) return;
+
+        try {
+            setLoading(true);
+            const token = localStorage.getItem('token');
+            const response = await fetch(`http://localhost:5000/api/enviar/cells/${cellId}`, {
+                method: 'DELETE',
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+
+            if (!response.ok) {
+                const err = await response.json();
+                throw new Error(err.error || 'Error al eliminar la célula');
+            }
+
+            alert('Célula eliminada exitosamente');
+            fetchCells();
+        } catch (error) {
+            alert(error.message);
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -373,6 +400,13 @@ const CellManagement = () => {
                                 className="text-blue-600 hover:text-blue-800 text-sm font-medium"
                             >
                                 Administrar
+                            </button>
+                            <button
+                                onClick={() => handleDeleteCell(cell.id)}
+                                className="text-red-500 hover:text-red-700 text-sm font-medium flex items-center gap-1"
+                            >
+                                <Trash2 size={16} />
+                                Eliminar
                             </button>
                         </div>
                     </div>

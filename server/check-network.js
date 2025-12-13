@@ -1,53 +1,53 @@
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 
-async function checkNetwork() {
-    // Get Jose Carlos
-    const joseCarlos = await prisma.user.findFirst({
-        where: { fullName: { contains: 'Jose Carlos' } },
-        select: { id: true, fullName: true, role: true }
-    });
+async function checkUsers() {
+    try {
+        console.log('=== Checking Network Structure ===\n');
 
-    console.log('Jose Carlos:', joseCarlos);
+        const users = await prisma.user.findMany({
+            where: {
+                OR: [
+                    { fullName: { contains: 'Alex', mode: 'insensitive' } },
+                    { fullName: { contains: 'Martha', mode: 'insensitive' } },
+                    { fullName: { contains: 'Bárbara', mode: 'insensitive' } },
+                    { fullName: { contains: 'Benjamin', mode: 'insensitive' } }
+                ]
+            },
+            select: {
+                id: true,
+                fullName: true,
+                email: true,
+                role: true,
+                leaderId: true,
+                leader: {
+                    select: {
+                        id: true,
+                        fullName: true,
+                        role: true
+                    }
+                }
+            },
+            orderBy: {
+                fullName: 'asc'
+            }
+        });
 
-    // Get his disciples
-    const disciples = await prisma.user.findMany({
-        where: { leaderId: joseCarlos.id },
-        select: { id: true, fullName: true, role: true }
-    });
+        users.forEach(user => {
+            console.log(`ID: ${user.id} | ${user.fullName}`);
+            console.log(`  Role: ${user.role}`);
+            console.log(`  Leader ID: ${user.leaderId || 'None'}`);
+            if (user.leader) {
+                console.log(`  Leader: ${user.leader.fullName} (${user.leader.role})`);
+            }
+            console.log('');
+        });
 
-    console.log('Disciples of Jose Carlos:', disciples);
-
-    // Get Ernesto and Sara
-    const ernesto = await prisma.user.findFirst({
-        where: { fullName: { contains: 'Ernesto' } },
-        select: { id: true, fullName: true, leaderId: true }
-    });
-
-    const sara = await prisma.user.findFirst({
-        where: { fullName: { contains: 'Sara' } },
-        select: { id: true, fullName: true, leaderId: true }
-    });
-
-    console.log('Ernesto:', ernesto);
-    console.log('Sara:', sara);
-
-    // Get guests
-    const guests = await prisma.guest.findMany({
-        select: {
-            id: true,
-            name: true,
-            invitedBy: { select: { fullName: true } },
-            assignedTo: { select: { fullName: true } }
-        }
-    });
-
-    console.log('\nAll guests:');
-    guests.forEach(g => {
-        console.log(`- ${g.name} (invited by: ${g.invitedBy.fullName}, assigned to: ${g.assignedTo?.fullName || 'none'})`);
-    });
-
-    await prisma.$disconnect();
+    } catch (error) {
+        console.error('Error:', error);
+    } finally {
+        await prisma.$disconnect();
+    }
 }
 
-checkNetwork().catch(console.error);
+checkUsers();

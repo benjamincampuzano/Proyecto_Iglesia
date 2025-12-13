@@ -23,8 +23,8 @@ router.get('/', authenticate, isAdmin, getAllUsers);
 router.get('/:id', authenticate, isAdmin, getUserById);
 router.put('/:id', authenticate, isAdmin, updateUser);
 router.post('/', authenticate, isAdmin, createUser);
-router.delete('/:id', isAdmin, deleteUser); // Modified: authenticate removed
-router.post('/assign-leader/:id', isAdmin, assignLeader); // Modified: method from PUT to POST, path changed, authenticate removed
+router.delete('/:id', authenticate, isAdmin, deleteUser);
+router.post('/assign-leader/:id', authenticate, isAdmin, assignLeader);
 router.get('/my-network/all', authenticate, getMyNetwork); // Added new route
 
 module.exports = router;

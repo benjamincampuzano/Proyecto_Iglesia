@@ -170,8 +170,63 @@ const getEligibleMembers = async (req, res) => {
     }
 };
 
+// Delete a cell
+const deleteCell = async (req, res) => {
+    try {
+        const { id } = req.params; // Cell ID
+        const cellId = parseInt(id);
+        const { role, id: userId } = req.user;
+
+        // 1. Permission check
+        if (role !== 'SUPER_ADMIN' && role !== 'LIDER_DOCE') {
+            return res.status(403).json({ error: 'Not authorized to delete cells' });
+        }
+
+        // Find cell to verify ownership/existence
+        const cell = await prisma.cell.findUnique({ where: { id: cellId } });
+        if (!cell) {
+            return res.status(404).json({ error: 'Cell not found' });
+        }
+
+        // If LIDER_DOCE, verify cell is in their network
+        if (role === 'LIDER_DOCE') {
+            // Check if cell leader is in their network or is themselves
+            const networkIds = await getNetworkIds(userId);
+            if (!networkIds.includes(cell.leaderId) && cell.leaderId !== userId) {
+                return res.status(403).json({ error: 'Cannot delete a cell outside your network' });
+            }
+        }
+
+        // 2. Cleanup transaction
+        await prisma.$transaction(async (tx) => {
+            // A. Unassign members
+            await tx.user.updateMany({
+                where: { cellId: cellId },
+                data: { cellId: null }
+            });
+
+            // B. Delete attendances
+            await tx.cellAttendance.deleteMany({
+                where: { cellId: cellId }
+            });
+
+            // C. Delete cell
+            await tx.cell.delete({
+                where: { id: cellId }
+            });
+        });
+
+        res.json({ message: 'Cell deleted successfully' });
+
+    } catch (error) {
+        console.error('Error deleting cell:', error);
+        res.status(500).json({ error: 'Error deleting cell' });
+    }
+};
+
 module.exports = {
     createCell,
+    deleteCell,
     assignMember,
     getEligibleLeaders,
     getEligibleHosts,

@@ -287,6 +287,9 @@ const createUser = async (req, res) => {
 const deleteUser = async (req, res) => {
     try {
         const { id } = req.params;
+        const userId = parseInt(id);
+
+        console.log(`Attempting to delete user ${userId}`);
 
         // LIDER_DOCE no puede eliminar usuarios
         if (req.user.role === 'LIDER_DOCE') {
@@ -296,18 +299,78 @@ const deleteUser = async (req, res) => {
         }
 
         // Prevenir eliminarse a sí mismo
-        if (parseInt(id) === req.user.id) {
+        if (userId === req.user.id) {
             return res.status(400).json({ message: 'Cannot delete your own account' });
         }
 
-        await prisma.user.delete({
-            where: { id: parseInt(id) },
+        // 1. Verificar si tiene invitados invitados (bloqueante)
+        const invitedGuestsCount = await prisma.guest.count({
+            where: { invitedById: userId }
         });
 
-        res.status(200).json({ message: 'User deleted successfully' });
+        if (invitedGuestsCount > 0) {
+            return res.status(400).json({
+                message: `No se puede eliminar: El usuario tiene ${invitedGuestsCount} invitados registrados. Reasígnalos o elimínalos primero.`
+            });
+        }
+
+        // 2. Verificar si es LIDER de alguna célula (bloqueante)
+        const ledCellsCount = await prisma.cell.count({
+            where: { leaderId: userId }
+        });
+
+        if (ledCellsCount > 0) {
+            return res.status(400).json({
+                message: `No se puede eliminar: El usuario es líder de ${ledCellsCount} células. Asigna un nuevo líder a estas células antes de eliminar el usuario.`
+            });
+        }
+
+        // 3. Transacción para limpiar TODAS las referencias y borrar
+        await prisma.$transaction(async (tx) => {
+            console.log('Starting deletion transaction for user', userId);
+
+            // A. Desvincular roles de liderazgo (poner null)
+            await tx.user.updateMany({ where: { leaderId: userId }, data: { leaderId: null } });
+            await tx.user.updateMany({ where: { pastorId: userId }, data: { pastorId: null } });
+            await tx.user.updateMany({ where: { liderDoceId: userId }, data: { liderDoceId: null } });
+            await tx.user.updateMany({ where: { liderCelulaId: userId }, data: { liderCelulaId: null } });
+
+            // B. Desvincular como Host de célula (opcional)
+            await tx.cell.updateMany({
+                where: { hostId: userId },
+                data: { hostId: null }
+            });
+
+            // C. Desvincular asignación de invitados
+            await tx.guest.updateMany({
+                where: { assignedToId: userId },
+                data: { assignedToId: null }
+            });
+
+            // D. Borrar datos relacionados (Historiales, Asistencias, Inscripciones)
+            await tx.classAttendance.deleteMany({ where: { userId: userId } });
+            await tx.seminarEnrollment.deleteMany({ where: { userId: userId } });
+            await tx.churchAttendance.deleteMany({ where: { userId: userId } });
+            await tx.cellAttendance.deleteMany({ where: { userId: userId } });
+            await tx.conventionRegistration.deleteMany({ where: { userId: userId } });
+
+            // E. Finalmente eliminar usuario
+            await tx.user.delete({
+                where: { id: userId },
+            });
+        });
+
+        console.log(`User ${userId} deleted successfully`);
+        res.status(200).json({ message: 'Usuario eliminado exitosamente' });
     } catch (error) {
-        console.error(error);
-        res.status(500).json({ message: 'Server error' });
+        console.error('Error deleting user:', error);
+        // Mejor manejo de errores de Prisma
+        if (error.code === 'P2003') {
+            return res.status(400).json({
+                message: 'No se puede eliminar: El usuario tiene datos relacionados (asistencias, clases, etc.) que impiden su eliminación.'
+            });
+        }
+        res.status(500).json({ message: 'Error del servidor al eliminar usuario' });
     }
 };
 
