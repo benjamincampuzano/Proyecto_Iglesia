@@ -160,7 +160,7 @@ const ConsolidatedStatsReport = ({ simpleMode = false }) => {
                             </table>
                         </div>
 
-                        <div className="h-64 flex justify-center items-center">
+                        <div className="h-64 w-full flex justify-center items-center">
                             {stats.churchAttendance.totalRecords > 0 ? (
                                 <ResponsiveContainer width="100%" height="100%">
                                     <PieChart>

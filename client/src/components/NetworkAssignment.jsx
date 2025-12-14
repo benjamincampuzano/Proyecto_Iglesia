@@ -74,9 +74,12 @@ const NetworkAssignment = () => {
     const handleAssignLeader = async (userId, leaderId) => {
         try {
             const token = localStorage.getItem('token');
-            await axios.put(
-                `http://localhost:5000/api/users/${userId}/assign-leader`,
-                { leaderId: leaderId ? parseInt(leaderId) : null },
+            await axios.post(
+                'http://localhost:5000/api/network/assign',
+                {
+                    userId: userId,
+                    leaderId: leaderId ? parseInt(leaderId) : null
+                },
                 { headers: { Authorization: `Bearer ${token}` } }
             );
 

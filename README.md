@@ -83,8 +83,12 @@ Proyecto_Iglesia/
 
 ## 📸 Capturas de Pantalla
 
+<<<<<<< HEAD
 > *Espacio reservado para capturas de pantalla de la aplicación funcionando.*
 > (Puedes agregar imágenes en la carpeta `/assets` y referenciarlas aquí)
+=======
+> 
+>>>>>>> 890ad01ac5e713dbf646f15e8e85b0ea34fa8bb3
 
 | Dashboard | Lista de Invitados |
 |-----------|--------------------|
@@ -92,7 +96,11 @@ Proyecto_Iglesia/
 
 ## 🎥 Demostración
 
+<<<<<<< HEAD
 > *Espacio reservado para un video o GIF demostrativo del flujo de usuario.*
+=======
+> 
+>>>>>>> 890ad01ac5e713dbf646f15e8e85b0ea34fa8bb3
 
 ---
 Desarrollado con ❤️ para el crecimiento de la iglesia.

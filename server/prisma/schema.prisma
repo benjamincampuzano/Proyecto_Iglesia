@@ -12,6 +12,7 @@ datasource db {
 
 enum Role {
   SUPER_ADMIN
+  PASTOR
   LIDER_DOCE
   LIDER_CELULA
   MIEMBRO
@@ -57,9 +58,23 @@ model User {
   invitedGuests  Guest[]  @relation("InvitedBy")
   assignedGuests Guest[]  @relation("AssignedTo")
 
+  // OLD: Deprecated - will be removed after migration
   leaderId       Int?
-  leader         User?    @relation("Discipleship", fields: [leaderId], references: [id])
+  leader         User?    @relation("Discipleship", fields: [leaderId], references: [id], onDelete: NoAction, onUpdate: NoAction)
   disciples      User[]   @relation("Discipleship")
+
+  // NEW: Hierarchical network structure
+  pastorId       Int?
+  pastor         User?    @relation("Pastor", fields: [pastorId], references: [id], onDelete: SetNull)
+  miembrosPastor User[]   @relation("Pastor")
+  
+  liderDoceId    Int?
+  liderDoce      User?    @relation("LiderDoce", fields: [liderDoceId], references: [id], onDelete: SetNull)
+  miembrosDoce   User[]   @relation("LiderDoce")
+  
+  liderCelulaId  Int?
+  liderCelula    User?    @relation("LiderCelula", fields: [liderCelulaId], references: [id], onDelete: SetNull)
+  miembrosCelula User[]   @relation("LiderCelula")
 
   cellId         Int?
   cell           Cell?    @relation("CellMembers", fields: [cellId], references: [id])

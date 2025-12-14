@@ -241,6 +241,7 @@ const UserManagementModal = ({ isOpen, onClose }) => {
                                         <option value="MIEMBRO">Miembro</option>
                                         <option value="LIDER_CELULA">Líder de Célula</option>
                                         <option value="LIDER_DOCE">Líder de Los Doce</option>
+                                        <option value="PASTOR">Pastor</option>
                                         <option value="SUPER_ADMIN">Super Admin</option>
                                     </select>
                                 </div>
@@ -341,6 +342,7 @@ const UserManagementModal = ({ isOpen, onClose }) => {
                                                         <option value="MIEMBRO">Miembro</option>
                                                         <option value="LIDER_CELULA">Líder de Célula</option>
                                                         <option value="LIDER_DOCE">Líder de Los Doce</option>
+                                                        <option value="PASTOR">Pastor</option>
                                                         <option value="SUPER_ADMIN">Super Admin</option>
                                                     </select>
                                                 ) : (

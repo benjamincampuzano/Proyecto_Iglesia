@@ -13,7 +13,7 @@ const LosDoceGrid = ({ losDoce, onSelectLeader }) => {
         return (
             <div className="text-center py-12">
                 <Users className="w-16 h-16 mx-auto text-gray-400 mb-4" />
-                <p className="text-gray-500">No hay líderes de Los Doce registrados</p>
+                <p className="text-gray-500">No hay Pastores registrados</p>
             </div>
         );
     }
@@ -39,8 +39,11 @@ const LosDoceGrid = ({ losDoce, onSelectLeader }) => {
                                 {leader.fullName}
                             </h3>
                             <p className="text-sm text-gray-500">{leader.email}</p>
-                            <span className="inline-block mt-2 px-3 py-1 text-xs font-medium bg-purple-100 text-purple-800 rounded-full">
-                                Líder de Los Doce
+                            <span className={`
+                                inline-block mt-2 px-3 py-1 text-xs font-medium rounded-full
+                                ${leader.role === 'PASTOR' ? 'bg-green-100 text-green-800' : 'bg-purple-100 text-purple-800'}
+                            `}>
+                                {leader.role === 'PASTOR' ? 'Pastor' : 'Líder de Los Doce'}
                             </span>
                         </div>
                         <ChevronRight className={`w-6 h-6 transition-transform ${selectedId === leader.id ? 'text-blue-500 transform rotate-90' : 'text-gray-400'}`} />
