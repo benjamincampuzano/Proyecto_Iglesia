@@ -112,10 +112,10 @@ const Encuentros = () => {
                         Encuentros
                     </h1>
                     <p className="text-gray-500 dark:text-gray-400 mt-1">
-                        Gestión de retiros espirituales (Pre, Encuentro, Pos)
+                        Gestión de Encuentros (Pre y Pos encuentros)
                     </p>
                 </div>
-                {(user.role === 'SUPER_ADMIN' || user.role === 'LIDER_DOCE') && (
+                {user.role === 'SUPER_ADMIN' && (
                     <button
                         onClick={() => setShowCreateModal(true)}
                         className="flex items-center px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors shadow-lg shadow-purple-500/30"
@@ -146,7 +146,7 @@ const Encuentros = () => {
                                         {enc.type}
                                     </span>
                                     <div className="flex items-center space-x-2">
-                                        {(user.role === 'SUPER_ADMIN' || user.role === 'LIDER_DOCE') && (
+                                        {user.role === 'SUPER_ADMIN' && (
                                             <button
                                                 onClick={(e) => handleDelete(e, enc.id)}
                                                 className="p-1 text-gray-400 hover:text-red-500 transition-colors z-10"

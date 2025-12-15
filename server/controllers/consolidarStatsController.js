@@ -1,21 +1,69 @@
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 
+// Helper to get network IDs (recursive)
+const getNetworkIds = async (leaderId) => {
+    const id = parseInt(leaderId);
+    if (isNaN(id)) return [];
+
+    const directDisciples = await prisma.user.findMany({
+        where: {
+            OR: [
+                { leaderId: id },
+                { liderDoceId: id },
+                { liderCelulaId: id },
+                { pastorId: id }
+            ]
+        },
+        select: { id: true }
+    });
+
+    let networkIds = directDisciples.map(d => d.id);
+
+    for (const disciple of directDisciples) {
+        if (disciple.id !== id) {
+            const subNetwork = await getNetworkIds(disciple.id);
+            networkIds = [...networkIds, ...subNetwork];
+        }
+    }
+
+    return [...new Set(networkIds)];
+};
+
 const getGeneralStats = async (req, res) => {
     try {
         const { startDate, endDate } = req.query;
+        const { role, id } = req.user;
 
         // Default date range: last 30 days
         const end = endDate ? new Date(endDate) : new Date();
         const start = startDate ? new Date(startDate) : new Date(end.getTime() - 30 * 24 * 60 * 60 * 1000);
 
+        let userFilter = {};
+        if (role === 'LIDER_DOCE' || role === 'LIDER_CELULA') {
+            const networkIds = await getNetworkIds(id);
+            userFilter = { id: { in: [...networkIds, id] } }; // Include self?
+            // Usually stats are about the network.
+            // If checking 'Users', we check if they are in the ID list.
+        } else if (role !== 'SUPER_ADMIN') {
+            // Member sees only self?
+            userFilter = { id: id };
+        }
+
         // 1. Church Attendance Stats
-        const attendanceWhere = {
+        // Attendance records are linked to User.
+        // We need to filter attendances where userId is in userFilter
+
+        let attendanceWhere = {
             date: {
                 gte: start,
                 lte: end
             }
         };
+
+        if (userFilter.id) {
+            attendanceWhere.userId = userFilter.id;
+        }
 
         const totalAttendanceRecords = await prisma.churchAttendance.count({ where: attendanceWhere });
         const presentCount = await prisma.churchAttendance.count({
@@ -32,28 +80,35 @@ const getGeneralStats = async (req, res) => {
         };
 
         // 2. Active Members (Total Database Users)
+        // Filter by network
         const totalMembers = await prisma.user.count({
-            where: { role: { not: 'SUPER_ADMIN' } } // Exclude system admin from general member count
+            where: {
+                role: { not: 'SUPER_ADMIN' },
+                ...userFilter
+            }
         });
 
         // 3. Seminar Stats (Modules and Enrollments)
-        // Active enrollments: INSCRITO and EN_PROGRESO
+        // Enrollments are linked to User (userId)
         const activeEnrollments = await prisma.seminarEnrollment.count({
             where: {
                 status: {
                     in: ['INSCRITO', 'EN_PROGRESO']
-                }
+                },
+                ...(userFilter.id && { userId: userFilter.id })
             }
         });
 
         const completedModules = await prisma.seminarEnrollment.count({
             where: {
                 status: 'COMPLETADO',
-                updatedAt: { gte: start, lte: end } // Completed in this period
+                updatedAt: { gte: start, lte: end },
+                ...(userFilter.id && { userId: userFilter.id })
             }
         });
 
         // 4. Daily Attendance Trend for the period (for a potential mini-chart)
+        // GroupBy allows filtering by 'where'
         const dailyAttendance = await prisma.churchAttendance.groupBy({
             by: ['date'],
             where: attendanceWhere,

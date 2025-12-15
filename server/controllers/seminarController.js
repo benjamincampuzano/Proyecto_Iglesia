@@ -147,21 +147,33 @@ const deleteModule = async (req, res) => {
 
 // Helper to get network
 const getUserNetwork = async (leaderId) => {
-    const network = [];
-    const queue = [leaderId];
-    const visited = new Set();
-    while (queue.length > 0) {
-        const currentId = queue.shift();
-        if (visited.has(currentId)) continue;
-        visited.add(currentId);
-        network.push(currentId);
-        const disciples = await prisma.user.findMany({
-            where: { leaderId: currentId },
-            select: { id: true }
-        });
-        queue.push(...disciples.map(d => d.id));
+    const id = parseInt(leaderId);
+    if (isNaN(id)) return [];
+
+    // Find all users who report to this leader via ANY of the hierarchy fields
+    const directDisciples = await prisma.user.findMany({
+        where: {
+            OR: [
+                { leaderId: id },
+                { liderDoceId: id },
+                { liderCelulaId: id },
+                { pastorId: id }
+            ]
+        },
+        select: { id: true }
+    });
+
+    let networkIds = directDisciples.map(d => d.id);
+
+    // Recursively find their disciples
+    for (const disciple of directDisciples) {
+        if (disciple.id !== id) {
+            const subNetwork = await getUserNetwork(disciple.id);
+            networkIds = [...networkIds, ...subNetwork];
+        }
     }
-    return network;
+
+    return [...new Set(networkIds)];
 };
 
 // Enroll a user in a module
@@ -236,9 +248,23 @@ const enrollStudent = async (req, res) => {
 const getModuleEnrollments = async (req, res) => {
     try {
         const { moduleId } = req.params;
+        const user = req.user;
+        let where = { moduleId: parseInt(moduleId) };
+
+        // Security Filter
+        if (user.role === 'SUPER_ADMIN') {
+            // See all
+        } else if (user.role === 'LIDER_DOCE' || user.role === 'LIDER_CELULA') {
+            const userId = parseInt(user.id);
+            const networkIds = await getUserNetwork(userId);
+            where.userId = { in: [...networkIds, userId] };
+        } else {
+            // Members see only themselves
+            where.userId = parseInt(user.id);
+        }
 
         const enrollments = await prisma.seminarEnrollment.findMany({
-            where: { moduleId: parseInt(moduleId) },
+            where,
             include: {
                 user: {
                     select: {

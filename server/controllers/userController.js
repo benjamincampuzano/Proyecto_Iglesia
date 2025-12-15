@@ -5,27 +5,34 @@ const prisma = new PrismaClient();
 
 // Función auxiliar para obtener todos los usuarios en la red de un líder (discípulos y sub-discípulos)
 const getUserNetwork = async (userId) => {
-    const network = [];
-    const queue = [userId];
-    const visited = new Set();
+    const id = parseInt(userId);
+    if (isNaN(id)) return [];
 
-    while (queue.length > 0) {
-        const currentId = queue.shift();
+    // Find all users who report to this leader via ANY of the hierarchy fields
+    const directDisciples = await prisma.user.findMany({
+        where: {
+            OR: [
+                { leaderId: id },
+                { liderDoceId: id },
+                { liderCelulaId: id },
+                { pastorId: id }
+            ]
+        },
+        select: { id: true }
+    });
 
-        if (visited.has(currentId)) continue;
-        visited.add(currentId);
-        network.push(currentId);
+    let networkIds = directDisciples.map(d => d.id);
 
-        const disciples = await prisma.user.findMany({
-            where: { leaderId: currentId },
-            select: { id: true }
-        });
-
-        queue.push(...disciples.map(d => d.id));
+    // Recursively find their disciples
+    for (const disciple of directDisciples) {
+        if (disciple.id !== id) {
+            const subNetwork = await getUserNetwork(disciple.id);
+            networkIds = [...networkIds, ...subNetwork];
+        }
     }
 
-    // Filter out any undefined/null values as safety measure
-    return network.filter(id => id != null);
+    // Filter out any undefined/null values as safety measure and deduplicate
+    return [...new Set(networkIds.filter(id => id != null))];
 };
 
 // Actualizar perfil propio (nombre, email)
@@ -103,7 +110,26 @@ const changePassword = async (req, res) => {
 // Admin: Obtener todos los usuarios
 const getAllUsers = async (req, res) => {
     try {
+        const currentUser = req.user;
+        let where = {};
+
+        // Security Filter
+        if (currentUser.role === 'SUPER_ADMIN') {
+            // See all
+            where = {};
+        } else if (currentUser.role === 'LIDER_DOCE' || currentUser.role === 'LIDER_CELULA') {
+            const networkIds = await getUserNetwork(currentUser.id);
+            // Include self and network
+            where = {
+                id: { in: [...networkIds, currentUser.id] }
+            };
+        } else {
+            // Members see only themselves
+            where = { id: currentUser.id };
+        }
+
         const users = await prisma.user.findMany({
+            where,
             select: {
                 id: true,
                 email: true,
@@ -247,7 +273,7 @@ const updateUser = async (req, res) => {
 // Admin: Crear nuevo usuario
 const createUser = async (req, res) => {
     try {
-        const { email, password, fullName, role } = req.body;
+        const { email, password, fullName, role, sex, phone, address, city, liderDoceId } = req.body;
 
         if (!email || !password || !fullName) {
             return res.status(400).json({ message: 'Email, password, and full name are required' });
@@ -260,13 +286,23 @@ const createUser = async (req, res) => {
 
         const hashedPassword = await bcrypt.hash(password, 10);
 
+        const userData = {
+            email,
+            password: hashedPassword,
+            fullName,
+            role: role || 'MIEMBRO',
+            sex,
+            phone,
+            address,
+            city
+        };
+
+        if (liderDoceId) {
+            userData.liderDoceId = parseInt(liderDoceId);
+        }
+
         const user = await prisma.user.create({
-            data: {
-                email,
-                password: hashedPassword,
-                fullName,
-                role: role || 'MIEMBRO',
-            },
+            data: userData,
         });
 
         res.status(201).json({

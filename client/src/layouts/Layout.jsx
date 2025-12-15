@@ -59,14 +59,7 @@ const Layout = () => {
 
 
                     {/* Network assignment - for SUPER_ADMIN and LIDER_DOCE */}
-                    {(user.role === 'SUPER_ADMIN' || user.role === 'LIDER_DOCE') && (
-                        <SidebarItem
-                            to="/network"
-                            icon={Network}
-                            label="Red de Discipulado"
-                            active={location.pathname === '/network'}
-                        />
-                    )}
+
                 </nav>
 
                 <div className="p-4 border-t border-gray-200 dark:border-gray-800">

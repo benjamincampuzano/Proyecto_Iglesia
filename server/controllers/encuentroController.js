@@ -67,6 +67,9 @@ const getEncuentroById = async (req, res) => {
 
 const createEncuentro = async (req, res) => {
     try {
+        if (req.user.role !== 'SUPER_ADMIN') {
+            return res.status(403).json({ error: 'Not authorized' });
+        }
         const { type, name, description, cost, startDate, endDate } = req.body;
         const encuentro = await prisma.encuentro.create({
             data: {
@@ -88,8 +91,8 @@ const createEncuentro = async (req, res) => {
 const deleteEncuentro = async (req, res) => {
     try {
         const { id } = req.params;
-        // Check permissions (Only SUPER_ADMIN and LIDER_DOCE)
-        if (req.user.role !== 'SUPER_ADMIN' && req.user.role !== 'LIDER_DOCE') {
+        // Check permissions (Only SUPER_ADMIN)
+        if (req.user.role !== 'SUPER_ADMIN') {
             return res.status(403).json({ error: 'Not authorized' });
         }
         await prisma.encuentro.delete({ where: { id: parseInt(id) } });
@@ -125,7 +128,7 @@ const registerGuest = async (req, res) => {
 const deleteRegistration = async (req, res) => {
     try {
         const { registrationId } = req.params;
-        if (req.user.role !== 'SUPER_ADMIN' && req.user.role !== 'LIDER_DOCE') {
+        if (req.user.role !== 'SUPER_ADMIN') {
             return res.status(403).json({ error: 'Not authorized' });
         }
         await prisma.encuentroRegistration.delete({ where: { id: parseInt(registrationId) } });
@@ -178,6 +181,132 @@ const updateClassAttendance = async (req, res) => {
     }
 };
 
+// Helper to get network
+const getNetworkIds = async (leaderId) => {
+    const id = parseInt(leaderId);
+    if (isNaN(id)) return [];
+
+    // Find all users who report to this leader via ANY of the hierarchy fields
+    const directDisciples = await prisma.user.findMany({
+        where: {
+            OR: [
+                { leaderId: id },
+                { liderDoceId: id },
+                { liderCelulaId: id },
+                { pastorId: id }
+            ]
+        },
+        select: { id: true }
+    });
+
+    let networkIds = directDisciples.map(d => d.id);
+
+    // Recursively find their disciples
+    for (const disciple of directDisciples) {
+        if (disciple.id !== id) {
+            const subNetwork = await getNetworkIds(disciple.id);
+            networkIds = [...networkIds, ...subNetwork];
+        }
+    }
+
+    return [...new Set(networkIds)];
+};
+
+const getEncuentroBalanceReport = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const user = req.user;
+
+        const encuentro = await prisma.encuentro.findUnique({
+            where: { id: parseInt(id) },
+            include: {
+                registrations: {
+                    include: {
+                        guest: {
+                            include: {
+                                assignedTo: {
+                                    include: {
+                                        leader: { select: { fullName: true } },
+                                        liderDoce: { select: { fullName: true } },
+                                        liderCelula: { select: { fullName: true } },
+                                        pastor: { select: { fullName: true } }
+                                    }
+                                },
+                                invitedBy: {
+                                    include: {
+                                        leader: { select: { fullName: true } },
+                                        liderDoce: { select: { fullName: true } },
+                                        liderCelula: { select: { fullName: true } },
+                                        pastor: { select: { fullName: true } }
+                                    }
+                                }
+                            }
+                        },
+                        payments: true
+                    }
+                }
+            }
+        });
+
+        if (!encuentro) {
+            return res.status(404).json({ error: 'Encuentro not found' });
+        }
+
+        // Apply Network Filter
+        let visibleRegistrations = encuentro.registrations;
+
+        if (user.role === 'SUPER_ADMIN') {
+            // All
+        } else if (user.role === 'LIDER_DOCE' || user.role === 'LIDER_CELULA') {
+            const userId = parseInt(user.id);
+            const networkIds = await getNetworkIds(userId);
+            const allowedIds = new Set([...networkIds, userId]);
+
+            visibleRegistrations = encuentro.registrations.filter(reg => {
+                const assignedCheck = reg.guest.assignedToId && allowedIds.has(reg.guest.assignedToId);
+                const invitedCheck = reg.guest.invitedById && allowedIds.has(reg.guest.invitedById);
+                return assignedCheck || invitedCheck;
+            });
+        } else {
+            // Member sees guests assigned to them OR invited by them
+            const userId = parseInt(user.id);
+            visibleRegistrations = encuentro.registrations.filter(reg =>
+                reg.guest.assignedToId === userId || reg.guest.invitedById === userId
+            );
+        }
+
+        // Transform Data for Report
+        const reportData = visibleRegistrations.map(reg => {
+            const totalPaid = reg.payments.reduce((sum, p) => sum + p.amount, 0);
+            const finalCost = encuentro.cost * (1 - (reg.discountPercentage / 100));
+            const balance = finalCost - totalPaid;
+
+            // Use assignedTo for hierarchy, fallback to invitedBy
+            const responsibleUser = reg.guest.assignedTo || reg.guest.invitedBy;
+
+            return {
+                id: reg.id,
+                guestName: reg.guest.name,
+                status: reg.guest.status,
+                responsibleName: responsibleUser?.fullName || 'Sin Asignar',
+                pastorName: responsibleUser?.pastor?.fullName || 'N/A',
+                liderDoceName: responsibleUser?.liderDoce?.fullName || 'N/A',
+                liderCelulaName: responsibleUser?.liderCelula?.fullName || 'N/A',
+                leaderName: responsibleUser?.leader?.fullName || 'N/A',
+                cost: finalCost,
+                paid: totalPaid,
+                balance: balance,
+                paymentsDetails: reg.payments
+            };
+        });
+
+        res.json(reportData);
+    } catch (error) {
+        console.error('Error generating balance report:', error);
+        res.status(500).json({ error: 'Error generating report' });
+    }
+};
+
 module.exports = {
     getEncuentros,
     getEncuentroById,
@@ -186,5 +315,6 @@ module.exports = {
     registerGuest,
     deleteRegistration,
     addPayment,
-    updateClassAttendance
+    updateClassAttendance,
+    getEncuentroBalanceReport
 };

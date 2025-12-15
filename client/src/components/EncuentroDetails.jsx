@@ -1,13 +1,17 @@
-import { useState } from 'react';
-import { ArrowLeft, UserPlus, DollarSign, CheckCircle, XCircle, Trash2, Calendar, BookOpen } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { ArrowLeft, UserPlus, DollarSign, CheckCircle, XCircle, Trash2, Calendar, BookOpen, FileText } from 'lucide-react';
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
 import GuestSearchSelect from './GuestSearchSelect';
 import EncuentroClassTracker from './EncuentroClassTracker';
+import BalanceReport from './BalanceReport';
 
 const EncuentroDetails = ({ encuentro, onBack, onRefresh }) => {
     const { user } = useAuth();
-    const [activeTab, setActiveTab] = useState('general'); // general | classes
+    const [activeTab, setActiveTab] = useState('general'); // general | classes | report
+    const [reportData, setReportData] = useState([]);
+    const [loadingReport, setLoadingReport] = useState(false);
+
     const [showRegisterModal, setShowRegisterModal] = useState(false);
     const [showPaymentModal, setShowPaymentModal] = useState(false);
     const [selectedRegistration, setSelectedRegistration] = useState(null);
@@ -26,6 +30,28 @@ const EncuentroDetails = ({ encuentro, onBack, onRefresh }) => {
     const [paymentAmount, setPaymentAmount] = useState('');
     const [paymentNotes, setPaymentNotes] = useState('');
 
+    useEffect(() => {
+        if (activeTab === 'report') {
+            fetchReport();
+        }
+    }, [activeTab]);
+
+    const fetchReport = async () => {
+        setLoadingReport(true);
+        try {
+            const token = localStorage.getItem('token');
+            const response = await axios.get(`http://localhost:5000/api/encuentros/${encuentro.id}/report/balance`, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            setReportData(response.data);
+        } catch (error) {
+            console.error('Error fetching report:', error);
+            alert('Error cargando el reporte financiero');
+        } finally {
+            setLoadingReport(false);
+        }
+    };
+
     const handleRegister = async (e) => {
         e.preventDefault();
         setLoading(true);
@@ -41,6 +67,7 @@ const EncuentroDetails = ({ encuentro, onBack, onRefresh }) => {
             setSelectedGuestId(null);
             setDiscount(0);
             onRefresh();
+            if (activeTab === 'report') fetchReport();
         } catch (error) {
             console.error('Error registering guest:', error);
             alert('Error creating registration: ' + (error.response?.data?.error || error.message));
@@ -65,6 +92,7 @@ const EncuentroDetails = ({ encuentro, onBack, onRefresh }) => {
             setPaymentAmount('');
             setPaymentNotes('');
             onRefresh();
+            if (activeTab === 'report') fetchReport();
         } catch (error) {
             console.error('Error adding payment:', error);
             alert('Error adding payment');
@@ -84,6 +112,7 @@ const EncuentroDetails = ({ encuentro, onBack, onRefresh }) => {
                 headers: { Authorization: `Bearer ${token}` }
             });
             onRefresh();
+            if (activeTab === 'report') fetchReport();
         } catch (error) {
             console.error('Error deleting registration:', error);
             alert('Error al eliminar');
@@ -142,20 +171,22 @@ const EncuentroDetails = ({ encuentro, onBack, onRefresh }) => {
     return (
         <div className="space-y-6">
             {/* Header */}
-            <div className="flex items-center space-x-4 mb-6">
-                <button
-                    onClick={onBack}
-                    className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors"
-                >
-                    <ArrowLeft size={24} />
-                </button>
-                <div>
-                    <h2 className="text-2xl font-bold dark:text-white">
-                        {encuentro.name}
-                    </h2>
-                    <p className="text-gray-500 dark:text-gray-400">
-                        {new Date(encuentro.startDate).toLocaleDateString()} - {new Date(encuentro.endDate).toLocaleDateString()}
-                    </p>
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+                <div className="flex items-center space-x-4">
+                    <button
+                        onClick={onBack}
+                        className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors"
+                    >
+                        <ArrowLeft size={24} />
+                    </button>
+                    <div>
+                        <h2 className="text-2xl font-bold dark:text-white">
+                            {encuentro.name}
+                        </h2>
+                        <p className="text-gray-500 dark:text-gray-400">
+                            {new Date(encuentro.startDate).toLocaleDateString()} - {new Date(encuentro.endDate).toLocaleDateString()}
+                        </p>
+                    </div>
                 </div>
             </div>
 
@@ -183,10 +214,10 @@ const EncuentroDetails = ({ encuentro, onBack, onRefresh }) => {
 
             {/* Tabs */}
             <div className="border-b border-gray-200 dark:border-gray-700">
-                <nav className="-mb-px flex space-x-8">
+                <nav className="-mb-px flex space-x-8 overflow-x-auto">
                     <button
                         onClick={() => setActiveTab('general')}
-                        className={`py-4 px-1 border-b-2 font-medium text-sm flex items-center ${activeTab === 'general'
+                        className={`py-4 px-1 border-b-2 font-medium text-sm flex items-center whitespace-nowrap ${activeTab === 'general'
                             ? 'border-blue-500 text-blue-600 dark:text-blue-400'
                             : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300'
                             }`}
@@ -196,7 +227,7 @@ const EncuentroDetails = ({ encuentro, onBack, onRefresh }) => {
                     </button>
                     <button
                         onClick={() => setActiveTab('classes')}
-                        className={`py-4 px-1 border-b-2 font-medium text-sm flex items-center ${activeTab === 'classes'
+                        className={`py-4 px-1 border-b-2 font-medium text-sm flex items-center whitespace-nowrap ${activeTab === 'classes'
                             ? 'border-blue-500 text-blue-600 dark:text-blue-400'
                             : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300'
                             }`}
@@ -204,112 +235,141 @@ const EncuentroDetails = ({ encuentro, onBack, onRefresh }) => {
                         <BookOpen size={18} className="mr-2" />
                         Asistencia a Clases
                     </button>
+                    <button
+                        onClick={() => setActiveTab('report')}
+                        className={`py-4 px-1 border-b-2 font-medium text-sm flex items-center whitespace-nowrap ${activeTab === 'report'
+                            ? 'border-blue-500 text-blue-600 dark:text-blue-400'
+                            : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300'
+                            }`}
+                    >
+                        <FileText size={18} className="mr-2" />
+                        Reporte Financiero
+                    </button>
                 </nav>
             </div>
 
-            {/* Actions */}
-            <div className="flex justify-end pt-4">
-                <button
-                    onClick={() => setShowRegisterModal(true)}
-                    className="flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
-                >
-                    <UserPlus size={20} className="mr-2" />
-                    Inscribir Invitado
-                </button>
-            </div>
-
-            {activeTab === 'general' ? (
-                /* Payment/Status Table */
-                <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg overflow-hidden border border-gray-200 dark:border-gray-700">
-                    <div className="overflow-x-auto">
-                        <table className="w-full">
-                            <thead className="bg-gray-50 dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800">
-                                <tr>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Invitado</th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Estado</th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Costo</th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Pagado</th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Saldo</th>
-                                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Acciones</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-                                {encuentro.registrations?.map((reg) => (
-                                    <tr key={reg.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
-                                        <td className="px-6 py-4 whitespace-nowrap">
-                                            <button
-                                                onClick={() => openHistoryModal(reg)}
-                                                className="text-left group"
-                                            >
-                                                <div className="text-sm font-medium text-gray-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors underline decoration-dotted decoration-gray-400">
-                                                    {reg.guest.name}
-                                                </div>
-                                                <div className="text-xs text-gray-500">{reg.guest.phone}</div>
-                                            </button>
-                                        </td>
-                                        <td className="px-6 py-4 whitespace-nowrap">
-                                            <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${reg.status === 'ATTENDED' ? 'bg-green-100 text-green-800' : 'bg-blue-100 text-blue-800'
-                                                }`}>
-                                                {reg.status}
-                                            </span>
-                                        </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                                            {formatCurrency(reg.finalCost)}
-                                        </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-green-600 font-medium">
-                                            {formatCurrency(reg.totalPaid)}
-                                        </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-red-500 font-medium">
-                                            {formatCurrency(reg.balance)}
-                                        </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium flex items-center justify-end space-x-3">
-                                            <button
-                                                onClick={() => openPaymentModal(reg)}
-                                                className="text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-300 inline-flex items-center"
-                                                title="Abonar"
-                                            >
-                                                <DollarSign size={16} className="mr-1" />
-                                                Abonar
-                                            </button>
-
-                                            {(user.role === 'SUPER_ADMIN' || user.role === 'LIDER_DOCE') && (
-                                                <>
-                                                    <button
-                                                        onClick={() => openConvertModal(reg)}
-                                                        className="text-purple-600 hover:text-purple-900 dark:text-purple-400 dark:hover:text-purple-300 inline-flex items-center"
-                                                        title="Convertir a Miembro"
-                                                    >
-                                                        <UserPlus size={16} />
-                                                    </button>
-                                                    <button
-                                                        onClick={() => handleDelete(reg.id)}
-                                                        className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300 inline-flex items-center"
-                                                        title="Eliminar Registro"
-                                                    >
-                                                        <Trash2 size={16} />
-                                                    </button>
-                                                </>
-                                            )}
-                                        </td>
-                                    </tr>
-                                ))}
-                                {(!encuentro.registrations || encuentro.registrations.length === 0) && (
-                                    <tr>
-                                        <td colSpan="6" className="px-6 py-12 text-center text-gray-500">
-                                            No hay inscritos aún.
-                                        </td>
-                                    </tr>
-                                )}
-                            </tbody>
-                        </table>
+            {/* Content Switcher */}
+            {activeTab === 'general' && (
+                <>
+                    {/* Actions */}
+                    <div className="flex justify-end pt-4">
+                        <button
+                            onClick={() => setShowRegisterModal(true)}
+                            className="flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+                        >
+                            <UserPlus size={20} className="mr-2" />
+                            Inscribir Invitado
+                        </button>
                     </div>
+                    {/* Payment/Status Table */}
+                    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg overflow-hidden border border-gray-200 dark:border-gray-700 mt-4">
+                        <div className="overflow-x-auto">
+                            <table className="w-full">
+                                <thead className="bg-gray-50 dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800">
+                                    <tr>
+                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Invitado</th>
+                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Estado</th>
+                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Costo</th>
+                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Pagado</th>
+                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Saldo</th>
+                                        <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+                                    {encuentro.registrations?.map((reg) => (
+                                        <tr key={reg.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
+                                            <td className="px-6 py-4 whitespace-nowrap">
+                                                <button
+                                                    onClick={() => openHistoryModal(reg)}
+                                                    className="text-left group"
+                                                >
+                                                    <div className="text-sm font-medium text-gray-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors underline decoration-dotted decoration-gray-400">
+                                                        {reg.guest.name}
+                                                    </div>
+                                                    <div className="text-xs text-gray-500">{reg.guest.phone}</div>
+                                                </button>
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap">
+                                                <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${reg.status === 'ATTENDED' ? 'bg-green-100 text-green-800' : 'bg-blue-100 text-blue-800'
+                                                    }`}>
+                                                    {reg.status}
+                                                </span>
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                                                {formatCurrency(reg.finalCost)}
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-green-600 font-medium">
+                                                {formatCurrency(reg.totalPaid)}
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-red-500 font-medium">
+                                                {formatCurrency(reg.balance)}
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium flex items-center justify-end space-x-3">
+                                                <button
+                                                    onClick={() => openPaymentModal(reg)}
+                                                    className="text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-300 inline-flex items-center"
+                                                    title="Abonar"
+                                                >
+                                                    <DollarSign size={16} className="mr-1" />
+                                                    Abonar
+                                                </button>
+
+                                                {(user.role === 'SUPER_ADMIN' || user.role === 'LIDER_DOCE') && (
+                                                    <>
+                                                        <button
+                                                            onClick={() => openConvertModal(reg)}
+                                                            className="text-purple-600 hover:text-purple-900 dark:text-purple-400 dark:hover:text-purple-300 inline-flex items-center"
+                                                            title="Convertir a Miembro"
+                                                        >
+                                                            <UserPlus size={16} />
+                                                        </button>
+                                                        <button
+                                                            onClick={() => handleDelete(reg.id)}
+                                                            className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300 inline-flex items-center"
+                                                            title="Eliminar Registro"
+                                                        >
+                                                            <Trash2 size={16} />
+                                                        </button>
+                                                    </>
+                                                )}
+                                            </td>
+                                        </tr>
+                                    ))}
+                                    {(!encuentro.registrations || encuentro.registrations.length === 0) && (
+                                        <tr>
+                                            <td colSpan="6" className="px-6 py-12 text-center text-gray-500">
+                                                No hay inscritos aún.
+                                            </td>
+                                        </tr>
+                                    )}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </>
+            )}
+
+            {activeTab === 'classes' && (
+                <div className="mt-4">
+                    <EncuentroClassTracker
+                        registrations={encuentro.registrations || []}
+                        onRefresh={onRefresh}
+                        onConvert={openConvertModal}
+                    />
                 </div>
-            ) : (
-                /* Class Matrix View */
-                <EncuentroClassTracker
-                    registrations={encuentro.registrations || []}
-                    onRefresh={onRefresh}
-                />
+            )}
+
+            {activeTab === 'report' && (
+                <div className="mt-6 animate-fade-in">
+                    {loadingReport ? (
+                        <div className="text-center py-10">
+                            <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600 mx-auto"></div>
+                            <p className="mt-4 text-gray-500">Cargando reporte financiero...</p>
+                        </div>
+                    ) : (
+                        <BalanceReport data={reportData} title={`Reporte_${encuentro.name}`} />
+                    )}
+                </div>
             )}
 
             {/* Registration Modal */}

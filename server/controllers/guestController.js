@@ -49,27 +49,34 @@ const createGuest = async (req, res) => {
 
 // Función auxiliar para obtener todos los usuarios en la red de un líder (discípulos y sub-discípulos)
 const getUserNetwork = async (userId) => {
-    const network = [];
-    const queue = [userId];
-    const visited = new Set();
+    const id = parseInt(userId);
+    if (isNaN(id)) return [];
 
-    while (queue.length > 0) {
-        const currentId = queue.shift();
+    // Find all users who report to this leader via ANY of the hierarchy fields
+    const directDisciples = await prisma.user.findMany({
+        where: {
+            OR: [
+                { leaderId: id },
+                { liderDoceId: id },
+                { liderCelulaId: id },
+                { pastorId: id }
+            ]
+        },
+        select: { id: true }
+    });
 
-        if (visited.has(currentId)) continue;
-        visited.add(currentId);
-        network.push(currentId);
+    let networkIds = directDisciples.map(d => d.id);
 
-        const disciples = await prisma.user.findMany({
-            where: { leaderId: currentId },
-            select: { id: true }
-        });
-
-        queue.push(...disciples.map(d => d.id));
+    // Recursively find their disciples
+    for (const disciple of directDisciples) {
+        if (disciple.id !== id) {
+            const subNetwork = await getUserNetwork(disciple.id);
+            networkIds = [...networkIds, ...subNetwork];
+        }
     }
 
-    // Filter out any undefined/null values as safety measure
-    return network.filter(id => id != null);
+    // Filter out any undefined/null values as safety measure and deduplicate
+    return [...new Set(networkIds.filter(id => id != null))];
 };
 
 // Obtener todos los invitados con filtros opcionales
@@ -86,11 +93,12 @@ const getAllGuests = async (req, res) => {
             securityFilter = {};
         } else if (user.role === 'LIDER_DOCE') {
             // LIDER_DOCE puede ver invitados invitados/asignados a cualquiera en su red
-            const networkUserIds = await getUserNetwork(user.id);
+            const userId = parseInt(user.id);
+            const networkUserIds = await getUserNetwork(userId);
             securityFilter = {
                 OR: [
-                    { invitedById: { in: networkUserIds } },
-                    { assignedToId: { in: networkUserIds } }
+                    { invitedById: { in: [...networkUserIds, userId] } },
+                    { assignedToId: { in: [...networkUserIds, userId] } }
                 ]
             };
         } else {

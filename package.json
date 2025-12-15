@@ -20,6 +20,7 @@
     "vite": "^7.2.7"
   },
   "dependencies": {
+    "@tailwindcss/postcss": "^4.1.18",
     "axios": "^1.13.2",
     "lucide-react": "^0.560.0",
     "react": "^19.2.1",

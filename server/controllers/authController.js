@@ -6,7 +6,7 @@ const prisma = new PrismaClient();
 
 const register = async (req, res) => {
     try {
-        const { email, password, fullName, role } = req.body;
+        const { email, password, fullName, role, sex, phone, address, city, liderDoceId } = req.body;
 
         const existingUser = await prisma.user.findUnique({ where: { email } });
         if (existingUser) {
@@ -15,13 +15,23 @@ const register = async (req, res) => {
 
         const hashedPassword = await bcrypt.hash(password, 10);
 
+        const userData = {
+            email,
+            password: hashedPassword,
+            fullName,
+            role: role || 'MIEMBRO',
+            sex,
+            phone,
+            address,
+            city
+        };
+
+        if (liderDoceId) {
+            userData.liderDoceId = parseInt(liderDoceId);
+        }
+
         const user = await prisma.user.create({
-            data: {
-                email,
-                password: hashedPassword,
-                fullName,
-                role: role || 'MIEMBRO',
-            },
+            data: userData,
         });
 
         const token = jwt.sign({ userId: user.id, role: user.role }, process.env.JWT_SECRET, {
@@ -60,4 +70,17 @@ const login = async (req, res) => {
     }
 };
 
-module.exports = { register, login };
+const getPublicLeaders = async (req, res) => {
+    try {
+        const leaders = await prisma.user.findMany({
+            where: { role: 'LIDER_DOCE' },
+            select: { id: true, fullName: true, role: true }
+        });
+        res.json(leaders);
+    } catch (error) {
+        console.error('Error fetching public leaders:', error);
+        res.status(500).json({ message: 'Error fetching leaders' });
+    }
+};
+
+module.exports = { register, login, getPublicLeaders };

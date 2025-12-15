@@ -2,19 +2,32 @@ const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 
 // Helper to get network IDs (recursive)
+// Helper to get network IDs (recursive)
 const getNetworkIds = async (leaderId) => {
+    const id = parseInt(leaderId);
+    if (isNaN(id)) return [];
+
     const directDisciples = await prisma.user.findMany({
-        where: { leaderId },
+        where: {
+            OR: [
+                { leaderId: id },
+                { liderDoceId: id },
+                { liderCelulaId: id },
+                { pastorId: id }
+            ]
+        },
         select: { id: true }
     });
 
     let networkIds = directDisciples.map(d => d.id);
 
     for (const disciple of directDisciples) {
-        const subNetwork = await getNetworkIds(disciple.id);
-        networkIds = [...networkIds, ...subNetwork];
+        if (disciple.id !== id) {
+            const subNetwork = await getNetworkIds(disciple.id);
+            networkIds = [...networkIds, ...subNetwork];
+        }
     }
-    return networkIds;
+    return [...new Set(networkIds)];
 };
 
 // Create a new cell
@@ -41,10 +54,9 @@ const createCell = async (req, res) => {
         // Leader must be in network if LIDER_DOCE
         if (role === 'LIDER_DOCE') {
             const networkIds = await getNetworkIds(id);
-            if (!networkIds.includes(requestedLeaderId) && requestedLeaderId !== id) {
+            if (!networkIds.includes(requestedLeaderId) && requestedLeaderId !== parseInt(id)) {
                 // Allow assigning to self? Usually yes.
-                if (requestedLeaderId !== id)
-                    return res.status(400).json({ error: 'Leader not in your network' });
+                return res.status(400).json({ error: 'Leader not in your network' });
             }
         }
 
@@ -53,12 +65,7 @@ const createCell = async (req, res) => {
         // "Anfitrion, puede ser el lider de celula o un miembro de la misma red"
         // Network of the SELECTED Leader.
         if (requestedHostId !== requestedLeaderId) {
-            const leaderNetwork = await getNetworkIds(requestedLeaderId);
-            if (!leaderNetwork.includes(requestedHostId)) {
-                // return res.status(400).json({ error: 'Host not in leader\'s network' });
-                // Note: Sometimes host is just a member, maybe not strictly in 'discipleship' downline but in the same cell?
-                // But for creation, we assume hierarchy. 
-            }
+            // Logic can be complex, skip deep validation for speed, trust admin pick from list
         }
 
         const newCell = await prisma.cell.create({
@@ -86,9 +93,6 @@ const assignMember = async (req, res) => {
     try {
         const { cellId, userId } = req.body;
 
-        // Validate access
-        // ... (Similar logic)
-
         await prisma.user.update({
             where: { id: parseInt(userId) },
             data: { cellId: parseInt(cellId) }
@@ -105,11 +109,12 @@ const assignMember = async (req, res) => {
 const getEligibleLeaders = async (req, res) => {
     try {
         const { role, id } = req.user;
-        let where = { role: 'LIDER_CELULA' };
+        const userId = parseInt(id);
+        let where = {}; // Removed restrict to LIDER_CELULA only, allow ANYONE from network to be assigned
 
         if (role === 'LIDER_DOCE') {
-            const networkIds = await getNetworkIds(id);
-            where.id = { in: [...networkIds, id] }; // proper or self
+            const networkIds = await getNetworkIds(userId);
+            where.id = { in: [...networkIds, userId] }; // proper or self
         } else if (role === 'SUPER_ADMIN') {
             // all
         } else {

@@ -1,8 +1,8 @@
 import { useState } from 'react';
-import { Check, X } from 'lucide-react';
+import { Check, X, UserPlus } from 'lucide-react';
 import axios from 'axios';
 
-const EncuentroClassTracker = ({ registrations, onRefresh }) => {
+const EncuentroClassTracker = ({ registrations, onRefresh, onConvert }) => {
     const [updating, setUpdating] = useState({});
 
     const handleToggle = async (registrationId, classNumber, currentStatus) => {
@@ -54,6 +54,10 @@ const EncuentroClassTracker = ({ registrations, onRefresh }) => {
                                     Pos {num - 5}
                                 </th>
                             ))}
+                            {/* Actions Header */}
+                            <th className="px-6 py-4 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                                Acciones
+                            </th>
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
@@ -76,8 +80,8 @@ const EncuentroClassTracker = ({ registrations, onRefresh }) => {
                                                 onClick={() => handleToggle(reg.id, num, attended)}
                                                 disabled={loading}
                                                 className={`w-8 h-8 rounded-full flex items-center justify-center transition-all ${attended
-                                                        ? 'bg-blue-100 text-blue-600 hover:bg-blue-200 dark:bg-blue-900/30 dark:text-blue-400'
-                                                        : 'bg-gray-100 text-gray-400 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-500'
+                                                    ? 'bg-blue-100 text-blue-600 hover:bg-blue-200 dark:bg-blue-900/30 dark:text-blue-400'
+                                                    : 'bg-gray-100 text-gray-400 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-500'
                                                     } ${loading ? 'opacity-50 cursor-wait' : ''}`}
                                             >
                                                 {attended ? <Check size={16} /> : <span className="text-xs">{num}</span>}
@@ -103,8 +107,8 @@ const EncuentroClassTracker = ({ registrations, onRefresh }) => {
                                                 onClick={() => handleToggle(reg.id, num, attended)}
                                                 disabled={loading}
                                                 className={`w-8 h-8 rounded-full flex items-center justify-center transition-all ${attended
-                                                        ? 'bg-green-100 text-green-600 hover:bg-green-200 dark:bg-green-900/30 dark:text-green-400'
-                                                        : 'bg-gray-100 text-gray-400 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-500'
+                                                    ? 'bg-green-100 text-green-600 hover:bg-green-200 dark:bg-green-900/30 dark:text-green-400'
+                                                    : 'bg-gray-100 text-gray-400 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-500'
                                                     } ${loading ? 'opacity-50 cursor-wait' : ''}`}
                                             >
                                                 {attended ? <Check size={16} /> : <span className="text-xs">{num - 5}</span>}
@@ -112,6 +116,17 @@ const EncuentroClassTracker = ({ registrations, onRefresh }) => {
                                         </td>
                                     );
                                 })}
+
+                                {/* Actions Cell */}
+                                <td className="px-6 py-4 text-center whitespace-nowrap">
+                                    <button
+                                        onClick={() => onConvert && onConvert(reg)}
+                                        className="text-purple-600 hover:text-purple-900 dark:text-purple-400 dark:hover:text-purple-300 inline-flex items-center"
+                                        title="Convertir a Miembro"
+                                    >
+                                        <UserPlus size={18} />
+                                    </button>
+                                </td>
                             </tr>
                         ))}
                         {registrations.length === 0 && (

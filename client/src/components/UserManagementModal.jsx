@@ -16,7 +16,14 @@ const UserManagementModal = ({ isOpen, onClose }) => {
         email: '',
         password: '',
         role: 'MIEMBRO',
+        sex: 'HOMBRE',
+        phone: '',
+        address: '',
+        city: '',
+        liderDoceId: ''
     });
+
+    const lideresDoce = users.filter(u => u.role === 'LIDER_DOCE');
 
     useEffect(() => {
         const user = JSON.parse(localStorage.getItem('user'));
@@ -58,7 +65,7 @@ const UserManagementModal = ({ isOpen, onClose }) => {
 
             setSuccess('Usuario creado exitosamente');
             setShowCreateForm(false);
-            setFormData({ fullName: '', email: '', password: '', role: 'MIEMBRO' });
+            setFormData({ fullName: '', email: '', password: '', role: 'MIEMBRO', sex: 'HOMBRE', phone: '', address: '', city: '', liderDoceId: '' });
             fetchUsers();
         } catch (err) {
             setError(err.response?.data?.message || 'Error al crear usuario');
@@ -245,6 +252,61 @@ const UserManagementModal = ({ isOpen, onClose }) => {
                                         <option value="SUPER_ADMIN">Super Admin</option>
                                     </select>
                                 </div>
+
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-300 mb-2">Sexo</label>
+                                    <select
+                                        value={formData.sex}
+                                        onChange={(e) => setFormData({ ...formData, sex: e.target.value })}
+                                        className="w-full px-4 py-2 bg-gray-600 border border-gray-500 rounded-lg text-white focus:outline-none focus:border-blue-500"
+                                    >
+                                        <option value="HOMBRE">Hombre</option>
+                                        <option value="MUJER">Mujer</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-300 mb-2">Teléfono</label>
+                                    <input
+                                        type="tel"
+                                        value={formData.phone}
+                                        onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                                        className="w-full px-4 py-2 bg-gray-600 border border-gray-500 rounded-lg text-white focus:outline-none focus:border-blue-500"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-300 mb-2">Dirección</label>
+                                    <input
+                                        type="text"
+                                        value={formData.address}
+                                        onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                                        className="w-full px-4 py-2 bg-gray-600 border border-gray-500 rounded-lg text-white focus:outline-none focus:border-blue-500"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-300 mb-2">Ciudad</label>
+                                    <input
+                                        type="text"
+                                        value={formData.city}
+                                        onChange={(e) => setFormData({ ...formData, city: e.target.value })}
+                                        className="w-full px-4 py-2 bg-gray-600 border border-gray-500 rounded-lg text-white focus:outline-none focus:border-blue-500"
+                                    />
+                                </div>
+
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-300 mb-2">Asignar a Líder 12</label>
+                                    <select
+                                        value={formData.liderDoceId}
+                                        onChange={(e) => setFormData({ ...formData, liderDoceId: e.target.value })}
+                                        className="w-full px-4 py-2 bg-gray-600 border border-gray-500 rounded-lg text-white focus:outline-none focus:border-blue-500"
+                                    >
+                                        <option value="">-- Sin Asignar --</option>
+                                        {lideresDoce.map(leader => (
+                                            <option key={leader.id} value={leader.id}>
+                                                {leader.fullName}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
                             </div>
                             <div className="flex space-x-3">
                                 <button
@@ -265,7 +327,7 @@ const UserManagementModal = ({ isOpen, onClose }) => {
                                     type="button"
                                     onClick={() => {
                                         setShowCreateForm(false);
-                                        setFormData({ fullName: '', email: '', password: '', role: 'MIEMBRO' });
+                                        setFormData({ fullName: '', email: '', password: '', role: 'MIEMBRO', sex: 'HOMBRE', phone: '', address: '', city: '', liderDoceId: '' });
                                     }}
                                     className="px-4 py-2 bg-gray-600 hover:bg-gray-500 text-white rounded-lg transition-colors"
                                 >

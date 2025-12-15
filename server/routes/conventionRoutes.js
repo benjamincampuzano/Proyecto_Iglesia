@@ -13,5 +13,6 @@ router.post('/:conventionId/register', conventionController.registerUser);
 router.post('/registrations/:registrationId/payments', conventionController.addPayment);
 router.delete('/registrations/:registrationId', conventionController.deleteRegistration);
 router.delete('/:id', conventionController.deleteConvention);
+router.get('/:id/report/balance', conventionController.getConventionBalanceReport);
 
 module.exports = router;

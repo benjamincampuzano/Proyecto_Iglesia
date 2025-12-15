@@ -75,53 +75,76 @@ const getAttendanceByDate = async (req, res) => {
     }
 };
 
-// Helper to get network ids recursively
+// Helper to get network IDs (recursive)
 const getNetworkIds = async (leaderId) => {
+    const id = parseInt(leaderId);
+    if (isNaN(id)) return [];
+
+    // Find all users who report to this leader via ANY of the hierarchy fields
     const directDisciples = await prisma.user.findMany({
-        where: { leaderId },
+        where: {
+            OR: [
+                { leaderId: id },
+                { liderDoceId: id },
+                { liderCelulaId: id },
+                { pastorId: id }
+            ]
+        },
         select: { id: true }
     });
 
     let networkIds = directDisciples.map(d => d.id);
 
+    // Recursively find their disciples
+    // Note: We use the same loose criteria recursively, which is correct because
+    // a user under Concepcion might have leaderId=Concepcion OR liderCelulaId=Concepcion.
     for (const disciple of directDisciples) {
-        const subNetwork = await getNetworkIds(disciple.id);
-        networkIds = [...networkIds, ...subNetwork];
+        // Optimization: Avoid infinite loops if circular ref exists (though valid tree shouldn't have them)
+        // We can pass a 'visited' set if needed, but for now simple recursion.
+        // To be safe, let's not recurse if the disciple ID is the same as leaderId (impossible but safe).
+        if (disciple.id !== id) {
+            const subNetwork = await getNetworkIds(disciple.id);
+            networkIds = [...networkIds, ...subNetwork];
+        }
     }
 
-    return networkIds;
+    // Deduplicate just in case
+    return [...new Set(networkIds)];
 };
 
 // Get members for attendance marking (filtered by role)
 const getAllMembers = async (req, res) => {
     try {
         const { role, id } = req.user;
+        const userId = parseInt(id);
         let where = {};
 
-        if (role === 'LIDER_DOCE' || role === 'LIDER_CELULA') {
-            const networkIds = await getNetworkIds(id);
-            // Include both the network and the leader themselves? 
-            // Usually network implies downline. Let's include networkIds.
-            // If they need to mark their own attendance, we should add `id` to the list.
-            // Based on "personas de su red", it usually implies disciples.
+        if (role === 'LIDER_DOCE') {
+            const networkIds = await getNetworkIds(userId);
+            // Include both the network and the leader themselves
             where = {
-                id: { in: networkIds }
+                id: { in: [...networkIds, userId] }
+            };
+        } else if (role === 'LIDER_CELULA') {
+            // LIDER_CELULA should see their disciples (network) AND their cell members
+            const networkIds = await getNetworkIds(userId);
+
+            // Find members of cells led by this user
+            const cellMembers = await prisma.user.findMany({
+                where: { cell: { leaderId: userId } },
+                select: { id: true }
+            });
+            const cellMemberIds = cellMembers.map(u => u.id);
+
+            // Combine unique IDs
+            const allIds = [...new Set([...networkIds, ...cellMemberIds, userId])];
+
+            where = {
+                id: { in: allIds }
             };
         } else if (role !== 'SUPER_ADMIN') {
-            // If not admin or leader 12/cell leader, return empty or limit to self?
-            // For now, if role is MIEMBRO, maybe they shouldn't see anyone?
-            // "que se pueda guardar... segun su rol". Role member probably can't mark attendance.
-            // We can return empty list or just themselves.
-            // Let's assume strict: if not leader, see nobody (or maybe just self if needed, but usually leaders mark).
-            where = { id: id }; // Restricted to self? Or restricted to nothing?
-            // Let's stick to restricting to network if leader, else standard behavior (which was 'show all' previously for others? No, it was empty/undefined in my previous edit?
-            // Original code: `else if (role !== 'SUPER_ADMIN')`. If it falls through, `where` is `{}` -> All members!
-            // That's risky.
-            // I'll make explicit: 
-            // Admin: All.
-            // Leaders: Network.
-            // Others (Member): None (or Self). I'll default to Self to be safe.
-            where = { id: id };
+            // Regular members only see themselves
+            where = { id: userId };
         }
 
         const members = await prisma.user.findMany({

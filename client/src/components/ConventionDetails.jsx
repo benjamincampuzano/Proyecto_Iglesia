@@ -1,11 +1,16 @@
-import { useState } from 'react';
-import { ArrowLeft, UserPlus, DollarSign, XCircle, Trash2 } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { ArrowLeft, UserPlus, DollarSign, XCircle, Trash2, FileText, Users } from 'lucide-react';
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
 import UserSearchSelect from './UserSearchSelect';
+import BalanceReport from './BalanceReport';
 
 const ConventionDetails = ({ convention, onBack, onRefresh }) => {
     const { user } = useAuth();
+    const [activeTab, setActiveTab] = useState('attendees'); // attendees, report
+    const [reportData, setReportData] = useState([]);
+    const [loadingReport, setLoadingReport] = useState(false);
+
     const [showRegisterModal, setShowRegisterModal] = useState(false);
     const [showPaymentModal, setShowPaymentModal] = useState(false);
     const [selectedRegistration, setSelectedRegistration] = useState(null);
@@ -23,6 +28,28 @@ const ConventionDetails = ({ convention, onBack, onRefresh }) => {
     const [paymentAmount, setPaymentAmount] = useState('');
     const [paymentNotes, setPaymentNotes] = useState('');
 
+    useEffect(() => {
+        if (activeTab === 'report') {
+            fetchReport();
+        }
+    }, [activeTab]);
+
+    const fetchReport = async () => {
+        setLoadingReport(true);
+        try {
+            const token = localStorage.getItem('token');
+            const response = await axios.get(`http://localhost:5000/api/convenciones/${convention.id}/report/balance`, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            setReportData(response.data);
+        } catch (error) {
+            console.error('Error fetching report:', error);
+            alert('Error cargando el reporte financiero');
+        } finally {
+            setLoadingReport(false);
+        }
+    };
+
     const handleRegister = async (e) => {
         e.preventDefault();
         setLoading(true);
@@ -38,6 +65,8 @@ const ConventionDetails = ({ convention, onBack, onRefresh }) => {
             setSelectedUserId(null);
             setDiscount(0);
             onRefresh();
+            // Refresh report if active
+            if (activeTab === 'report') fetchReport();
         } catch (error) {
             console.error('Error registering user:', error);
             alert('Error creating registration: ' + (error.response?.data?.error || error.message));
@@ -62,6 +91,8 @@ const ConventionDetails = ({ convention, onBack, onRefresh }) => {
             setPaymentAmount('');
             setPaymentNotes('');
             onRefresh();
+            // Refresh report if active
+            if (activeTab === 'report') fetchReport();
         } catch (error) {
             console.error('Error adding payment:', error);
             alert('Error adding payment');
@@ -81,6 +112,7 @@ const ConventionDetails = ({ convention, onBack, onRefresh }) => {
                 headers: { Authorization: `Bearer ${token}` }
             });
             onRefresh();
+            if (activeTab === 'report') fetchReport();
         } catch (error) {
             console.error('Error deleting registration:', error);
             alert('Error al eliminar el registro: ' + (error.response?.data?.error || error.message));
@@ -103,23 +135,50 @@ const ConventionDetails = ({ convention, onBack, onRefresh }) => {
 
     return (
         <div className="space-y-6">
-            <div className="flex items-center space-x-4 mb-6">
-                <button
-                    onClick={onBack}
-                    className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors"
-                >
-                    <ArrowLeft size={24} />
-                </button>
-                <div>
-                    <h2 className="text-2xl font-bold dark:text-white">
-                        {convention.type} {convention.year}
-                    </h2>
-                    <p className="text-gray-500 dark:text-gray-400">
-                        {new Date(convention.startDate).toLocaleDateString()} - {new Date(convention.endDate).toLocaleDateString()}
-                    </p>
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+                <div className="flex items-center space-x-4">
+                    <button
+                        onClick={onBack}
+                        className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors"
+                    >
+                        <ArrowLeft size={24} />
+                    </button>
+                    <div>
+                        <h2 className="text-2xl font-bold dark:text-white">
+                            {convention.type} {convention.year}
+                        </h2>
+                        <p className="text-gray-500 dark:text-gray-400">
+                            {new Date(convention.startDate).toLocaleDateString()} - {new Date(convention.endDate).toLocaleDateString()}
+                        </p>
+                    </div>
+                </div>
+
+                {/* Tabs */}
+                <div className="flex bg-gray-100 dark:bg-gray-800 p-1 rounded-lg self-start md:self-auto">
+                    <button
+                        onClick={() => setActiveTab('attendees')}
+                        className={`flex items-center px-4 py-2 rounded-md text-sm font-medium transition-all ${activeTab === 'attendees'
+                                ? 'bg-white dark:bg-gray-700 text-blue-600 dark:text-blue-400 shadow-sm'
+                                : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
+                            }`}
+                    >
+                        <Users size={16} className="mr-2" />
+                        Asistentes
+                    </button>
+                    <button
+                        onClick={() => setActiveTab('report')}
+                        className={`flex items-center px-4 py-2 rounded-md text-sm font-medium transition-all ${activeTab === 'report'
+                                ? 'bg-white dark:bg-gray-700 text-blue-600 dark:text-blue-400 shadow-sm'
+                                : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
+                            }`}
+                    >
+                        <FileText size={16} className="mr-2" />
+                        Reporte Financiero
+                    </button>
                 </div>
             </div>
 
+            {/* General Stats - Always Visible */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg border border-gray-100 dark:border-gray-700">
                     <h3 className="text-gray-500 dark:text-gray-400 text-sm font-medium">Inscritos</h3>
@@ -141,93 +200,109 @@ const ConventionDetails = ({ convention, onBack, onRefresh }) => {
                 </div>
             </div>
 
-            {/* Actions */}
-            <div className="flex justify-end">
-                <button
-                    onClick={() => setShowRegisterModal(true)}
-                    className="flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
-                >
-                    <UserPlus size={20} className="mr-2" />
-                    Registrar Asistente
-                </button>
-            </div>
+            {/* Content for Tabs */}
+            {activeTab === 'attendees' ? (
+                <>
+                    {/* Actions */}
+                    <div className="flex justify-end">
+                        <button
+                            onClick={() => setShowRegisterModal(true)}
+                            className="flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+                        >
+                            <UserPlus size={20} className="mr-2" />
+                            Registrar Asistente
+                        </button>
+                    </div>
 
-            {/* Registrations List */}
-            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg overflow-hidden border border-gray-200 dark:border-gray-700">
-                <div className="overflow-x-auto">
-                    <table className="w-full">
-                        <thead className="bg-gray-50 dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800">
-                            <tr>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Asistente</th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Costo</th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Descuento</th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Total a Pagar</th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Abonado</th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Saldo</th>
-                                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Acciones</th>
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-                            {convention.registrations?.map((reg) => (
-                                <tr key={reg.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
-                                    <td className="px-6 py-4 whitespace-nowrap">
-                                        <button
-                                            onClick={() => openHistoryModal(reg)}
-                                            className="text-left group"
-                                        >
-                                            <div className="text-sm font-medium text-gray-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors underline decoration-dotted decoration-gray-400">
-                                                {reg.user.fullName}
-                                            </div>
-                                            <div className="text-xs text-gray-500">{reg.user.email}</div>
-                                        </button>
-                                    </td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                                        {formatCurrency(convention.cost)}
-                                    </td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                                        {reg.discountPercentage}%
-                                    </td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
-                                        {formatCurrency(reg.finalCost)}
-                                    </td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-green-600 font-medium">
-                                        {formatCurrency(reg.totalPaid)}
-                                    </td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-red-500 font-medium">
-                                        {formatCurrency(reg.balance)}
-                                    </td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium flex items-center justify-end space-x-3">
-                                        <button
-                                            onClick={() => openPaymentModal(reg)}
-                                            className="text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-300 inline-flex items-center"
-                                            title="Agregar Abono"
-                                        >
-                                            <DollarSign size={16} className="mr-1" />
-                                            Abonar
-                                        </button>
-                                        {(user.role === 'SUPER_ADMIN' || user.role === 'LIDER_DOCE') && (
-                                            <button
-                                                onClick={() => handleDelete(reg.id)}
-                                                className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300 inline-flex items-center"
-                                                title="Eliminar Registro"
-                                            >
-                                                <Trash2 size={16} />
-                                            </button>
-                                        )}
-                                    </td>
-                                </tr>
-                            ))}
-                            {(!convention.registrations || convention.registrations.length === 0) && (
-                                <tr>
-                                    <td colSpan="7" className="px-6 py-12 text-center text-gray-500 dark:text-gray-400">
-                                        No hay inscritos aún.
-                                    </td>
-                                </tr>
-                            )}
-                        </tbody>
-                    </table>
+                    {/* Registrations List */}
+                    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg overflow-hidden border border-gray-200 dark:border-gray-700">
+                        <div className="overflow-x-auto">
+                            <table className="w-full">
+                                <thead className="bg-gray-50 dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800">
+                                    <tr>
+                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Asistente</th>
+                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Costo</th>
+                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Descuento</th>
+                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Total a Pagar</th>
+                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Abonado</th>
+                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Saldo</th>
+                                        <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+                                    {convention.registrations?.map((reg) => (
+                                        <tr key={reg.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
+                                            <td className="px-6 py-4 whitespace-nowrap">
+                                                <button
+                                                    onClick={() => openHistoryModal(reg)}
+                                                    className="text-left group"
+                                                >
+                                                    <div className="text-sm font-medium text-gray-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors underline decoration-dotted decoration-gray-400">
+                                                        {reg.user.fullName}
+                                                    </div>
+                                                    <div className="text-xs text-gray-500">{reg.user.email}</div>
+                                                </button>
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                                                {formatCurrency(convention.cost)}
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                                                {reg.discountPercentage}%
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
+                                                {formatCurrency(reg.finalCost)}
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-green-600 font-medium">
+                                                {formatCurrency(reg.totalPaid)}
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-red-500 font-medium">
+                                                {formatCurrency(reg.balance)}
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium flex items-center justify-end space-x-3">
+                                                <button
+                                                    onClick={() => openPaymentModal(reg)}
+                                                    className="text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-300 inline-flex items-center"
+                                                    title="Agregar Abono"
+                                                >
+                                                    <DollarSign size={16} className="mr-1" />
+                                                    Abonar
+                                                </button>
+                                                {(user.role === 'SUPER_ADMIN' || user.role === 'LIDER_DOCE') && (
+                                                    <button
+                                                        onClick={() => handleDelete(reg.id)}
+                                                        className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300 inline-flex items-center"
+                                                        title="Eliminar Registro"
+                                                    >
+                                                        <Trash2 size={16} />
+                                                    </button>
+                                                )}
+                                            </td>
+                                        </tr>
+                                    ))}
+                                    {(!convention.registrations || convention.registrations.length === 0) && (
+                                        <tr>
+                                            <td colSpan="7" className="px-6 py-12 text-center text-gray-500 dark:text-gray-400">
+                                                No hay inscritos aún.
+                                            </td>
+                                        </tr>
+                                    )}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </>
+            ) : (
+                <div className="animate-fade-in">
+                    {loadingReport ? (
+                        <div className="text-center py-10">
+                            <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600 mx-auto"></div>
+                            <p className="mt-4 text-gray-500">Cargando reporte financiero...</p>
+                        </div>
+                    ) : (
+                        <BalanceReport data={reportData} title={`Reporte_${convention.type}`} />
+                    )}
                 </div>
-            </div>
+            )}
 
             {/* Registration Modal */}
             {showRegisterModal && (

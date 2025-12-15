@@ -118,7 +118,7 @@ const Convenciones = () => {
                         Gestión de eventos anuales y registros
                     </p>
                 </div>
-                {(user.role === 'SUPER_ADMIN' || user.role === 'LIDER_DOCE') && (
+                {user.role === 'SUPER_ADMIN' && (
                     <button
                         onClick={() => setShowCreateModal(true)}
                         className="flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors shadow-lg shadow-blue-500/30"
@@ -156,7 +156,7 @@ const Convenciones = () => {
                                 </div>
 
                                 <div className="absolute top-4 right-12 z-10 opacity-0 group-hover:opacity-100 transition-opacity">
-                                    {(user.role === 'SUPER_ADMIN' || user.role === 'LIDER_DOCE') && (
+                                    {user.role === 'SUPER_ADMIN' && (
                                         <button
                                             onClick={(e) => handleDelete(e, conv.id)}
                                             className="p-2 bg-red-100 text-red-600 rounded-full hover:bg-red-200 transition-colors"

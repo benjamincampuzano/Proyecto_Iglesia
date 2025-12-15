@@ -44,14 +44,21 @@ enum EnrollmentStatus {
   ABANDONADO
 }
 
+enum Sex {
+  HOMBRE
+  MUJER
+}
+
 model User {
   id             Int      @id @default(autoincrement())
   email          String   @unique
   password       String
   fullName       String
   role           Role     @default(MIEMBRO)
+  sex            Sex?
   phone          String?
   address        String?
+  city           String?
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
   
@@ -86,6 +93,11 @@ model User {
   seminarEnrollments SeminarEnrollment[]
   classAttendances  ClassAttendance[]
   conventionRegistrations ConventionRegistration[]
+
+  // School / Discipleship Relations
+  professedModules SeminarModule[] @relation("ModuleProfessor")
+  auxiliaryModules SeminarModule[] @relation("ModuleAuxiliaries") // Many-to-Many
+  guidedEnrollments SeminarEnrollment[] @relation("AssignedAuxiliar")
 }
 
 model Guest {
@@ -158,7 +170,15 @@ model SeminarModule {
   description String?
   moduleNumber Int?               
   code        String?             @unique
-  type        String              @default("SEMINARIO") // SEMINARIO, CAPACITACION_DESTINO
+  type        String              @default("SEMINARIO") // SEMINARIO, CAPACITACION_DESTINO, ESCUELA
+  
+  // School Fields
+  startDate   DateTime?
+  endDate     DateTime?
+  professorId Int?
+  professor   User?               @relation("ModuleProfessor", fields: [professorId], references: [id])
+  auxiliaries User[]              @relation("ModuleAuxiliaries")
+
   enrollments SeminarEnrollment[]
   createdAt   DateTime            @default(now())
   updatedAt   DateTime            @updatedAt
@@ -173,6 +193,13 @@ model SeminarEnrollment {
   status          EnrollmentStatus   @default(INSCRITO)
   assignmentsDone Int                @default(0)
   finalProjectGrade Float?
+  
+  // School Fields
+  assignedAuxiliarId Int?
+  assignedAuxiliar   User?           @relation("AssignedAuxiliar", fields: [assignedAuxiliarId], references: [id])
+  projectNotes       String?
+  finalGrade         Float?
+
   classAttendances ClassAttendance[]
   createdAt       DateTime           @default(now())
   updatedAt       DateTime           @updatedAt

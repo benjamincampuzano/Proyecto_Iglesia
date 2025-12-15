@@ -9,6 +9,7 @@ router.get('/', encuentroController.getEncuentros);
 router.post('/', encuentroController.createEncuentro);
 router.delete('/:id', encuentroController.deleteEncuentro);
 router.get('/:id', encuentroController.getEncuentroById);
+router.get('/:id/report/balance', encuentroController.getEncuentroBalanceReport);
 
 router.post('/:encuentroId/register', encuentroController.registerGuest);
 router.delete('/registrations/:registrationId', encuentroController.deleteRegistration);

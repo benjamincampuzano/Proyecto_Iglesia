@@ -60,8 +60,40 @@ const getConventions = async (req, res) => {
     }
 };
 
+const getNetworkIds = async (leaderId) => {
+    const id = parseInt(leaderId);
+    if (isNaN(id)) return [];
+
+    // Find all users who report to this leader via ANY of the hierarchy fields
+    const directDisciples = await prisma.user.findMany({
+        where: {
+            OR: [
+                { leaderId: id },
+                { liderDoceId: id },
+                { liderCelulaId: id },
+                { pastorId: id }
+            ]
+        },
+        select: { id: true }
+    });
+
+    let networkIds = directDisciples.map(d => d.id);
+
+    // Recursively find their disciples
+    for (const disciple of directDisciples) {
+        if (disciple.id !== id) {
+            const subNetwork = await getNetworkIds(disciple.id);
+            networkIds = [...networkIds, ...subNetwork];
+        }
+    }
+
+    return [...new Set(networkIds)];
+};
+
 const getConventionById = async (req, res) => {
     const { id } = req.params;
+    const user = req.user;
+
     try {
         const convention = await prisma.convention.findUnique({
             where: { id: parseInt(id) },
@@ -81,8 +113,23 @@ const getConventionById = async (req, res) => {
             return res.status(404).json({ error: 'Convention not found' });
         }
 
+        // Filter registrations based on Role & Network
+        let visibleRegistrations = convention.registrations;
+
+        if (user.role === 'SUPER_ADMIN') {
+            // See all
+        } else if (user.role === 'LIDER_DOCE' || user.role === 'LIDER_CELULA') {
+            const userId = parseInt(user.id);
+            const networkIds = await getNetworkIds(userId);
+            const allowedIds = new Set([...networkIds, userId]);
+            visibleRegistrations = convention.registrations.filter(reg => allowedIds.has(reg.userId));
+        } else {
+            // Member sees only themselves
+            visibleRegistrations = convention.registrations.filter(reg => reg.userId === parseInt(user.id));
+        }
+
         // Enhance registrations with balance info
-        const registrationsWithBalance = convention.registrations.map(reg => {
+        const registrationsWithBalance = visibleRegistrations.map(reg => {
             const totalPaid = reg.payments.reduce((sum, p) => sum + p.amount, 0);
             const initialCost = convention.cost;
             const finalCost = initialCost * (1 - (reg.discountPercentage / 100));
@@ -105,6 +152,9 @@ const getConventionById = async (req, res) => {
 
 const createConvention = async (req, res) => {
     try {
+        if (req.user.role !== 'SUPER_ADMIN') {
+            return res.status(403).json({ error: 'Not authorized' });
+        }
         const { type, year, theme, cost, startDate, endDate } = req.body;
 
         const existing = await prisma.convention.findUnique({
@@ -198,8 +248,8 @@ const deleteRegistration = async (req, res) => {
     try {
         const { registrationId } = req.params;
 
-        // Check permissions (Only SUPER_ADMIN and LIDER_DOCE)
-        if (req.user.role !== 'SUPER_ADMIN' && req.user.role !== 'LIDER_DOCE') {
+        // Check permissions (Only SUPER_ADMIN)
+        if (req.user.role !== 'SUPER_ADMIN') {
             return res.status(403).json({ error: 'Not authorized to delete registrations' });
         }
 
@@ -218,8 +268,8 @@ const deleteConvention = async (req, res) => {
     try {
         const { id } = req.params;
 
-        // Check permissions (Only SUPER_ADMIN and LIDER_DOCE)
-        if (req.user.role !== 'SUPER_ADMIN' && req.user.role !== 'LIDER_DOCE') {
+        // Check permissions (Only SUPER_ADMIN)
+        if (req.user.role !== 'SUPER_ADMIN') {
             return res.status(403).json({ error: 'Not authorized to delete conventions' });
         }
 
@@ -234,6 +284,77 @@ const deleteConvention = async (req, res) => {
     }
 };
 
+const getConventionBalanceReport = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const user = req.user;
+
+        const convention = await prisma.convention.findUnique({
+            where: { id: parseInt(id) },
+            include: {
+                registrations: {
+                    include: {
+                        user: {
+                            include: {
+                                leader: { select: { fullName: true } },
+                                liderDoce: { select: { fullName: true } },
+                                liderCelula: { select: { fullName: true } },
+                                pastor: { select: { fullName: true } }
+                            }
+                        },
+                        payments: true
+                    }
+                }
+            }
+        });
+
+        if (!convention) {
+            return res.status(404).json({ error: 'Convention not found' });
+        }
+
+        // Apply Network Filter
+        let visibleRegistrations = convention.registrations;
+        if (user.role === 'SUPER_ADMIN') {
+            // All
+        } else if (user.role === 'LIDER_DOCE' || user.role === 'LIDER_CELULA') {
+            const userId = parseInt(user.id);
+            const networkIds = await getNetworkIds(userId);
+            const allowedIds = new Set([...networkIds, userId]);
+            visibleRegistrations = convention.registrations.filter(reg => allowedIds.has(reg.userId));
+        } else {
+            // Members see only themselves
+            visibleRegistrations = convention.registrations.filter(reg => reg.userId === parseInt(user.id));
+        }
+
+        // Transform Data for Report
+        const reportData = visibleRegistrations.map(reg => {
+            const totalPaid = reg.payments.reduce((sum, p) => sum + p.amount, 0);
+            const initialCost = convention.cost;
+            const finalCost = initialCost * (1 - (reg.discountPercentage / 100));
+            const balance = finalCost - totalPaid;
+
+            return {
+                id: reg.id,
+                userName: reg.user.fullName,
+                userRole: reg.user.role,
+                pastorName: reg.user.pastor?.fullName || 'N/A',
+                liderDoceName: reg.user.liderDoce?.fullName || 'N/A',
+                liderCelulaName: reg.user.liderCelula?.fullName || 'N/A',
+                leaderName: reg.user.leader?.fullName || 'N/A', // Direct discipler
+                cost: finalCost,
+                paid: totalPaid,
+                balance: balance,
+                paymentsDetails: reg.payments
+            };
+        });
+
+        res.json(reportData);
+    } catch (error) {
+        console.error('Error generating balance report:', error);
+        res.status(500).json({ error: 'Error generating report' });
+    }
+};
+
 module.exports = {
     getConventions,
     getConventionById,
@@ -241,5 +362,6 @@ module.exports = {
     registerUser,
     addPayment,
     deleteRegistration,
-    deleteConvention
+    deleteConvention,
+    getConventionBalanceReport
 };
