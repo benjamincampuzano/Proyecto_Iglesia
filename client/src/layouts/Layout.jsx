@@ -22,6 +22,7 @@ const SidebarItem = ({ to, icon: Icon, label, active }) => (
 const Layout = () => {
     const { user, logout } = useAuth();
     const location = useLocation();
+    const [isCollapsed, setIsCollapsed] = useState(false);
     const [showProfileModal, setShowProfileModal] = useState(false);
     const [showUserManagementModal, setShowUserManagementModal] = useState(false);
 
@@ -40,35 +41,49 @@ const Layout = () => {
     return (
         <div className="flex h-screen bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100">
             {/* Sidebar */}
-            <aside className="w-64 bg-white dark:bg-gray-950 border-r border-gray-200 dark:border-gray-800 flex flex-col">
-                <div className="p-6 border-b border-gray-200 dark:border-gray-800">
-                    <h1 className="text-2xl font-bold text-blue-600 dark:text-blue-500">MCI Manizales</h1>
-                    <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Bienvenido, {user.fullName}</p>
+            <aside
+                className={`${isCollapsed ? 'w-20' : 'w-64'} bg-white dark:bg-gray-950 border-r border-gray-200 dark:border-gray-800 flex flex-col transition-all duration-300 ease-in-out`}
+            >
+                <div className="p-6 border-b border-gray-200 dark:border-gray-800 flex items-center justify-between">
+                    {!isCollapsed && (
+                        <div>
+                            <h1 className="text-2xl font-bold text-blue-600 dark:text-blue-500 truncate">MCI</h1>
+                            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1 truncate">{user.fullName}</p>
+                        </div>
+                    )}
+                    <button
+                        onClick={() => setIsCollapsed(!isCollapsed)}
+                        className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500"
+                    >
+                        {isCollapsed ? <div className="font-bold text-xl">→</div> : <div className="font-bold text-xl">←</div>}
+                    </button>
                 </div>
 
                 <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
                     {navItems.map((item) => (
-                        <SidebarItem
+                        <Link
                             key={item.to}
                             to={item.to}
-                            icon={item.icon}
-                            label={item.label}
-                            active={location.pathname === item.to}
-                        />
+                            className={`flex items-center ${isCollapsed ? 'justify-center' : 'space-x-3'} px-4 py-3 rounded-lg transition-colors ${location.pathname === item.to
+                                ? 'bg-blue-600 text-white'
+                                : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white'
+                                }`}
+                            title={isCollapsed ? item.label : ''}
+                        >
+                            <item.icon size={20} />
+                            {!isCollapsed && <span className="font-medium">{item.label}</span>}
+                        </Link>
                     ))}
-
-
-                    {/* Network assignment - for SUPER_ADMIN and LIDER_DOCE */}
-
                 </nav>
 
                 <div className="p-4 border-t border-gray-200 dark:border-gray-800">
                     <button
                         onClick={logout}
-                        className="flex items-center space-x-3 px-4 py-3 w-full rounded-lg text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+                        className={`flex items-center ${isCollapsed ? 'justify-center' : 'space-x-3'} px-4 py-3 w-full rounded-lg text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors`}
+                        title={isCollapsed ? "Cerrar Sesión" : ""}
                     >
                         <LogOut size={20} />
-                        <span className="font-medium">Cerrar Sesión</span>
+                        {!isCollapsed && <span className="font-medium">Cerrar Sesión</span>}
                     </button>
                 </div>
             </aside>

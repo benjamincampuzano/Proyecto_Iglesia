@@ -16,6 +16,7 @@ async function createAdminUser() {
 
         if (existingUser) {
             console.log('❌ El usuario administrador ya existe');
+            console.log('Detalles encontrados:', existingUser);
             console.log('Email:', email);
             console.log('Puedes usar este usuario para iniciar sesión');
             return;

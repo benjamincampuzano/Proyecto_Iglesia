@@ -50,7 +50,7 @@ const CourseManagement = () => {
             });
             // Filter only potential leaders? Or all?
             // "Auxiliar: rol: LIDER_DOCE, LIDER_CELULA, MIEMBRO" -> All seem eligible.
-            setLeaders(res.data);
+            setLeaders(res.data.users || []);
         } catch (error) {
             console.error('Error fetching users', error);
         }
@@ -136,66 +136,69 @@ const CourseManagement = () => {
 
             {/* Create Modal */}
             {showCreateModal && (
-                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-                    <div className="bg-white dark:bg-gray-800 rounded-lg max-w-lg w-full p-6">
-                        <h3 className="text-xl font-bold mb-4 text-gray-900 dark:text-white">Nueva Clase</h3>
-                        <form onSubmit={handleCreate} className="space-y-4">
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 backdrop-blur-sm bg-black/40 transition-all">
+                    <div className="bg-white/90 dark:bg-gray-800/90 backdrop-filter backdrop-blur-md rounded-2xl shadow-2xl border border-white/20 max-w-lg w-full p-8 transform transition-all scale-100">
+                        <h3 className="text-2xl font-bold mb-6 text-gray-900 dark:text-white border-b border-gray-200 dark:border-gray-700 pb-2">Nueva Clase</h3>
+                        <form onSubmit={handleCreate} className="space-y-5">
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Nombre</label>
+                                <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">Nombre</label>
                                 <input
                                     type="text"
-                                    className="w-full px-3 py-2 border rounded dark:bg-gray-700 dark:text-white"
+                                    className="w-full px-4 py-2 bg-gray-50/50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all dark:text-white"
                                     value={formData.name}
                                     onChange={e => setFormData({ ...formData, name: e.target.value })}
                                     required
+                                    placeholder="Ej. Vida Discipular 1"
                                 />
                             </div>
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Descripción</label>
+                                <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">Descripción</label>
                                 <textarea
-                                    className="w-full px-3 py-2 border rounded dark:bg-gray-700 dark:text-white"
+                                    className="w-full px-4 py-2 bg-gray-50/50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all dark:text-white"
                                     value={formData.description}
                                     onChange={e => setFormData({ ...formData, description: e.target.value })}
+                                    rows="3"
+                                    placeholder="Breve descripción de la clase..."
                                 />
                             </div>
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Fecha Inicio</label>
+                                    <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">Fecha Inicio</label>
                                     <input
                                         type="date"
-                                        className="w-full px-3 py-2 border rounded dark:bg-gray-700 dark:text-white"
+                                        className="w-full px-4 py-2 bg-gray-50/50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all dark:text-white"
                                         value={formData.startDate}
                                         onChange={e => setFormData({ ...formData, startDate: e.target.value })}
                                     />
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Fecha Fin</label>
+                                    <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">Fecha Fin</label>
                                     <input
                                         type="date"
-                                        className="w-full px-3 py-2 border rounded dark:bg-gray-700 dark:text-white"
+                                        className="w-full px-4 py-2 bg-gray-50/50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all dark:text-white"
                                         value={formData.endDate}
                                         onChange={e => setFormData({ ...formData, endDate: e.target.value })}
                                     />
                                 </div>
                             </div>
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Profesor</label>
+                                <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">Profesor</label>
                                 <select
-                                    className="w-full px-3 py-2 border rounded dark:bg-gray-700 dark:text-white"
+                                    className="w-full px-4 py-2 bg-gray-50/50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all dark:text-white"
                                     value={formData.professorId}
                                     onChange={e => setFormData({ ...formData, professorId: e.target.value })}
                                 >
-                                    <option value="">Seleccionar...</option>
+                                    <option value="">Seleccionar Profesor...</option>
                                     {leaders.map(l => (
                                         <option key={l.id} value={l.id}>{l.fullName}</option>
                                     ))}
                                 </select>
                             </div>
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Auxiliares (Mantener Ctrl para múltiple)</label>
+                                <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">Auxiliares <span className="text-xs font-normal text-gray-500">(Ctrl+Click para múltiple)</span></label>
                                 <select
                                     multiple
-                                    className="w-full px-3 py-2 border rounded dark:bg-gray-700 dark:text-white h-24"
+                                    className="w-full px-4 py-2 bg-gray-50/50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all dark:text-white h-24"
                                     value={formData.auxiliarIds}
                                     onChange={e => {
                                         const options = Array.from(e.target.selectedOptions, option => option.value);
@@ -208,17 +211,17 @@ const CourseManagement = () => {
                                 </select>
                             </div>
 
-                            <div className="flex justify-end space-x-3 pt-4">
+                            <div className="flex justify-end space-x-3 pt-6 border-t border-gray-200 dark:border-gray-700 mt-2">
                                 <button
                                     type="button"
                                     onClick={() => setShowCreateModal(false)}
-                                    className="px-4 py-2 text-gray-600 hover:text-gray-800"
+                                    className="px-6 py-2.5 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 font-medium transition-colors"
                                 >
                                     Cancelar
                                 </button>
                                 <button
                                     type="submit"
-                                    className="px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700"
+                                    className="px-6 py-2.5 rounded-lg bg-gradient-to-r from-purple-600 to-blue-600 text-white font-bold hover:shadow-lg transform hover:-translate-y-0.5 transition-all"
                                 >
                                     Crear Clase
                                 </button>

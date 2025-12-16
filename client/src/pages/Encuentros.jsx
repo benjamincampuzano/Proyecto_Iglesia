@@ -176,7 +176,8 @@ const Encuentros = () => {
                     ))}
                     {encuentros.length === 0 && (
                         <div className="col-span-full text-center py-12 text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-800/50 rounded-xl border border-dashed border-gray-300 dark:border-gray-700">
-                            No hay encuentros activos.
+                            No hay encuentros activos.<br />
+                            ¡Crea un nuevo encuentro para comenzar!
                         </div>
                     )}
                 </div>

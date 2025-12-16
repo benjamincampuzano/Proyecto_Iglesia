@@ -41,7 +41,7 @@ const ClassMatrix = ({ courseId }) => {
             const res = await axios.get('http://localhost:5000/api/users', {
                 headers: { Authorization: `Bearer ${token}` }
             });
-            setPotentialStudents(res.data);
+            setPotentialStudents(res.data.users || []);
         } catch (err) {
             console.error(err);
         }
@@ -172,17 +172,19 @@ const ClassMatrix = ({ courseId }) => {
                                                 <div className="flex flex-col space-y-1">
                                                     {/* Attendance Select */}
                                                     <select
-                                                        className={`text-xs p-1 rounded border-none focus:ring-1 focus:ring-blue-500 bg-gray-50 dark:bg-gray-700 dark:text-white ${attendStatus === 'ASISTE' ? 'text-green-600 font-bold' :
-                                                                attendStatus === 'AUSENCIA_NO_JUSTIFICADA' ? 'text-red-500' : ''
+                                                        className={`text-xs p-1 rounded border-none focus:ring-1 focus:ring-blue-500 bg-gray-50 dark:bg-gray-700 dark:text-white font-bold ${attendStatus === 'ASISTE' ? 'text-green-600' :
+                                                                attendStatus === 'AUSENCIA_JUSTIFICADA' ? 'text-yellow-600' :
+                                                                    attendStatus === 'AUSENCIA_NO_JUSTIFICADA' ? 'text-red-500' :
+                                                                        attendStatus === 'BAJA' ? 'text-gray-900 dark:text-gray-300' : ''
                                                             }`}
                                                         defaultValue={attendStatus}
                                                         onChange={(e) => handleUpdate(row.id, 'attendance', classNum, e.target.value)}
                                                     >
                                                         <option value="">-</option>
-                                                        <option value="ASISTE">P</option>
-                                                        <option value="AUSENCIA_JUSTIFICADA">J</option>
-                                                        <option value="AUSENCIA_NO_JUSTIFICADA">I</option>
-                                                        <option value="BAJA">B</option>
+                                                        <option value="ASISTE">AS</option>
+                                                        <option value="AUSENCIA_JUSTIFICADA">AJ</option>
+                                                        <option value="AUSENCIA_NO_JUSTIFICADA">ASJ</option>
+                                                        <option value="BAJA">BJ</option>
                                                     </select>
 
                                                     {/* Grade Input 1-5 */}
@@ -236,28 +238,28 @@ const ClassMatrix = ({ courseId }) => {
 
             {/* Enroll Modal */}
             {showEnrollModal && (
-                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-                    <div className="bg-white dark:bg-gray-800 rounded-lg max-w-lg w-full p-6">
-                        <h3 className="text-xl font-bold mb-4 dark:text-white">Inscribir Estudiante</h3>
-                        <form onSubmit={handleEnroll} className="space-y-4">
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 backdrop-blur-sm bg-black/40 transition-all">
+                    <div className="bg-white/90 dark:bg-gray-800/90 backdrop-filter backdrop-blur-md rounded-2xl shadow-2xl border border-white/20 max-w-lg w-full p-8 transform transition-all scale-100">
+                        <h3 className="text-2xl font-bold mb-6 text-gray-900 dark:text-white border-b border-gray-200 dark:border-gray-700 pb-2">Inscribir Estudiante</h3>
+                        <form onSubmit={handleEnroll} className="space-y-5">
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Estudiante</label>
+                                <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">Estudiante</label>
                                 <select
-                                    className="w-full px-3 py-2 border rounded dark:bg-gray-700 dark:text-white"
+                                    className="w-full px-4 py-2 bg-gray-50/50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all dark:text-white"
                                     value={enrollForm.studentId}
                                     onChange={e => setEnrollForm({ ...enrollForm, studentId: e.target.value })}
                                     required
                                 >
-                                    <option value="">Seleccionar...</option>
+                                    <option value="">Seleccionar Estudiante...</option>
                                     {potentialStudents.map(s => (
                                         <option key={s.id} value={s.id}>{s.fullName}</option>
                                     ))}
                                 </select>
                             </div>
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Asignar Auxiliar</label>
+                                <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">Asignar Auxiliar</label>
                                 <select
-                                    className="w-full px-3 py-2 border rounded dark:bg-gray-700 dark:text-white"
+                                    className="w-full px-4 py-2 bg-gray-50/50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all dark:text-white"
                                     value={enrollForm.assignedAuxiliarId}
                                     onChange={e => setEnrollForm({ ...enrollForm, assignedAuxiliarId: e.target.value })}
                                 >
@@ -267,9 +269,9 @@ const ClassMatrix = ({ courseId }) => {
                                     ))}
                                 </select>
                             </div>
-                            <div className="flex justify-end space-x-3 pt-4">
-                                <button type="button" onClick={() => setShowEnrollModal(false)} className="px-4 py-2 text-gray-600">Cancelar</button>
-                                <button type="submit" className="px-4 py-2 bg-green-600 text-white rounded">Inscribir</button>
+                            <div className="flex justify-end space-x-3 pt-6 border-t border-gray-200 dark:border-gray-700 mt-2">
+                                <button type="button" onClick={() => setShowEnrollModal(false)} className="px-6 py-2.5 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 font-medium transition-colors">Cancelar</button>
+                                <button type="submit" className="px-6 py-2.5 rounded-lg bg-gradient-to-r from-green-600 to-teal-600 text-white font-bold hover:shadow-lg transform hover:-translate-y-0.5 transition-all">Inscribir</button>
                             </div>
                         </form>
                     </div>
