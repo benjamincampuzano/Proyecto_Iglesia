@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Plus, Calendar, Users, BookOpen } from 'lucide-react';
+import { Plus, Calendar, Users, Trash2, Edit } from 'lucide-react';
 import { useAuth } from "../../context/AuthContext";
 import ClassMatrix from './ClassMatrix';
 
@@ -9,6 +9,8 @@ const CourseManagement = () => {
     const [courses, setCourses] = useState([]);
     const [selectedCourseId, setSelectedCourseId] = useState(null);
     const [showCreateModal, setShowCreateModal] = useState(false);
+    const [showEditModal, setShowEditModal] = useState(false);
+    const [editingCourse, setEditingCourse] = useState(null);
 
     // Form State
     const [formData, setFormData] = useState({
@@ -17,10 +19,12 @@ const CourseManagement = () => {
         startDate: '',
         endDate: '',
         professorId: '',
-        auxiliarIds: [] // Multi-select
+        auxiliarIds: [],
+        nivel: '1',
+        seccion: 'A'
     });
 
-    const [leaders, setLeaders] = useState([]); // For selecting Prof/Aux
+    const [leaders, setLeaders] = useState([]);
 
     useEffect(() => {
         fetchCourses();
@@ -42,17 +46,28 @@ const CourseManagement = () => {
     };
 
     const fetchLeaders = async () => {
-        // Fetch users to populate dropdowns
         try {
             const token = localStorage.getItem('token');
             const res = await axios.get('http://localhost:5000/api/users', {
                 headers: { Authorization: `Bearer ${token}` }
             });
-            // Filter only potential leaders? Or all?
-            // "Auxiliar: rol: LIDER_DOCE, LIDER_CELULA, MIEMBRO" -> All seem eligible.
             setLeaders(res.data.users || []);
         } catch (error) {
             console.error('Error fetching users', error);
+        }
+    };
+
+    const handleDelete = async (e, id) => {
+        e.stopPropagation();
+        if (!window.confirm('¿Estás seguro de eliminar esta clase? Se perderán todas las inscripciones y notas.')) return;
+        try {
+            const token = localStorage.getItem('token');
+            await axios.delete(`http://localhost:5000/api/school/modules/${id}`, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            fetchCourses();
+        } catch (error) {
+            alert('Error deleting course');
         }
     };
 
@@ -60,13 +75,62 @@ const CourseManagement = () => {
         e.preventDefault();
         try {
             const token = localStorage.getItem('token');
-            await axios.post('http://localhost:5000/api/school/modules', formData, {
+            // Construct name from Nivel/Seccion if not custom
+            // e.g. "Escuela 1A"
+            const finalName = `Escuela ${formData.nivel}${formData.seccion}`;
+
+            // Map 1A -> 1, 1B -> 2 ... just simple mapping or store as is? 
+            // schoolController expects stored moduleNumber (int). 
+            // We can just send 0 or random if not strictly used as Int ID from frontend
+            // Or mapped: 1A=1, 1B=2, 2A=3, 2B=4, 3A=5, 3B=6
+            const mapping = {
+                '1A': 1, '1B': 2, '2A': 3, '2B': 4, '3A': 5, '3B': 6
+            };
+            const modId = mapping[`${formData.nivel}${formData.seccion}`] || 0;
+
+            await axios.post('http://localhost:5000/api/school/modules', {
+                ...formData,
+                name: finalName,
+                moduleId: modId
+            }, {
                 headers: { Authorization: `Bearer ${token}` }
             });
             setShowCreateModal(false);
+            setFormData({ ...formData, name: '', description: '', professorId: '', auxiliarIds: [], startDate: '', endDate: '' });
             fetchCourses();
         } catch (error) {
             alert('Error creating course');
+        }
+    };
+
+    const openEditModal = (e, course) => {
+        e.stopPropagation();
+        setEditingCourse(course);
+        setFormData({
+            name: course.name,
+            description: course.description || '',
+            startDate: course.startDate ? course.startDate.split('T')[0] : '',
+            endDate: course.endDate ? course.endDate.split('T')[0] : '',
+            professorId: course.professor?.id || '',
+            auxiliarIds: course.auxiliaries ? course.auxiliaries.map(a => a.id) : [],
+            nivel: '1',
+            seccion: 'A'
+        });
+        setShowEditModal(true);
+    };
+
+    const handleUpdate = async (e) => {
+        e.preventDefault();
+        try {
+            const token = localStorage.getItem('token');
+            await axios.put(`http://localhost:5000/api/school/modules/${editingCourse.id}`, formData, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            setShowEditModal(false);
+            setEditingCourse(null);
+            fetchCourses();
+        } catch (error) {
+            alert('Error updating course');
         }
     };
 
@@ -90,7 +154,7 @@ const CourseManagement = () => {
                 <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-100">Escuelas de Discipulado</h2>
                 {(user.role === 'SUPER_ADMIN' || user.role === 'LIDER_DOCE') && (
                     <button
-                        onClick={() => setShowCreateModal(true)}
+                        onClick={() => { setShowCreateModal(true); setFormData({ ...formData, name: '' }); }}
                         className="flex items-center px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg"
                     >
                         <Plus size={20} className="mr-2" />
@@ -104,14 +168,32 @@ const CourseManagement = () => {
                     <div
                         key={course.id}
                         onClick={() => setSelectedCourseId(course.id)}
-                        className="bg-white dark:bg-gray-800 rounded-lg shadow cursor-pointer hover:shadow-lg transition-shadow p-6 border border-gray-200 dark:border-gray-700"
+                        className="bg-white dark:bg-gray-800 rounded-lg shadow cursor-pointer hover:shadow-lg transition-shadow p-6 border border-gray-200 dark:border-gray-700 relative group"
                     >
                         <div className="flex justify-between items-start mb-4">
                             <h3 className="text-xl font-semibold text-gray-800 dark:text-white">{course.name}</h3>
-                            <span className="bg-purple-100 text-purple-800 text-xs px-2 py-1 rounded-full">
-                                {course._count?.enrollments || 0} Estudiantes
-                            </span>
+                            {(user.role === 'SUPER_ADMIN' || user.role === 'LIDER_DOCE') && (
+                                <div className="flex space-x-2">
+                                    <button
+                                        onClick={(e) => openEditModal(e, course)}
+                                        className="text-blue-500 hover:text-blue-700 p-1 rounded-full hover:bg-blue-50 transition-colors"
+                                        title="Editar"
+                                    >
+                                        <Edit size={18} />
+                                    </button>
+                                    <button
+                                        onClick={(e) => handleDelete(e, course.id)}
+                                        className="text-red-500 hover:text-red-700 p-1 rounded-full hover:bg-red-50 transition-colors"
+                                        title="Eliminar"
+                                    >
+                                        <Trash2 size={18} />
+                                    </button>
+                                </div>
+                            )}
                         </div>
+                        <span className="bg-purple-100 text-purple-800 text-xs px-2 py-1 rounded-full mb-2 inline-block">
+                            {course._count?.enrollments || 0} Estudiantes
+                        </span>
                         <p className="text-gray-500 text-sm mb-4 line-clamp-2">{course.description}</p>
 
                         <div className="space-y-2 text-sm text-gray-600 dark:text-gray-400">
@@ -128,82 +210,101 @@ const CourseManagement = () => {
                         </div>
                     </div>
                 ))}
-
-                {courses.length === 0 && (
-                    <p className="text-gray-500 col-span-full text-center py-10">No hay clases activas.</p>
-                )}
             </div>
 
-            {/* Create Modal */}
-            {showCreateModal && (
+            {/* Create/Edit Modal */}
+            {(showCreateModal || showEditModal) && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 backdrop-blur-sm bg-black/40 transition-all">
-                    <div className="bg-white/90 dark:bg-gray-800/90 backdrop-filter backdrop-blur-md rounded-2xl shadow-2xl border border-white/20 max-w-lg w-full p-8 transform transition-all scale-100">
-                        <h3 className="text-2xl font-bold mb-6 text-gray-900 dark:text-white border-b border-gray-200 dark:border-gray-700 pb-2">Nueva Clase</h3>
-                        <form onSubmit={handleCreate} className="space-y-5">
-                            <div>
-                                <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">Nombre</label>
-                                <input
-                                    type="text"
-                                    className="w-full px-4 py-2 bg-gray-50/50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all dark:text-white"
-                                    value={formData.name}
-                                    onChange={e => setFormData({ ...formData, name: e.target.value })}
-                                    required
-                                    placeholder="Ej. Familias con Propósito"
-                                />
-                            </div>
+                    <div className="bg-white/90 dark:bg-gray-800/90 backdrop-filter backdrop-blur-md rounded-2xl shadow-2xl border border-white/20 max-w-lg w-full p-8">
+                        <h3 className="text-2xl font-bold mb-6 text-gray-900 dark:text-white border-b pb-2">
+                            {showEditModal ? 'Editar Clase' : 'Nueva Clase'}
+                        </h3>
+                        <form onSubmit={showEditModal ? handleUpdate : handleCreate} className="space-y-5">
+
+                            {/* Nivel/Seccion Selection only for Create */}
+                            {!showEditModal && (
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">Nivel</label>
+                                        <select
+                                            className="w-full px-4 py-2 bg-gray-50/50 dark:bg-gray-700/50 rounded-lg dark:text-white border border-gray-200 dark:border-gray-600"
+                                            value={formData.nivel}
+                                            onChange={e => setFormData({ ...formData, nivel: e.target.value })}
+                                        >
+                                            <option value="1">1</option>
+                                            <option value="2">2</option>
+                                            <option value="3">3</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">Sección</label>
+                                        <select
+                                            className="w-full px-4 py-2 bg-gray-50/50 dark:bg-gray-700/50 rounded-lg dark:text-white border border-gray-200 dark:border-gray-600"
+                                            value={formData.seccion}
+                                            onChange={e => setFormData({ ...formData, seccion: e.target.value })}
+                                        >
+                                            <option value="A">A</option>
+                                            <option value="B">B</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Name Input - Only visible/editable when editing */}
+                            {showEditModal && (
+                                <div>
+                                    <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">Nombre</label>
+                                    <input
+                                        type="text"
+                                        className="w-full px-4 py-2 bg-gray-50/50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 rounded-lg dark:text-white"
+                                        value={formData.name}
+                                        onChange={e => setFormData({ ...formData, name: e.target.value })}
+                                    />
+                                </div>
+                            )}
+
                             <div>
                                 <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">Descripción</label>
                                 <textarea
-                                    className="w-full px-4 py-2 bg-gray-50/50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all dark:text-white"
+                                    className="w-full px-4 py-2 bg-gray-50/50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 rounded-lg dark:text-white"
                                     value={formData.description}
                                     onChange={e => setFormData({ ...formData, description: e.target.value })}
-                                    rows="3"
-                                    placeholder="Explicación breve de la clase..."
+                                    rows="2"
                                 />
                             </div>
+
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
                                     <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">Fecha Inicio</label>
-                                    <input
-                                        type="date"
-                                        className="w-full px-4 py-2 bg-gray-50/50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all dark:text-white"
-                                        value={formData.startDate}
-                                        onChange={e => setFormData({ ...formData, startDate: e.target.value })}
-                                    />
+                                    <input type="date" className="w-full px-4 py-2 rounded-lg border dark:bg-gray-700/50 dark:text-white dark:border-gray-600" value={formData.startDate} onChange={e => setFormData({ ...formData, startDate: e.target.value })} />
                                 </div>
                                 <div>
                                     <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">Fecha Fin</label>
-                                    <input
-                                        type="date"
-                                        className="w-full px-4 py-2 bg-gray-50/50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all dark:text-white"
-                                        value={formData.endDate}
-                                        onChange={e => setFormData({ ...formData, endDate: e.target.value })}
-                                    />
+                                    <input type="date" className="w-full px-4 py-2 rounded-lg border dark:bg-gray-700/50 dark:text-white dark:border-gray-600" value={formData.endDate} onChange={e => setFormData({ ...formData, endDate: e.target.value })} />
                                 </div>
                             </div>
+
                             <div>
                                 <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">Profesor</label>
                                 <select
-                                    className="w-full px-4 py-2 bg-gray-50/50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all dark:text-white"
+                                    className="w-full px-4 py-2 bg-gray-50/50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 rounded-lg dark:text-white"
                                     value={formData.professorId}
                                     onChange={e => setFormData({ ...formData, professorId: e.target.value })}
                                 >
-                                    <option value="">Seleccionar Profesor de la clase.</option>
+                                    <option value="">Seleccionar Profesor</option>
                                     {leaders.map(l => (
                                         <option key={l.id} value={l.id}>{l.fullName}</option>
                                     ))}
                                 </select>
                             </div>
+
                             <div>
-                                <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">Auxiliares <span className="text-xs font-normal text-gray-500">(Ctrl+Click para múltiple)</span></label>
+                                <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">Auxiliares (Ctrl+Click)</label>
                                 <select
                                     multiple
-                                    className="w-full px-4 py-2 bg-gray-50/50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all dark:text-white h-24"
+                                    className="w-full px-4 py-2 bg-gray-50/50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 rounded-lg dark:text-white h-24"
                                     value={formData.auxiliarIds}
-                                    onChange={e => {
-                                        const options = Array.from(e.target.selectedOptions, option => option.value);
-                                        setFormData({ ...formData, auxiliarIds: options });
-                                    }}
+                                    onChange={e => setFormData({ ...formData, auxiliarIds: Array.from(e.target.selectedOptions, o => o.value) })}
                                 >
                                     {leaders.map(l => (
                                         <option key={l.id} value={l.id}>{l.fullName}</option>
@@ -211,20 +312,9 @@ const CourseManagement = () => {
                                 </select>
                             </div>
 
-                            <div className="flex justify-end space-x-3 pt-6 border-t border-gray-200 dark:border-gray-700 mt-2">
-                                <button
-                                    type="button"
-                                    onClick={() => setShowCreateModal(false)}
-                                    className="px-6 py-2.5 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 font-medium transition-colors"
-                                >
-                                    Cancelar
-                                </button>
-                                <button
-                                    type="submit"
-                                    className="px-6 py-2.5 rounded-lg bg-gradient-to-r from-purple-600 to-blue-600 text-white font-bold hover:shadow-lg transform hover:-translate-y-0.5 transition-all"
-                                >
-                                    Crear Clase
-                                </button>
+                            <div className="flex justify-end space-x-3 pt-4 border-t border-gray-200 dark:border-gray-700">
+                                <button type="button" onClick={() => { setShowCreateModal(false); setShowEditModal(false); }} className="px-5 py-2 rounded-lg text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700">Cancelar</button>
+                                <button type="submit" className="px-5 py-2 rounded-lg bg-gradient-to-r from-purple-600 to-blue-600 text-white font-bold hover:shadow-lg">{showEditModal ? 'Guardar Cambios' : 'Crear Clase'}</button>
                             </div>
                         </form>
                     </div>

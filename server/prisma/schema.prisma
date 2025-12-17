@@ -130,6 +130,8 @@ model Guest {
   host        User?    @relation("CellHost", fields: [hostId], references: [id])
   address     String?
   city        String?
+  latitude    Float?
+  longitude   Float?
   dayOfWeek   String?
   time        String?
   members     User[]   @relation("CellMembers")
@@ -244,6 +246,7 @@ model Convention {
   cost        Float
   startDate   DateTime
   endDate     DateTime
+  liderDoceIds Int[]   @default([])
   registrations ConventionRegistration[]
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
@@ -259,6 +262,8 @@ model ConventionRegistration {
   convention         Convention         @relation(fields: [conventionId], references: [id], onDelete: Cascade)
   status             RegistrationStatus @default(REGISTERED)
   discountPercentage Float              @default(0)
+  needsTransport     Boolean            @default(false)
+  needsAccommodation Boolean            @default(false)
   payments           ConventionPayment[]
   createdAt          DateTime           @default(now())
   updatedAt          DateTime           @updatedAt
@@ -335,4 +340,3 @@ model EncuentroClassAttendance {
 
   @@unique([registrationId, classNumber])
 }
-

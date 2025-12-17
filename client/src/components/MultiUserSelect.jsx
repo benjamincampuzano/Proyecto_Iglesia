@@ -1,13 +1,13 @@
 import { useState, useEffect, useRef } from 'react';
-import { Search, ChevronDown, X } from 'lucide-react';
+import { Search, X, UserPlus } from 'lucide-react';
 import axios from 'axios';
 
-const UserSearchSelect = ({ value, onChange, label, placeholder = "Buscar usuario...", roleFilter }) => {
+const MultiUserSelect = ({ value = [], onChange, label, placeholder = "Seleccionar usuarios...", roleFilter }) => {
     const [isOpen, setIsOpen] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
     const [users, setUsers] = useState([]);
     const [loading, setLoading] = useState(false);
-    const [selectedUser, setSelectedUser] = useState(null);
+    const [selectedUsers, setSelectedUsers] = useState([]);
     const dropdownRef = useRef(null);
 
     useEffect(() => {
@@ -32,10 +32,12 @@ const UserSearchSelect = ({ value, onChange, label, placeholder = "Buscar usuari
         };
     }, [isOpen]);
 
-    // Load selected user details when value changes
+    // Load selected users details when value changes
     useEffect(() => {
-        if (value && !selectedUser) {
-            fetchUserById(value);
+        if (value && value.length > 0) {
+            fetchSelectedUsers(value);
+        } else {
+            setSelectedUsers([]);
         }
     }, [value]);
 
@@ -45,7 +47,6 @@ const UserSearchSelect = ({ value, onChange, label, placeholder = "Buscar usuari
             const token = localStorage.getItem('token');
             const params = new URLSearchParams();
 
-            // Add role filter if provided
             if (roleFilter) {
                 params.append('role', roleFilter);
             }
@@ -63,6 +64,9 @@ const UserSearchSelect = ({ value, onChange, label, placeholder = "Buscar usuari
                 );
             }
 
+            // Filter out already selected users
+            filteredUsers = filteredUsers.filter(user => !value.includes(user.id));
+
             setUsers(filteredUsers);
         } catch (error) {
             console.error('Error fetching users:', error);
@@ -71,29 +75,29 @@ const UserSearchSelect = ({ value, onChange, label, placeholder = "Buscar usuari
         }
     };
 
-    const fetchUserById = async (userId) => {
+    const fetchSelectedUsers = async (userIds) => {
         try {
             const token = localStorage.getItem('token');
-            const res = await axios.get(`http://localhost:5000/api/users/${userId}`, {
+            const res = await axios.get('http://localhost:5000/api/users', {
                 headers: { Authorization: `Bearer ${token}` },
             });
-            setSelectedUser(res.data.user);
+
+            const selected = res.data.users.filter(user => userIds.includes(user.id));
+            setSelectedUsers(selected);
         } catch (error) {
-            console.error('Error fetching user:', error);
+            console.error('Error fetching selected users:', error);
         }
     };
 
     const handleSelect = (user) => {
-        setSelectedUser(user);
-        onChange(user.id);
-        setIsOpen(false);
+        const newValue = [...value, user.id];
+        onChange(newValue);
         setSearchTerm('');
     };
 
-    const handleClear = () => {
-        setSelectedUser(null);
-        onChange(null);
-        setSearchTerm('');
+    const handleRemove = (userId) => {
+        const newValue = value.filter(id => id !== userId);
+        onChange(newValue);
     };
 
     return (
@@ -104,32 +108,36 @@ const UserSearchSelect = ({ value, onChange, label, placeholder = "Buscar usuari
                 </label>
             )}
 
+            {/* Selected Users Display */}
+            {selectedUsers.length > 0 && (
+                <div className="flex flex-wrap gap-2 mb-2">
+                    {selectedUsers.map(user => (
+                        <div
+                            key={user.id}
+                            className="flex items-center space-x-2 bg-blue-600 text-white px-3 py-1 rounded-full text-sm"
+                        >
+                            <span>{user.fullName}</span>
+                            <button
+                                onClick={() => handleRemove(user.id)}
+                                className="hover:bg-blue-700 rounded-full p-0.5"
+                            >
+                                <X size={14} />
+                            </button>
+                        </div>
+                    ))}
+                </div>
+            )}
+
+            {/* Input/Dropdown Trigger */}
             <div
                 onClick={() => setIsOpen(!isOpen)}
                 className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white cursor-pointer flex items-center justify-between hover:border-blue-500 transition-colors"
             >
-                {selectedUser ? (
-                    <div className="flex items-center justify-between w-full">
-                        <div>
-                            <p className="text-sm font-medium">{selectedUser.fullName}</p>
-                            <p className="text-xs text-gray-400">{selectedUser.email}</p>
-                        </div>
-                        <button
-                            onClick={(e) => {
-                                e.stopPropagation();
-                                handleClear();
-                            }}
-                            className="text-gray-400 hover:text-white"
-                        >
-                            <X size={18} />
-                        </button>
-                    </div>
-                ) : (
-                    <span className="text-gray-400">{placeholder}</span>
-                )}
-                <ChevronDown size={20} className={`text-gray-400 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+                <span className="text-gray-400">{placeholder}</span>
+                <UserPlus size={20} className="text-gray-400" />
             </div>
 
+            {/* Dropdown */}
             {isOpen && (
                 <div className="absolute z-50 w-full mt-2 bg-gray-800 border border-gray-700 rounded-lg shadow-lg max-h-64 overflow-hidden flex flex-col">
                     <div className="p-2 border-b border-gray-700">
@@ -171,4 +179,4 @@ const UserSearchSelect = ({ value, onChange, label, placeholder = "Buscar usuari
     );
 };
 
-export default UserSearchSelect;
+export default MultiUserSelect;

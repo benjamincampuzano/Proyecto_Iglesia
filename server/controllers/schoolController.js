@@ -85,19 +85,66 @@ const getModules = async (req, res) => {
     }
 };
 
+const updateModule = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { name, description, moduleId, professorId, startDate, endDate, auxiliarIds } = req.body;
+
+        if (req.user.role !== 'SUPER_ADMIN' && req.user.role !== 'LIDER_DOCE') {
+            return res.status(403).json({ error: 'Not authorized to update classes' });
+        }
+
+        const updateData = {
+            ...(name && { name }),
+            ...(description && { description }),
+            ...(moduleId !== undefined && { moduleNumber: parseInt(moduleId) }),
+            ...(professorId && { professorId: parseInt(professorId) }),
+            ...(startDate && { startDate: new Date(startDate) }),
+            ...(endDate && { endDate: new Date(endDate) }),
+        };
+
+        if (auxiliarIds && Array.isArray(auxiliarIds)) {
+            updateData.auxiliaries = {
+                set: [], // Disconnect all prev
+                connect: auxiliarIds.map(id => ({ id: parseInt(id) }))
+            };
+        }
+
+        const updatedModule = await prisma.seminarModule.update({
+            where: { id: parseInt(id) },
+            data: updateData
+        });
+
+        res.json(updatedModule);
+    } catch (error) {
+        console.error('Error updating module:', error);
+        res.status(500).json({ error: 'Error updating module' });
+    }
+};
+
+const deleteModule = async (req, res) => {
+    try {
+        const { id } = req.params;
+        if (req.user.role !== 'SUPER_ADMIN' && req.user.role !== 'LIDER_DOCE') {
+            return res.status(403).json({ error: 'Not authorized to delete classes' });
+        }
+
+        await prisma.seminarModule.delete({
+            where: { id: parseInt(id) }
+        });
+
+        res.json({ message: 'Module deleted' });
+    } catch (error) {
+        console.error('Error deleting module:', error);
+        res.status(500).json({ error: 'Error deleting module' });
+    }
+};
+
 // --- Student Enrollment ---
 
 const enrollStudent = async (req, res) => {
     try {
-        // Only Professor or Admin can enroll students usually, or maybe open enrollment?
-        // Requirement says "Auxiliar: Solo registro de Asistencia, notas... del grupo asignado"
-        // Implies someone assigns them. Let's allow Admin/Professor/Auxiliar to enroll?
-        // For now, restriction: SUPER_ADMIN, LIDER_DOCE (Professor)
-
         const { moduleId, studentId, assignedAuxiliarId } = req.body;
-
-        // Check permissions... assuming loose for now or strict?
-        // Let's allow if user has access to the module.
 
         const enrollment = await prisma.seminarEnrollment.create({
             data: {
@@ -115,6 +162,30 @@ const enrollStudent = async (req, res) => {
             return res.status(400).json({ error: 'Student already enrolled' });
         }
         res.status(500).json({ error: 'Error enrolling student' });
+    }
+};
+
+const unenrollStudent = async (req, res) => {
+    try {
+        const { enrollmentId } = req.params;
+
+        if (req.user.role !== 'SUPER_ADMIN' && req.user.role !== 'LIDER_DOCE') {
+            return res.status(403).json({ error: 'Not authorized to remove students' });
+        }
+
+        // Manual Cascade Delete due to missing schema cascade
+        await prisma.classAttendance.deleteMany({
+            where: { enrollmentId: parseInt(enrollmentId) }
+        });
+
+        await prisma.seminarEnrollment.delete({
+            where: { id: parseInt(enrollmentId) }
+        });
+
+        res.json({ message: 'Student unenrolled' });
+    } catch (error) {
+        console.error('Error unenrolling student:', error);
+        res.status(500).json({ error: 'Error unenrolling student' });
     }
 };
 
@@ -139,7 +210,6 @@ const getModuleMatrix = async (req, res) => {
 
         // Access Control
         const isProfessor = moduleData.professorId === user.id || user.role === 'SUPER_ADMIN';
-        // Check if user is an aux for this module
         const isAuxiliar = moduleData.auxiliaries.some(a => a.id === user.id);
 
         // Determine which enrollments to show
@@ -148,13 +218,8 @@ const getModuleMatrix = async (req, res) => {
         if (isProfessor) {
             // See all
         } else if (isAuxiliar) {
-            // See ONLY assigned students ?? Or all but edit only assigned?
-            // User request: "Auxiliar... Solo registro de Asistencia, notas y proyectos del grupo asignado"
-            // It says "Solo registro", implies they MIGHT see others? But usually "del grupo asignado" implies visibility scope too.
-            // Let's restrict visibility to Assigned Group for simplicity and privacy.
             enrollmentsQuery.assignedAuxiliarId = user.id;
         } else {
-            // Student: See ONLY themselves
             enrollmentsQuery.userId = user.id;
         }
 
@@ -179,12 +244,10 @@ const getModuleMatrix = async (req, res) => {
         });
 
         // Format for Matrix
-        // We need 10 columns.
         const matrix = enrollments.map(enrollment => {
             const attendances = {};
             const grades = {};
 
-            // Fill existing data
             enrollment.classAttendances.forEach(rec => {
                 attendances[rec.classNumber] = rec.status;
                 grades[rec.classNumber] = rec.grade;
@@ -196,9 +259,8 @@ const getModuleMatrix = async (req, res) => {
                 studentName: enrollment.user.fullName,
                 auxiliarId: enrollment.assignedAuxiliarId,
                 auxiliarName: enrollment.assignedAuxiliar?.fullName || 'Sin Asignar',
-                // Data for 10 sessions
-                attendances, // { 1: 'ASISTE', 2: 'AUSENTE'... }
-                grades,      // { 1: 5.0, 2: 4.5 ... }
+                attendances,
+                grades,
                 projectNotes: enrollment.projectNotes,
                 finalGrade: enrollment.finalGrade
             };
@@ -223,12 +285,9 @@ const getModuleMatrix = async (req, res) => {
 const updateMatrixCell = async (req, res) => {
     try {
         const { enrollmentId, type, key, value } = req.body;
-        // type: 'attendance', 'grade', 'project', 'final'
-        // key: classNumber (1-10) for attendance/grade
-
         const user = req.user;
 
-        // Fetch enrollment to check permissions
+        // Fetch enrollment
         const enrollment = await prisma.seminarEnrollment.findUnique({
             where: { id: parseInt(enrollmentId) },
             include: { module: { include: { auxiliaries: true } } }
@@ -247,23 +306,35 @@ const updateMatrixCell = async (req, res) => {
         // Update Logic
         if (type === 'attendance') {
             const classNumber = parseInt(key);
-            await prisma.classAttendance.upsert({
-                where: {
-                    enrollmentId_classNumber: {
+            if (!value) {
+                // If empty value, delete the record (reset) to allow empty state in UI
+                await prisma.classAttendance.deleteMany({
+                    where: {
                         enrollmentId: enrollment.id,
-                        classNumber
+                        classNumber: classNumber
                     }
-                },
-                create: {
-                    enrollmentId: enrollment.id,
-                    userId: enrollment.userId,
-                    classNumber,
-                    status: value // Enum
-                },
-                update: { status: value }
-            });
+                });
+            } else {
+                await prisma.classAttendance.upsert({
+                    where: {
+                        enrollmentId_classNumber: {
+                            enrollmentId: enrollment.id,
+                            classNumber
+                        }
+                    },
+                    create: {
+                        enrollmentId: enrollment.id,
+                        userId: enrollment.userId,
+                        classNumber,
+                        status: value
+                    },
+                    update: { status: value }
+                });
+            }
         } else if (type === 'grade') {
             const classNumber = parseInt(key);
+            const numValue = value === '' ? null : parseFloat(value);
+
             await prisma.classAttendance.upsert({
                 where: {
                     enrollmentId_classNumber: {
@@ -275,9 +346,10 @@ const updateMatrixCell = async (req, res) => {
                     enrollmentId: enrollment.id,
                     userId: enrollment.userId,
                     classNumber,
-                    grade: parseFloat(value)
+                    status: 'ASISTE', // Default if only grading
+                    grade: numValue
                 },
-                update: { grade: parseFloat(value) }
+                update: { grade: numValue }
             });
         } else if (type === 'projectNotes') {
             await prisma.seminarEnrollment.update({
@@ -285,9 +357,10 @@ const updateMatrixCell = async (req, res) => {
                 data: { projectNotes: value }
             });
         } else if (type === 'finalGrade') {
+            const numValue = value === '' ? null : parseFloat(value);
             await prisma.seminarEnrollment.update({
                 where: { id: enrollment.id },
-                data: { finalGrade: parseFloat(value) }
+                data: { finalGrade: numValue }
             });
         }
 
@@ -295,7 +368,74 @@ const updateMatrixCell = async (req, res) => {
 
     } catch (error) {
         console.error('Error updating matrix:', error);
-        res.status(500).json({ error: 'Update failed' });
+        res.status(500).json({ error: 'Update failed: ' + error.message });
+    }
+};
+
+const getSchoolStatsByLeader = async (req, res) => {
+    try {
+        const enrollments = await prisma.seminarEnrollment.findMany({
+            where: {
+                module: { type: 'ESCUELA' }
+            },
+            include: {
+                user: {
+                    include: { liderDoce: true, leader: true }
+                },
+                classAttendances: true
+            }
+        });
+
+        const statsByLeader = {};
+
+        const getLiderName = (user) => {
+            if (!user) return 'Sin Asignar';
+            const leader = user.liderDoce || user.leader;
+            return leader ? leader.fullName : 'Sin Asignar';
+        };
+
+        enrollments.forEach(enrol => {
+            const leaderName = getLiderName(enrol.user);
+
+            if (!statsByLeader[leaderName]) {
+                statsByLeader[leaderName] = {
+                    leaderName,
+                    totalStudents: 0,
+                    totalGradeSum: 0,
+                    gradeCount: 0,
+                    totalAttendancePctSum: 0,
+                    passedCount: 0
+                };
+            }
+
+            const stats = statsByLeader[leaderName];
+            stats.totalStudents++;
+
+            if (enrol.finalGrade) {
+                stats.totalGradeSum += enrol.finalGrade;
+                stats.gradeCount++;
+                if (enrol.finalGrade >= 3.0) stats.passedCount++;
+            }
+
+            const expectedClasses = 10;
+            const attended = enrol.classAttendances.filter(c => c.status === 'ASISTE').length;
+            const pct = (attended / expectedClasses) * 100;
+            stats.totalAttendancePctSum += pct;
+        });
+
+        const report = Object.values(statsByLeader).map(s => ({
+            leaderName: s.leaderName,
+            students: s.totalStudents,
+            avgGrade: s.gradeCount > 0 ? (s.totalGradeSum / s.gradeCount).toFixed(1) : 0,
+            avgAttendance: s.totalStudents > 0 ? (s.totalAttendancePctSum / s.totalStudents).toFixed(1) : 0,
+            passed: s.passedCount
+        }));
+
+        res.json(report);
+
+    } catch (error) {
+        console.error('Error fetching school stats:', error);
+        res.status(500).json({ error: 'Error fetching stats' });
     }
 };
 
@@ -304,5 +444,9 @@ module.exports = {
     getModules,
     enrollStudent,
     getModuleMatrix,
-    updateMatrixCell
+    updateMatrixCell,
+    deleteModule,
+    updateModule,
+    unenrollStudent,
+    getSchoolStatsByLeader
 };

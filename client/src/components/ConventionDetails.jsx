@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react';
-import { ArrowLeft, UserPlus, DollarSign, XCircle, Trash2, FileText, Users } from 'lucide-react';
+import { ArrowLeft, UserPlus, DollarSign, XCircle, Trash2, FileText, Users, Edit2, Download } from 'lucide-react';
 import axios from 'axios';
+import * as XLSX from 'xlsx';
 import { useAuth } from '../context/AuthContext';
 import UserSearchSelect from './UserSearchSelect';
+import MultiUserSelect from './MultiUserSelect';
 import BalanceReport from './BalanceReport';
 
 const ConventionDetails = ({ convention, onBack, onRefresh }) => {
@@ -20,9 +22,23 @@ const ConventionDetails = ({ convention, onBack, onRefresh }) => {
     const [showHistoryModal, setShowHistoryModal] = useState(false);
     const [selectedHistoryRegistration, setSelectedHistoryRegistration] = useState(null);
 
+    // Edit Modal State
+    const [showEditModal, setShowEditModal] = useState(false);
+    const [editData, setEditData] = useState({
+        type: '',
+        year: '',
+        theme: '',
+        cost: '',
+        startDate: '',
+        endDate: '',
+        liderDoceIds: []
+    });
+
     // Registration Form State
     const [selectedUserId, setSelectedUserId] = useState(null);
     const [discount, setDiscount] = useState(0);
+    const [needsTransport, setNeedsTransport] = useState(false);
+    const [needsAccommodation, setNeedsAccommodation] = useState(false);
 
     // Payment Form State
     const [paymentAmount, setPaymentAmount] = useState('');
@@ -57,13 +73,17 @@ const ConventionDetails = ({ convention, onBack, onRefresh }) => {
             const token = localStorage.getItem('token');
             await axios.post(`http://localhost:5000/api/convenciones/${convention.id}/register`, {
                 userId: selectedUserId,
-                discountPercentage: parseFloat(discount)
+                discountPercentage: parseFloat(discount),
+                needsTransport,
+                needsAccommodation
             }, {
                 headers: { Authorization: `Bearer ${token}` }
             });
             setShowRegisterModal(false);
             setSelectedUserId(null);
             setDiscount(0);
+            setNeedsTransport(false);
+            setNeedsAccommodation(false);
             onRefresh();
             // Refresh report if active
             if (activeTab === 'report') fetchReport();
@@ -73,6 +93,76 @@ const ConventionDetails = ({ convention, onBack, onRefresh }) => {
         } finally {
             setLoading(false);
         }
+    };
+
+    const openEditModal = () => {
+        setEditData({
+            type: convention.type,
+            year: convention.year,
+            theme: convention.theme || '',
+            cost: convention.cost,
+            startDate: new Date(convention.startDate).toISOString().split('T')[0],
+            endDate: new Date(convention.endDate).toISOString().split('T')[0],
+            liderDoceIds: convention.liderDoceIds || []
+        });
+        setShowEditModal(true);
+    };
+
+    const handleUpdateConvention = async (e) => {
+        e.preventDefault();
+        setLoading(true);
+        try {
+            const token = localStorage.getItem('token');
+            await axios.put(`http://localhost:5000/api/convenciones/${convention.id}`, editData, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            setShowEditModal(false);
+            alert('Convención actualizada exitosamente!');
+            onRefresh();
+        } catch (error) {
+            console.error('Error updating convention:', error);
+            alert('Error al actualizar: ' + (error.response?.data?.error || 'Error desconocido'));
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleExportToExcel = () => {
+        if (!convention.registrations || convention.registrations.length === 0) {
+            alert('No hay registros para exportar');
+            return;
+        }
+
+        // Create workbook
+        const wb = XLSX.utils.book_new();
+
+        // Prepare data
+        const exportData = convention.registrations.map((reg, index) => ({
+            '#': index + 1,
+            'Nombre': reg.user.fullName,
+            'Email': reg.user.email,
+            'Rol': reg.user.role,
+            'Costo Base': convention.cost,
+            'Descuento %': reg.discountPercentage,
+            'Total a Pagar': reg.finalCost,
+            'Abonado': reg.totalPaid,
+            'Saldo': reg.balance,
+            'Transporte': reg.needsTransport ? 'Sí' : 'No',
+            'Alojamiento': reg.needsAccommodation ? 'Sí' : 'No',
+            'Estado': reg.status
+        }));
+
+        // Create worksheet
+        const ws = XLSX.utils.json_to_sheet(exportData);
+
+        // Add worksheet to workbook
+        XLSX.utils.book_append_sheet(wb, ws, 'Registros');
+
+        // Generate filename
+        const fileName = `${convention.type}_${convention.year}_registros.xlsx`;
+
+        // Save file
+        XLSX.writeFile(wb, fileName);
     };
 
     const handlePayment = async (e) => {
@@ -158,8 +248,8 @@ const ConventionDetails = ({ convention, onBack, onRefresh }) => {
                     <button
                         onClick={() => setActiveTab('attendees')}
                         className={`flex items-center px-4 py-2 rounded-md text-sm font-medium transition-all ${activeTab === 'attendees'
-                                ? 'bg-white dark:bg-gray-700 text-blue-600 dark:text-blue-400 shadow-sm'
-                                : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
+                            ? 'bg-white dark:bg-gray-700 text-blue-600 dark:text-blue-400 shadow-sm'
+                            : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
                             }`}
                     >
                         <Users size={16} className="mr-2" />
@@ -168,8 +258,8 @@ const ConventionDetails = ({ convention, onBack, onRefresh }) => {
                     <button
                         onClick={() => setActiveTab('report')}
                         className={`flex items-center px-4 py-2 rounded-md text-sm font-medium transition-all ${activeTab === 'report'
-                                ? 'bg-white dark:bg-gray-700 text-blue-600 dark:text-blue-400 shadow-sm'
-                                : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
+                            ? 'bg-white dark:bg-gray-700 text-blue-600 dark:text-blue-400 shadow-sm'
+                            : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
                             }`}
                     >
                         <FileText size={16} className="mr-2" />

@@ -28,10 +28,31 @@ const getAllModules = async (req, res) => {
     }
 };
 
+// Get single module details (with staff) - NEW
+const getModuleDetails = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const moduleData = await prisma.seminarModule.findUnique({
+            where: { id: parseInt(id) },
+            include: {
+                professor: true,
+                auxiliaries: true
+            }
+        });
+
+        if (!moduleData) return res.status(404).json({ error: 'Module not found' });
+
+        res.json(moduleData);
+    } catch (error) {
+        console.error('Error fetching module details:', error);
+        res.status(500).json({ error: 'Error fetching module details' });
+    }
+};
+
 // Create a new module
 const createModule = async (req, res) => {
     try {
-        const { name, description, moduleNumber, code, type } = req.body;
+        const { name, description, moduleNumber, code, type, professorId, auxiliaryIds } = req.body;
 
         if (!name) {
             return res.status(400).json({ error: 'Name is required' });
@@ -41,7 +62,12 @@ const createModule = async (req, res) => {
             name,
             description,
             type: type || 'SEMINARIO',
-            code
+            code,
+            professorId: professorId ? parseInt(professorId) : null,
+            // Handle multiple auxiliaries connection
+            auxiliaries: auxiliaryIds && Array.isArray(auxiliaryIds) ? {
+                connect: auxiliaryIds.map(id => ({ id: parseInt(id) }))
+            } : undefined
         };
 
         if (moduleNumber !== undefined && moduleNumber !== null && moduleNumber !== '') {
@@ -70,7 +96,7 @@ const createModule = async (req, res) => {
 const updateModule = async (req, res) => {
     try {
         const { id } = req.params;
-        const { name, description, moduleNumber, code, type } = req.body;
+        const { name, description, moduleNumber, code, type, professorId, auxiliaryIds } = req.body;
 
         // Check if module exists
         const existingModule = await prisma.seminarModule.findUnique({
@@ -86,8 +112,17 @@ const updateModule = async (req, res) => {
             ...(description && { description }),
             ...(code && { code }),
             ...(type && { type }),
-            ...(moduleNumber !== undefined && { moduleNumber: parseInt(moduleNumber) })
+            ...(moduleNumber !== undefined && { moduleNumber: parseInt(moduleNumber) }),
+            professorId: professorId ? parseInt(professorId) : undefined
         };
+
+        // Handle Auxiliaries Update (Disconnect all existing, connect new)
+        if (auxiliaryIds && Array.isArray(auxiliaryIds)) {
+            updateData.auxiliaries = {
+                set: [], // Clear existing relations
+                connect: auxiliaryIds.map(aid => ({ id: parseInt(aid) }))
+            };
+        }
 
         const module = await prisma.seminarModule.update({
             where: { id: parseInt(id) },
@@ -127,12 +162,16 @@ const updateProgress = async (req, res) => {
     }
 };
 
-// ... existing deleteModule, enrollStudent, getModuleEnrollments ...
-
 // Delete a module
 const deleteModule = async (req, res) => {
     try {
         const { id } = req.params;
+        const user = req.user;
+
+        // Strict Role Check - NEW
+        if (user.role !== 'SUPER_ADMIN' && user.role !== 'LIDER_DOCE') {
+            return res.status(403).json({ error: 'No tienes permiso para eliminar módulos.' });
+        }
 
         await prisma.seminarModule.delete({
             where: { id: parseInt(id) }
@@ -142,6 +181,28 @@ const deleteModule = async (req, res) => {
     } catch (error) {
         console.error('Error deleting module:', error);
         res.status(500).json({ error: 'Error deleting module' });
+    }
+};
+
+// Delete an enrollment (Unenroll student) - NEW
+const deleteEnrollment = async (req, res) => {
+    try {
+        const { id } = req.params; // Enrollment ID
+        const user = req.user;
+
+        // Role Check: Only Admin or Lider Doce
+        if (user.role !== 'SUPER_ADMIN' && user.role !== 'LIDER_DOCE') {
+            return res.status(403).json({ error: 'No tienes permiso para eliminar inscripciones.' });
+        }
+
+        await prisma.seminarEnrollment.delete({
+            where: { id: parseInt(id) }
+        });
+
+        res.json({ message: 'Inscripción eliminada correctamente.' });
+    } catch (error) {
+        console.error('Error deleting enrollment:', error);
+        res.status(500).json({ error: 'Error eliminando inscripción.' });
     }
 };
 
@@ -290,9 +351,11 @@ const getModuleEnrollments = async (req, res) => {
 
 module.exports = {
     getAllModules,
+    getModuleDetails,
     createModule,
     updateModule,
     deleteModule,
+    deleteEnrollment,
     enrollStudent,
     getModuleEnrollments,
     updateProgress

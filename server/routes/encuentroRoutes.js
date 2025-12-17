@@ -1,23 +1,35 @@
 const express = require('express');
 const router = express.Router();
 const { authenticate } = require('../middleware/auth');
-const encuentroController = require('../controllers/encuentroController');
+const {
+    getEncuentros,
+    getEncuentroById,
+    createEncuentro,
+    updateEncuentro,
+    deleteEncuentro,
+    registerGuest,
+    deleteRegistration,
+    addPayment,
+    updateClassAttendance,
+    getEncuentroBalanceReport
+} = require('../controllers/encuentroController');
 
 router.use(authenticate);
 
-router.get('/', encuentroController.getEncuentros);
-router.post('/', encuentroController.createEncuentro);
-router.delete('/:id', encuentroController.deleteEncuentro);
-router.get('/:id', encuentroController.getEncuentroById);
-router.get('/:id/report/balance', encuentroController.getEncuentroBalanceReport);
+router.get('/', getEncuentros);
+router.post('/', createEncuentro);
+router.get('/:id', getEncuentroById);
+router.put('/:id', updateEncuentro);
+router.delete('/:id', deleteEncuentro);
+router.get('/:id/report/balance', getEncuentroBalanceReport);
 
-router.post('/:encuentroId/register', encuentroController.registerGuest);
-router.delete('/registrations/:registrationId', encuentroController.deleteRegistration);
+router.post('/:encuentroId/register', registerGuest);
+router.delete('/registrations/:registrationId', deleteRegistration);
 
-router.post('/registrations/:registrationId/payments', encuentroController.addPayment);
+router.post('/registrations/:registrationId/payments', addPayment);
 
 // Class Attendance
 // classNumber should be 1-10
-router.put('/registrations/:registrationId/classes/:classNumber', encuentroController.updateClassAttendance);
+router.put('/registrations/:registrationId/classes/:classNumber', updateClassAttendance);
 
 module.exports = router;

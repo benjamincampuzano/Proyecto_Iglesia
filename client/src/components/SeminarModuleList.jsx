@@ -1,15 +1,21 @@
 import { useState, useEffect } from 'react';
 import { Plus, Edit2, Trash2, BookOpen } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
 
 const SeminarModuleList = () => {
+    const { user } = useAuth();
     const [modules, setModules] = useState([]);
     const [showForm, setShowForm] = useState(false);
     const [editingModule, setEditingModule] = useState(null);
     const [formData, setFormData] = useState({
         name: '',
         description: '',
-        moduleNumber: ''
+        moduleType: '1',
+        moduleLevel: 'A'
     });
+
+    // Helper to format full module code
+    const formatModuleCode = (type, level) => `${type}${level}`;
 
     useEffect(() => {
         fetchModules();
@@ -22,6 +28,7 @@ const SeminarModuleList = () => {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             const data = await response.json();
+            // Sort modules meaningfully if needed, though backend does it by number
             setModules(data);
         } catch (error) {
             console.error('Error fetching modules:', error);
@@ -30,6 +37,23 @@ const SeminarModuleList = () => {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+
+        // Construct standard name if empty or manually typed? 
+        // User asked for selection "1A, 1B...". 
+        // We will save this as the module "name" or "number" depending on schema.
+        // Existing schema uses `moduleNumber` (int) and `name` (string).
+        // Let's use `name` for "1A", "1B" etc. and maybe `moduleNumber` just for ordering if needed.
+        // Actually, let's map 1A->1, 1B->2, 2A->3 etc for sort order? Or just trust the string.
+
+        const finalName = editingModule ? formData.name : `Módulo ${formData.moduleType}${formData.moduleLevel}`;
+
+        const payload = {
+            name: finalName,
+            description: formData.description,
+            // We might want to save the code too if needed
+            code: `${formData.moduleType}${formData.moduleLevel}`
+        };
+
         try {
             const token = localStorage.getItem('token');
             const url = editingModule
@@ -42,27 +66,19 @@ const SeminarModuleList = () => {
                     'Content-Type': 'application/json',
                     'Authorization': `Bearer ${token}`
                 },
-                body: JSON.stringify(formData)
+                body: JSON.stringify(payload)
             });
 
-            let data;
-            const contentType = response.headers.get("content-type");
-            if (contentType && contentType.indexOf("application/json") !== -1) {
-                data = await response.json();
-            } else {
-                // If not JSON, probably an HTML error page or empty
-                const text = await response.text();
-                throw new Error(text || `Error ${response.status}: ${response.statusText}`);
-            }
+            const data = await response.json();
 
             if (response.ok) {
                 alert(editingModule ? 'Módulo actualizado exitosamente' : 'Módulo creado exitosamente');
-                await fetchModules(); // Wait for modules to refresh
+                await fetchModules();
                 setShowForm(false);
                 setEditingModule(null);
-                setFormData({ name: '', description: '', moduleNumber: '' });
+                setFormData({ name: '', description: '', moduleType: '1', moduleLevel: 'A' });
             } else {
-                throw new Error(data.error || data.message || 'No se pudo guardar el módulo');
+                throw new Error(data.error || 'No se pudo guardar el módulo');
             }
         } catch (error) {
             console.error('Error saving module:', error);
@@ -75,7 +91,8 @@ const SeminarModuleList = () => {
         setFormData({
             name: module.name,
             description: module.description || '',
-            moduleNumber: module.moduleNumber
+            moduleType: '1', // Defaults as we can't easily parse back without specific logic
+            moduleLevel: 'A'
         });
         setShowForm(true);
     };
@@ -103,6 +120,8 @@ const SeminarModuleList = () => {
         }
     };
 
+    const canDelete = user && (user.role === 'SUPER_ADMIN' || user.role === 'LIDER_DOCE');
+
     return (
         <div className="space-y-6">
             <div className="flex justify-between items-center">
@@ -111,7 +130,7 @@ const SeminarModuleList = () => {
                     onClick={() => {
                         setShowForm(!showForm);
                         setEditingModule(null);
-                        setFormData({ name: '', description: '', moduleNumber: '' });
+                        setFormData({ name: '', description: '', moduleType: '1', moduleLevel: 'A' });
                     }}
                     className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
                 >
@@ -126,32 +145,50 @@ const SeminarModuleList = () => {
                         {editingModule ? 'Editar Módulo' : 'Nuevo Módulo'}
                     </h4>
                     <form onSubmit={handleSubmit} className="space-y-4">
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                                Número de Módulo
-                            </label>
-                            <input
-                                type="number"
-                                value={formData.moduleNumber}
-                                onChange={(e) => setFormData({ ...formData, moduleNumber: e.target.value })}
-                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
-                                required
-                                min="1"
-                                max="6"
-                            />
-                        </div>
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                                Nombre del Módulo
-                            </label>
-                            <input
-                                type="text"
-                                value={formData.name}
-                                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
-                                required
-                            />
-                        </div>
+
+                        {!editingModule && (
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Nivel</label>
+                                    <select
+                                        value={formData.moduleType}
+                                        onChange={(e) => setFormData({ ...formData, moduleType: e.target.value })}
+                                        className="w-full px-4 py-2 border rounded-lg"
+                                    >
+                                        <option value="1">Nivel 1</option>
+                                        <option value="2">Nivel 2</option>
+                                        <option value="3">Nivel 3</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Sección</label>
+                                    <select
+                                        value={formData.moduleLevel}
+                                        onChange={(e) => setFormData({ ...formData, moduleLevel: e.target.value })}
+                                        className="w-full px-4 py-2 border rounded-lg"
+                                    >
+                                        <option value="A">A</option>
+                                        <option value="B">B</option>
+                                    </select>
+                                </div>
+                            </div>
+                        )}
+
+                        {editingModule && (
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                    Nombre del Módulo
+                                </label>
+                                <input
+                                    type="text"
+                                    value={formData.name}
+                                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+                                    required
+                                />
+                            </div>
+                        )}
+
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">
                                 Descripción
@@ -192,7 +229,7 @@ const SeminarModuleList = () => {
                             <div className="flex items-center gap-2">
                                 <BookOpen className="w-5 h-5 text-purple-600" />
                                 <span className="text-sm font-semibold text-purple-600">
-                                    Módulo {module.moduleNumber}
+                                    {module.code || `Módulo ${module.moduleNumber || ''}`}
                                 </span>
                             </div>
                             <div className="flex gap-2">
@@ -202,12 +239,14 @@ const SeminarModuleList = () => {
                                 >
                                     <Edit2 className="w-4 h-4" />
                                 </button>
-                                <button
-                                    onClick={() => handleDelete(module.id)}
-                                    className="p-1 text-red-600 hover:bg-red-50 rounded"
-                                >
-                                    <Trash2 className="w-4 h-4" />
-                                </button>
+                                {canDelete && (
+                                    <button
+                                        onClick={() => handleDelete(module.id)}
+                                        className="p-1 text-red-600 hover:bg-red-50 rounded"
+                                    >
+                                        <Trash2 className="w-4 h-4" />
+                                    </button>
+                                )}
                             </div>
                         </div>
                         <h4 className="font-semibold text-gray-800 mb-2">{module.name}</h4>

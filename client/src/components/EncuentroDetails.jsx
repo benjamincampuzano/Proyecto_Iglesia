@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
-import { ArrowLeft, UserPlus, DollarSign, CheckCircle, XCircle, Trash2, Calendar, BookOpen, FileText } from 'lucide-react';
+import { ArrowLeft, UserPlus, DollarSign, CheckCircle, XCircle, Trash2, Calendar, BookOpen, FileText, Edit2 } from 'lucide-react';
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
 import GuestSearchSelect from './GuestSearchSelect';
+import MultiUserSelect from './MultiUserSelect';
 import EncuentroClassTracker from './EncuentroClassTracker';
 import BalanceReport from './BalanceReport';
 
@@ -21,6 +22,18 @@ const EncuentroDetails = ({ encuentro, onBack, onRefresh }) => {
     const [selectedHistoryRegistration, setSelectedHistoryRegistration] = useState(null);
     const [showConvertModal, setShowConvertModal] = useState(false);
     const [convertData, setConvertData] = useState({ email: '', password: '' });
+
+    // Edit Modal State
+    const [showEditModal, setShowEditModal] = useState(false);
+    const [editData, setEditData] = useState({
+        name: '',
+        description: '',
+        cost: '',
+        startDate: '',
+        endDate: '',
+        type: '',
+        liderDoceIds: []
+    });
 
     // Registration Form State
     const [selectedGuestId, setSelectedGuestId] = useState(null);
@@ -149,6 +162,38 @@ const EncuentroDetails = ({ encuentro, onBack, onRefresh }) => {
         }
     };
 
+    const openEditModal = () => {
+        setEditData({
+            name: encuentro.name,
+            description: encuentro.description || '',
+            cost: encuentro.cost,
+            startDate: new Date(encuentro.startDate).toISOString().split('T')[0],
+            endDate: new Date(encuentro.endDate).toISOString().split('T')[0],
+            type: encuentro.type,
+            liderDoceIds: encuentro.liderDoceIds || []
+        });
+        setShowEditModal(true);
+    };
+
+    const handleUpdateEncuentro = async (e) => {
+        e.preventDefault();
+        setLoading(true);
+        try {
+            const token = localStorage.getItem('token');
+            await axios.put(`http://localhost:5000/api/encuentros/${encuentro.id}`, editData, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            setShowEditModal(false);
+            alert('Encuentro actualizado exitosamente!');
+            onRefresh();
+        } catch (error) {
+            console.error('Error updating encuentro:', error);
+            alert('Error al actualizar: ' + (error.response?.data?.error || 'Error desconocido'));
+        } finally {
+            setLoading(false);
+        }
+    };
+
     const openHistoryModal = (registration) => {
         setSelectedHistoryRegistration(registration);
         setShowHistoryModal(true);
@@ -188,6 +233,15 @@ const EncuentroDetails = ({ encuentro, onBack, onRefresh }) => {
                         </p>
                     </div>
                 </div>
+                {(user.role === 'SUPER_ADMIN' || user.role === 'LIDER_DOCE') && (
+                    <button
+                        onClick={openEditModal}
+                        className="flex items-center space-x-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+                    >
+                        <Edit2 size={20} />
+                        <span>Editar Encuentro</span>
+                    </button>
+                )}
             </div>
 
             {/* Stats Dashboard */}
@@ -566,6 +620,119 @@ const EncuentroDetails = ({ encuentro, onBack, onRefresh }) => {
                                     className="w-full py-2 px-4 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors font-medium shadow-lg hover:shadow-xl"
                                 >
                                     {loading ? 'Procesando...' : 'Crear Usuario'}
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
+
+            {/* Edit Encuentro Modal */}
+            {showEditModal && (
+                <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+                    <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl w-full max-w-2xl overflow-hidden max-h-[90vh] overflow-y-auto">
+                        <div className="p-6 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
+                            <h3 className="text-lg font-bold text-gray-900 dark:text-white">Editar Encuentro</h3>
+                            <button onClick={() => setShowEditModal(false)} className="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300">
+                                <XCircle size={24} />
+                            </button>
+                        </div>
+                        <form onSubmit={handleUpdateEncuentro} className="p-6 space-y-4">
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                    Nombre
+                                </label>
+                                <input
+                                    type="text"
+                                    value={editData.name}
+                                    onChange={(e) => setEditData({ ...editData, name: e.target.value })}
+                                    className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500"
+                                    required
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                    Descripción
+                                </label>
+                                <textarea
+                                    value={editData.description}
+                                    onChange={(e) => setEditData({ ...editData, description: e.target.value })}
+                                    rows={3}
+                                    className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500"
+                                />
+                            </div>
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                        Costo
+                                    </label>
+                                    <input
+                                        type="number"
+                                        step="0.01"
+                                        value={editData.cost}
+                                        onChange={(e) => setEditData({ ...editData, cost: e.target.value })}
+                                        className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500"
+                                        required
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                        Tipo
+                                    </label>
+                                    <select
+                                        value={editData.type}
+                                        onChange={(e) => setEditData({ ...editData, type: e.target.value })}
+                                        className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500"
+                                        required
+                                    >
+                                        <option value="MUJERES">Mujeres</option>
+                                        <option value="JOVENES">Jóvenes</option>
+                                        <option value="HOMBRES">Hombres</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                        Fecha Inicio
+                                    </label>
+                                    <input
+                                        type="date"
+                                        value={editData.startDate}
+                                        onChange={(e) => setEditData({ ...editData, startDate: e.target.value })}
+                                        className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500"
+                                        required
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                        Fecha Fin
+                                    </label>
+                                    <input
+                                        type="date"
+                                        value={editData.endDate}
+                                        onChange={(e) => setEditData({ ...editData, endDate: e.target.value })}
+                                        className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500"
+                                        required
+                                    />
+                                </div>
+                            </div>
+                            <div>
+                                <MultiUserSelect
+                                    value={editData.liderDoceIds}
+                                    onChange={(ids) => setEditData({ ...editData, liderDoceIds: ids })}
+                                    label="Líderes de 12 Asignados"
+                                    placeholder="Seleccionar Líderes de 12..."
+                                    roleFilter="LIDER_DOCE"
+                                />
+                            </div>
+                            <div className="pt-4">
+                                <button
+                                    type="submit"
+                                    disabled={loading}
+                                    className="w-full py-2 px-4 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors font-medium shadow-lg hover:shadow-xl disabled:opacity-50"
+                                >
+                                    {loading ? 'Guardando...' : 'Guardar Cambios'}
                                 </button>
                             </div>
                         </form>

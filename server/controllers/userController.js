@@ -111,6 +111,7 @@ const changePassword = async (req, res) => {
 const getAllUsers = async (req, res) => {
     try {
         const currentUser = req.user;
+        const { role } = req.query; // Added role parameter extraction
         let where = {};
 
         // Security Filter
@@ -126,6 +127,11 @@ const getAllUsers = async (req, res) => {
         } else {
             // Members see only themselves
             where = { id: currentUser.id };
+        }
+
+        // Apple role filter if provided
+        if (role) {
+            where.role = role;
         }
 
         const users = await prisma.user.findMany({
