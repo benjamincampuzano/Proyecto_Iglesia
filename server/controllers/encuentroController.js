@@ -102,6 +102,37 @@ const deleteEncuentro = async (req, res) => {
     }
 };
 
+const updateEncuentro = async (req, res) => {
+    try {
+        const { id } = req.params;
+        // Check permissions (SUPER_ADMIN or LIDER_DOCE)
+        if (req.user.role !== 'SUPER_ADMIN' && req.user.role !== 'LIDER_DOCE') {
+            return res.status(403).json({ error: 'Not authorized' });
+        }
+
+        const { type, name, description, cost, startDate, endDate, liderDoceIds } = req.body;
+
+        const updateData = {};
+        if (type !== undefined) updateData.type = type;
+        if (name !== undefined) updateData.name = name;
+        if (description !== undefined) updateData.description = description;
+        if (cost !== undefined) updateData.cost = parseFloat(cost);
+        if (startDate !== undefined) updateData.startDate = new Date(startDate);
+        if (endDate !== undefined) updateData.endDate = new Date(endDate);
+        if (liderDoceIds !== undefined) updateData.liderDoceIds = liderDoceIds;
+
+        const encuentro = await prisma.encuentro.update({
+            where: { id: parseInt(id) },
+            data: updateData
+        });
+
+        res.json(encuentro);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: 'Error updating encuentro' });
+    }
+};
+
 const registerGuest = async (req, res) => {
     try {
         const { encuentroId } = req.params;
@@ -311,6 +342,7 @@ module.exports = {
     getEncuentros,
     getEncuentroById,
     createEncuentro,
+    updateEncuentro,
     deleteEncuentro,
     registerGuest,
     deleteRegistration,

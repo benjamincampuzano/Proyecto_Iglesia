@@ -1,21 +1,29 @@
-
 import { useState, useEffect } from 'react';
-import { Calendar, Printer, TrendingUp, Users, BookOpen, UserCheck } from 'lucide-react';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
+import { Calendar, Printer, TrendingUp, Users, BookOpen, MapPin, Award, Lock } from 'lucide-react';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LineChart, Line } from 'recharts';
+import { useAuth } from '../context/AuthContext';
 
 const ConsolidatedStatsReport = ({ simpleMode = false }) => {
+    const { user } = useAuth();
     const [stats, setStats] = useState(null);
+    // Default to last 5 years for a complete general history
     const [startDate, setStartDate] = useState(() => {
         const date = new Date();
-        date.setDate(date.getDate() - 30);
+        date.setFullYear(date.getFullYear() - 5);
         return date.toISOString().split('T')[0];
     });
     const [endDate, setEndDate] = useState(new Date().toISOString().split('T')[0]);
     const [loading, setLoading] = useState(false);
 
+    // Access Control
+    const ALLOWED_ROLES = ['PASTOR', 'LIDER_DOCE', 'SUPER_ADMIN'];
+    const hasAccess = user && ALLOWED_ROLES.includes(user.role);
+
     useEffect(() => {
-        fetchStats();
-    }, [startDate, endDate]);
+        if (hasAccess) {
+            fetchStats();
+        }
+    }, [startDate, endDate, hasAccess]);
 
     const fetchStats = async () => {
         try {
@@ -26,8 +34,6 @@ const ConsolidatedStatsReport = ({ simpleMode = false }) => {
                 endDate
             });
 
-            // Note: Ensure the API URL matches your server configuration
-            // Using relative path or configured base URL is better practice
             const response = await fetch(`http://localhost:5000/api/consolidar/stats/general?${params}`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
@@ -50,41 +56,67 @@ const ConsolidatedStatsReport = ({ simpleMode = false }) => {
         return date.toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: 'numeric' });
     };
 
+    // Restricted Access View
+    if (!hasAccess) {
+        return (
+            <div className="flex flex-col items-center justify-center p-12 bg-white rounded-lg shadow text-center">
+                <div className="bg-red-100 p-4 rounded-full mb-4">
+                    <Lock className="w-12 h-12 text-red-600" />
+                </div>
+                <h2 className="text-xl font-bold text-gray-800 mb-2">Acceso Restringido</h2>
+                <p className="text-gray-600 max-w-md">
+                    Este informe solo está disponible para usuarios con perfil de <strong>Pastor</strong> o <strong>Líder de 12</strong>.
+                </p>
+            </div>
+        );
+    }
+
     if (!stats && loading) return <div className="text-center py-10">Cargando reporte...</div>;
     if (!stats) return <div className="text-center py-10">No hay datos disponibles</div>;
 
-    // Data for charts
-    const attendancePieData = [
-        { name: 'Presentes', value: stats.churchAttendance.present },
-        { name: 'Ausentes', value: stats.churchAttendance.absent },
-    ];
-    const COLORS = ['#10b981', '#ef4444'];
+    // --- Data Transformation Helpers ---
+    const transformToChartData = (dataObj) => {
+        if (!dataObj) return [];
+        return Object.keys(dataObj).map(key => ({
+            name: key,
+            ...dataObj[key]
+        }));
+    };
+
+    const transformGuestsData = (dataObj) => {
+        if (!dataObj) return [];
+        return Object.keys(dataObj).map(leader => ({
+            name: leader,
+            count: dataObj[leader]
+        }));
+    };
+
+    // Prepare Chart Data
+    const attendanceData = transformToChartData(stats.attendanceByMonth);
+    const guestsData = transformGuestsData(stats.guestsByLeader);
+    const encuentrosData = transformToChartData(stats.encuentrosByMonth);
+    const conventionsData = transformToChartData(stats.conventionsByYear);
+
+    // Extract all unique leaders for dynamic Lines/Bars
+    const getAllLeaders = (dataObj) => {
+        const leaders = new Set();
+        Object.values(dataObj).forEach(monthObj => {
+            Object.keys(monthObj).forEach(l => leaders.add(l));
+        });
+        return Array.from(leaders);
+    };
+
+    const attendanceLeaders = getAllLeaders(stats.attendanceByMonth || {});
+    const encuentrosLeaders = getAllLeaders(stats.encuentrosByMonth || {});
+    const conventionsLeaders = getAllLeaders(stats.conventionsByYear || {});
+
+    const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#6366f1', '#14b8a6'];
+    const getColor = (index) => COLORS[index % COLORS.length];
 
     return (
         <div className={`space-y-8 ${simpleMode ? 'p-0' : 'p-4'} print:p-0`}>
-            {/* Header / Actions - Hidden when printing */}
-            <div className={`flex flex-col ${simpleMode ? 'gap-2' : 'md:flex-row justify-between items-start md:items-center gap-4'} print:hidden`}>
-                <div className={`flex ${simpleMode ? 'flex-col gap-2' : 'gap-4 items-center'} bg-white p-4 rounded-lg shadow w-full md:w-auto`}>
-                    <div>
-                        <label className="block text-xs font-medium text-gray-500 mb-1">Desde</label>
-                        <input
-                            type="date"
-                            value={startDate}
-                            onChange={(e) => setStartDate(e.target.value)}
-                            className="border rounded px-2 py-1 text-sm w-full"
-                        />
-                    </div>
-                    <div>
-                        <label className="block text-xs font-medium text-gray-500 mb-1">Hasta</label>
-                        <input
-                            type="date"
-                            value={endDate}
-                            onChange={(e) => setEndDate(e.target.value)}
-                            className="border rounded px-2 py-1 text-sm w-full"
-                        />
-                    </div>
-                </div>
-
+            {/* Header / Actions - Simplified without Date Inputs */}
+            <div className={`flex flex-col ${simpleMode ? 'gap-2' : 'md:flex-row justify-end items-center gap-4'} print:hidden`}>
                 {!simpleMode && (
                     <button
                         onClick={handlePrint}
@@ -102,133 +134,205 @@ const ConsolidatedStatsReport = ({ simpleMode = false }) => {
                 {/* Report Header */}
                 {!simpleMode && (
                     <div className="text-center border-b pb-6 mb-8">
-                        <h1 className="text-3xl font-bold text-gray-800 mb-2">Informe General de Consolidación</h1>
+                        <h1 className="text-3xl font-bold text-gray-800 mb-2">Informe General</h1>
                         <p className="text-gray-500">
-                            Período: {formatDate(stats.period.start)} - {formatDate(stats.period.end)}
+                            Reporte Histórico General
                         </p>
                     </div>
                 )}
 
-                {/* Section 1: Executive Summary */}
-                <div className="mb-10">
+                {/* 1. Guests by Leader (Doce) */}
+                <div className="mb-10 page-break-inside-avoid">
                     <h2 className="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
-                        <TrendingUp className="text-blue-600" /> Resumen Ejecutivo
+                        <Users className="text-blue-600" /> Personas Invitadas por Lider Doce
                     </h2>
-                    <div className={`grid gap-6 ${simpleMode ? 'grid-cols-1' : 'grid-cols-1 md:grid-cols-3'}`}>
-                        <div className="bg-blue-50 p-6 rounded-lg text-center border border-blue-100">
-                            <p className="text-blue-600 font-medium mb-1">Total Miembros</p>
-                            <p className="text-4xl font-bold text-blue-800">{stats.summary.totalMembers}</p>
-                        </div>
-                        <div className="bg-green-50 p-6 rounded-lg text-center border border-green-100">
-                            <p className="text-green-600 font-medium mb-1">Estudiantes Activos</p>
-                            <p className="text-4xl font-bold text-green-800">{stats.summary.activeStudents}</p>
-                        </div>
-                        <div className="bg-purple-50 p-6 rounded-lg text-center border border-purple-100">
-                            <p className="text-purple-600 font-medium mb-1">Graduados en Período</p>
-                            <p className="text-4xl font-bold text-purple-800">{stats.summary.graduatedInPeriod}</p>
-                        </div>
+                    <div className="h-64 w-full">
+                        {guestsData.length > 0 ? (
+                            <ResponsiveContainer width="100%" height="100%">
+                                <BarChart data={guestsData} layout="vertical" margin={{ left: 20 }}>
+                                    <CartesianGrid strokeDasharray="3 3" horizontal={false} />
+                                    <XAxis type="number" />
+                                    <YAxis dataKey="name" type="category" width={150} tick={{ fontSize: 12 }} />
+                                    <Tooltip />
+                                    <Bar dataKey="count" name="Invitados" fill="#3b82f6" radius={[0, 4, 4, 0]} />
+                                </BarChart>
+                            </ResponsiveContainer>
+                        ) : <p className="text-gray-400 italic text-center pt-10">No hay datos de invitados en este período.</p>}
                     </div>
                 </div>
 
-                {/* Section 2: Church Attendance */}
-                <div className="mb-10">
+                {/* 2. Church Attendance by Month (Grouped by Leader) */}
+                <div className="mb-10 page-break-inside-avoid">
                     <h2 className="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
-                        <Users className="text-blue-600" /> Asistencia a la Iglesia
+                        <TrendingUp className="text-green-600" /> Asistencia a la Iglesia (Mensual por Lider Doce)
+                    </h2>
+                    <div className="h-80 w-full">
+                        {attendanceData.length > 0 ? (
+                            <ResponsiveContainer width="100%" height="100%">
+                                <BarChart data={attendanceData}>
+                                    <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                                    <XAxis dataKey="name" />
+                                    <YAxis />
+                                    <Tooltip />
+                                    <Legend />
+                                    {attendanceLeaders.map((leader, index) => (
+                                        <Bar key={leader} dataKey={leader} stackId="a" fill={getColor(index)} />
+                                    ))}
+                                </BarChart>
+                            </ResponsiveContainer>
+                        ) : <p className="text-gray-400 italic text-center pt-10">No hay datos de asistencia.</p>}
+                    </div>
+                </div>
+
+                {/* 3. Student Stats */}
+                <div className="mb-10 page-break-inside-avoid">
+                    <h2 className="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
+                        <BookOpen className="text-indigo-600" /> Rendimiento Académico (Por Clase)
+                    </h2>
+                    <div className="overflow-x-auto">
+                        <table className="w-full text-sm text-left border rounded-lg overflow-hidden">
+                            <thead className="bg-gray-50 text-gray-700 uppercase">
+                                <tr>
+                                    <th className="p-3">Clase / Módulo</th>
+                                    <th className="p-3 text-center">Cantidad Estudiantes</th>
+                                    <th className="p-3 text-center">Promedio Notas</th>
+                                    <th className="p-3 text-center">Asistencia Promedio</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-gray-100">
+                                {stats.studentStats && stats.studentStats.map((item, idx) => (
+                                    <tr key={idx} className="hover:bg-gray-50">
+                                        <td className="p-3 font-medium">{item.moduleName}</td>
+                                        <td className="p-3 text-center">{item.studentCount}</td>
+                                        <td className="p-3 text-center font-bold text-blue-600">{item.avgGrade}</td>
+                                        <td className="p-3 text-center">{item.avgAttendance}%</td>
+                                    </tr>
+                                ))}
+                                {(!stats.studentStats || stats.studentStats.length === 0) && (
+                                    <tr><td colSpan="4" className="p-4 text-center text-gray-400">Sin datos académicos</td></tr>
+                                )}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                {/* 4. Cells by Lider Doce (Stats + Map List) */}
+                <div className="mb-10 page-break-inside-avoid">
+                    <h2 className="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
+                        <MapPin className="text-red-600" /> Células y Ubicación
                     </h2>
 
-                    <div className={`grid gap-8 items-center ${simpleMode ? 'grid-cols-1' : 'grid-cols-1 md:grid-cols-2'}`}>
+                    <div className="grid gap-6 grid-cols-1 md:grid-cols-2">
+                        {/* Stats Table */}
                         <div>
-                            <table className="w-full text-sm text-left">
+                            <table className="w-full text-sm text-left border rounded-lg">
+                                <thead className="bg-gray-50 text-gray-700">
+                                    <tr>
+                                        <th className="p-2">Lider Doce</th>
+                                        <th className="p-2 text-center">Cant. Células</th>
+                                        <th className="p-2 text-center">Asistencia Prom.</th>
+                                    </tr>
+                                </thead>
                                 <tbody className="divide-y divide-gray-100">
-                                    <tr className="bg-gray-50">
-                                        <td className="p-3 font-medium">Asistencia Promedio</td>
-                                        <td className="p-3 text-right font-bold">{stats.churchAttendance.rate}%</td>
-                                    </tr>
-                                    <tr>
-                                        <td className="p-3">Total Registros Evaluados</td>
-                                        <td className="p-3 text-right">{stats.churchAttendance.totalRecords}</td>
-                                    </tr>
-                                    <tr>
-                                        <td className="p-3 text-green-600">Total Asistencias</td>
-                                        <td className="p-3 text-right font-medium">{stats.churchAttendance.present}</td>
-                                    </tr>
-                                    <tr>
-                                        <td className="p-3 text-red-600">Total Ausencias</td>
-                                        <td className="p-3 text-right font-medium">{stats.churchAttendance.absent}</td>
-                                    </tr>
+                                    {Object.keys(stats.cellsByLeader || {}).map((leader, i) => (
+                                        <tr key={i}>
+                                            <td className="p-2 font-medium">{leader}</td>
+                                            <td className="p-2 text-center">{stats.cellsByLeader[leader].count}</td>
+                                            <td className="p-2 text-center">{stats.cellsByLeader[leader].avgAttendance}</td>
+                                        </tr>
+                                    ))}
                                 </tbody>
                             </table>
                         </div>
 
-                        <div className="h-64 w-full flex justify-center items-center">
-                            {stats.churchAttendance.totalRecords > 0 ? (
-                                <ResponsiveContainer width="100%" height="100%">
-                                    <PieChart>
-                                        <Pie
-                                            data={attendancePieData}
-                                            cx="50%"
-                                            cy="50%"
-                                            innerRadius={60}
-                                            outerRadius={80}
-                                            fill="#8884d8"
-                                            paddingAngle={5}
-                                            dataKey="value"
-                                        >
-                                            {attendancePieData.map((entry, index) => (
-                                                <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                        {/* Location List ("Map") */}
+                        <div className="bg-gray-50 p-4 rounded-lg h-60 overflow-y-auto border border-gray-200">
+                            <h3 className="font-semibold text-gray-600 mb-2 text-xs uppercase">Ubicaciones Registradas</h3>
+                            <div className="space-y-3">
+                                {Object.keys(stats.cellsByLeader || {}).map((leader) => (
+                                    <div key={leader}>
+                                        <p className="text-xs font-bold text-blue-600 mb-1">{leader}</p>
+                                        <ul className="text-xs text-gray-600 ml-2 space-y-1">
+                                            {stats.cellsByLeader[leader].locations.map((loc, idx) => (
+                                                <li key={idx} className="flex items-start gap-1">
+                                                    <span className="text-red-500">•</span>
+                                                    <span>{loc.address || 'Sin dirección'}, {loc.city || ''} <span className="text-gray-400">({loc.name})</span></span>
+                                                    {loc.lat && loc.lng && (
+                                                        <a
+                                                            href={`https://www.google.com/maps/search/?api=1&query=${loc.lat},${loc.lng}`}
+                                                            target="_blank"
+                                                            rel="noopener noreferrer"
+                                                            className="text-blue-500 hover:underline ml-2 font-semibold text-[10px]"
+                                                            title={`GPS: ${loc.lat}, ${loc.lng}`}
+                                                        >
+                                                            [Ver Mapa]
+                                                        </a>
+                                                    )}
+                                                </li>
                                             ))}
-                                        </Pie>
-                                        <Tooltip />
-                                        <Legend />
-                                    </PieChart>
-                                </ResponsiveContainer>
-                            ) : (
-                                <p className="text-gray-400 italic">Sin datos suficientes para gráfica</p>
-                            )}
+                                            {stats.cellsByLeader[leader].locations.length === 0 && <li className="text-gray-400 italic">Sin ubicaciones</li>}
+                                        </ul>
+                                    </div>
+                                ))}
+                            </div>
                         </div>
                     </div>
                 </div>
 
-                {/* Section 3: Seminars & Consolidation */}
-                <div className="mb-6 page-break-inside-avoid">
+                {/* 5. Encuentros Grouped by Leader */}
+                <div className="mb-10 page-break-inside-avoid">
                     <h2 className="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
-                        <BookOpen className="text-blue-600" /> Seminarios y Consolidación
+                        <Award className="text-purple-600" /> Asistencia a Encuentros (Por Mes)
                     </h2>
-                    <div className="bg-gray-50 rounded-lg p-6 border border-gray-100">
-                        <p className="text-gray-600 mb-4">
-                            Detalles del proceso de consolidación para el período seleccionado.
-                        </p>
-                        <div className={`grid gap-4 text-center ${simpleMode ? 'grid-cols-2' : 'grid-cols-2 md:grid-cols-4'}`}>
-                            <div>
-                                <p className="text-xs text-gray-500 uppercase tracking-wide">Nuevos Inscritos</p>
-                                <p className="text-2xl font-bold text-gray-800 mt-1">-</p> {/* Placeholder for now if backend doesn't send it */}
-                            </div>
-                            <div>
-                                <p className="text-xs text-gray-500 uppercase tracking-wide">Tasa de Finalización</p>
-                                <p className="text-2xl font-bold text-gray-800 mt-1">-</p>
-                            </div>
-                            <div>
-                                <p className="text-xs text-gray-500 uppercase tracking-wide">Clases Impartidas</p>
-                                <p className="text-2xl font-bold text-gray-800 mt-1">-</p>
-                            </div>
-                            <div>
-                                <p className="text-xs text-gray-500 uppercase tracking-wide">Retención Global</p>
-                                <p className="text-2xl font-bold text-gray-800 mt-1">-</p>
-                            </div>
-                        </div>
-                        <div className="mt-4 text-xs text-center text-gray-400 italic">
-                            * Datos detallados de seminarios en desarrollo
-                        </div>
+                    <div className="h-64 w-full">
+                        {encuentrosData.length > 0 ? (
+                            <ResponsiveContainer width="100%" height="100%">
+                                <BarChart data={encuentrosData}>
+                                    <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                                    <XAxis dataKey="name" />
+                                    <YAxis allowDecimals={false} />
+                                    <Tooltip />
+                                    <Legend />
+                                    {encuentrosLeaders.map((leader, index) => (
+                                        <Bar key={leader} dataKey={leader} stackId="b" fill={getColor(index + 2)} />
+                                    ))}
+                                </BarChart>
+                            </ResponsiveContainer>
+                        ) : <p className="text-gray-400 italic text-center pt-10">No hay datos de encuentros.</p>}
                     </div>
                 </div>
+
+                {/* 6. Conventions by Year */}
+                <div className="mb-10 page-break-inside-avoid">
+                    <h2 className="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
+                        <Award className="text-pink-600" /> Asistencia a Convenciones (Por Año)
+                    </h2>
+                    <div className="h-64 w-full">
+                        {conventionsData.length > 0 ? (
+                            <ResponsiveContainer width="100%" height="100%">
+                                <BarChart data={conventionsData}>
+                                    <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                                    <XAxis dataKey="name" />
+                                    <YAxis allowDecimals={false} />
+                                    <Tooltip />
+                                    <Legend />
+                                    {conventionsLeaders.map((leader, index) => (
+                                        <Bar key={leader} dataKey={leader} stackId="c" fill={getColor(index + 4)} />
+                                    ))}
+                                </BarChart>
+                            </ResponsiveContainer>
+                        ) : <p className="text-gray-400 italic text-center pt-10">No hay datos de convenciones.</p>}
+                    </div>
+                </div>
+
 
                 <div className="mt-12 pt-6 border-t border-gray-200 text-center text-xs text-gray-400 print:fixed print:bottom-4 print:left-0 print:w-full">
-                    <p>Generado por Sistema de Gestión Eclesiástica - {new Date().toLocaleDateString()}</p>
+                    <p>Generado por Ministerio Consolidación - {new Date().toLocaleDateString()}</p>
                 </div>
-            </div>
 
-            <style>
-                {`
+                {/* Print Styles */}
+                <style>
+                    {`
                     @media print {
                         body * {
                             visibility: hidden;
@@ -250,7 +354,8 @@ const ConsolidatedStatsReport = ({ simpleMode = false }) => {
                         }
                     }
                 `}
-            </style>
+                </style>
+            </div>
         </div>
     );
 };

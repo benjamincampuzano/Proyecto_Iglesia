@@ -1,5 +1,4 @@
 const { PrismaClient } = require('@prisma/client');
-
 const prisma = new PrismaClient();
 
 // Crear nuevo invitado
@@ -82,7 +81,7 @@ const getUserNetwork = async (userId) => {
 // Obtener todos los invitados con filtros opcionales
 const getAllGuests = async (req, res) => {
     try {
-        const { status, invitedById, assignedToId, search } = req.query;
+        const { status, invitedById, assignedToId, search, liderDoceId } = req.query;
         const user = req.user; // Obtener usuario autenticado de la petición
 
         let securityFilter = {};
@@ -123,22 +122,34 @@ const getAllGuests = async (req, res) => {
             };
         }
 
-        // DEBUG: Log del filtro siendo aplicado
-        console.log('=== GUEST FILTER DEBUG ===');
-        console.log('User:', { id: user.id, role: user.role });
-        console.log('Security Filter:', JSON.stringify(securityFilter, null, 2));
-        console.log('========================');
-
         // Construir filtros de consulta
         const queryFilters = {};
         if (status) queryFilters.status = status;
-        if (invitedById) queryFilters.invitedById = parseInt(invitedById);
         if (assignedToId) queryFilters.assignedToId = parseInt(assignedToId);
         if (search) {
             queryFilters.OR = [
                 { name: { contains: search, mode: 'insensitive' } },
                 { phone: { contains: search } },
             ];
+        }
+
+        // Lider Doce & Invited By Logic
+        if (liderDoceId) {
+            const networkIds = await getUserNetwork(liderDoceId);
+            const idsToCheck = [...networkIds, parseInt(liderDoceId)];
+
+            if (invitedById) {
+                // If filtering by specific inviter AND Lider Doce, prevent conflict or check intersection
+                if (!idsToCheck.includes(parseInt(invitedById))) {
+                    queryFilters.invitedById = -1; // Force empty result, intersection is empty
+                } else {
+                    queryFilters.invitedById = parseInt(invitedById);
+                }
+            } else {
+                queryFilters.invitedById = { in: idsToCheck };
+            }
+        } else if (invitedById) {
+            queryFilters.invitedById = parseInt(invitedById);
         }
 
         // Combinar filtro de seguridad y filtros de consulta

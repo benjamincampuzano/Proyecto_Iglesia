@@ -155,7 +155,7 @@ const createConvention = async (req, res) => {
         if (req.user.role !== 'SUPER_ADMIN') {
             return res.status(403).json({ error: 'Not authorized' });
         }
-        const { type, year, theme, cost, startDate, endDate } = req.body;
+        const { type, year, theme, cost, startDate, endDate, liderDoceIds } = req.body;
 
         const existing = await prisma.convention.findUnique({
             where: {
@@ -177,7 +177,8 @@ const createConvention = async (req, res) => {
                 theme,
                 cost: parseFloat(cost),
                 startDate: new Date(startDate),
-                endDate: new Date(endDate)
+                endDate: new Date(endDate),
+                liderDoceIds: liderDoceIds || []
             }
         });
 
@@ -188,10 +189,41 @@ const createConvention = async (req, res) => {
     }
 };
 
+const updateConvention = async (req, res) => {
+    try {
+        const { id } = req.params;
+        // Check permissions (SUPER_ADMIN or LIDER_DOCE)
+        if (req.user.role !== 'SUPER_ADMIN' && req.user.role !== 'LIDER_DOCE') {
+            return res.status(403).json({ error: 'Not authorized' });
+        }
+
+        const { type, year, theme, cost, startDate, endDate, liderDoceIds } = req.body;
+
+        const updateData = {};
+        if (type !== undefined) updateData.type = type;
+        if (year !== undefined) updateData.year = parseInt(year);
+        if (theme !== undefined) updateData.theme = theme;
+        if (cost !== undefined) updateData.cost = parseFloat(cost);
+        if (startDate !== undefined) updateData.startDate = new Date(startDate);
+        if (endDate !== undefined) updateData.endDate = new Date(endDate);
+        if (liderDoceIds !== undefined) updateData.liderDoceIds = liderDoceIds;
+
+        const convention = await prisma.convention.update({
+            where: { id: parseInt(id) },
+            data: updateData
+        });
+
+        res.json(convention);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: 'Error updating convention' });
+    }
+};
+
 const registerUser = async (req, res) => {
     try {
         const { conventionId } = req.params;
-        const { userId, discountPercentage } = req.body;
+        const { userId, discountPercentage, needsTransport, needsAccommodation } = req.body;
 
         const existing = await prisma.conventionRegistration.findUnique({
             where: {
@@ -210,7 +242,9 @@ const registerUser = async (req, res) => {
             data: {
                 userId: parseInt(userId),
                 conventionId: parseInt(conventionId),
-                discountPercentage: parseFloat(discountPercentage || 0)
+                discountPercentage: parseFloat(discountPercentage || 0),
+                needsTransport: needsTransport || false,
+                needsAccommodation: needsAccommodation || false
             },
             include: {
                 user: true
@@ -359,6 +393,7 @@ module.exports = {
     getConventions,
     getConventionById,
     createConvention,
+    updateConvention,
     registerUser,
     addPayment,
     deleteRegistration,

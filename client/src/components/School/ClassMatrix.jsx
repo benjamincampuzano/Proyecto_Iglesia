@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Save, UserPlus, CheckCircle, XCircle } from 'lucide-react';
+import { Save, UserPlus, Trash2 } from 'lucide-react';
 
 const ClassMatrix = ({ courseId }) => {
     const [data, setData] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
-    const [potentialStudents, setPotentialStudents] = useState([]); // For enrollment modal
+    const [potentialStudents, setPotentialStudents] = useState([]);
     const [showEnrollModal, setShowEnrollModal] = useState(false);
 
     // Enrollment Form
@@ -48,8 +48,7 @@ const ClassMatrix = ({ courseId }) => {
     };
 
     const handleUpdate = async (enrollmentId, type, key, value) => {
-        // Optimistic update could happen here, but for simplicity let's just push and refresh or allow local state drift until reload?
-        // Let's rely on onBlur saving
+        // Optimistic update could happen here
         try {
             const token = localStorage.getItem('token');
             await axios.post('http://localhost:5000/api/school/matrix/update', {
@@ -57,7 +56,6 @@ const ClassMatrix = ({ courseId }) => {
             }, {
                 headers: { Authorization: `Bearer ${token}` }
             });
-            // console.log('Saved');
         } catch (err) {
             alert('Error guarding change');
         }
@@ -75,9 +73,23 @@ const ClassMatrix = ({ courseId }) => {
                 headers: { Authorization: `Bearer ${token}` }
             });
             setShowEnrollModal(false);
+            setEnrollForm({ studentId: '', assignedAuxiliarId: '' });
             fetchMatrix();
         } catch (err) {
-            alert('Error enrolling student');
+            alert('Error enrolling student: ' + (err.response?.data?.error || 'Unknown error'));
+        }
+    };
+
+    const handleDeleteEnrollment = async (enrollmentId) => {
+        if (!window.confirm("¿Seguro que deseas eliminar a este estudiante de la clase?")) return;
+        try {
+            const token = localStorage.getItem('token');
+            await axios.delete(`http://localhost:5000/api/school/enrollments/${enrollmentId}`, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            fetchMatrix();
+        } catch (error) {
+            alert('Error deleting student');
         }
     };
 
@@ -86,7 +98,7 @@ const ClassMatrix = ({ courseId }) => {
 
     const { module, matrix, permissions } = data;
     const { isProfessor, isAuxiliar } = permissions;
-    const canEnroll = isProfessor; // Only professor/admin enrolls (can change based on req)
+    const canEnroll = isProfessor || permissions.isProfessor; // Corrected check
 
     return (
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-4 overflow-hidden">
@@ -131,26 +143,15 @@ const ClassMatrix = ({ courseId }) => {
                             <th className="px-2 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                                 Nota Final
                             </th>
+                            <th className="px-2 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                Acciones
+                            </th>
                         </tr>
                     </thead>
                     <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
                         {matrix.map((row) => {
-                            // Determine editability for this row
-
-                            const canEdit = isProfessor || (isAuxiliar && row.auxiliarId === parseInt(permissions.userId));
-                            // *Note*: permissions.userId isn't in payload, need to pass it or rely on isAuxiliar logic from backend?
-                            // Logic: In backend, we filtered fetch based on permissions. 
-                            // But for Auxiliar, they only see rows they can edit? 
-                            // Wait, if Professor sees all, he can edit all. 
-                            // If Auxiliar views all (if we allowed viewing unassigned), filter needed. 
-                            // But currently backend filters `findMany`. So if an Auxiliar sees a row, they can essentially edit it 
-                            // UNLESS we want Read-Only for peers. 
-                            // Backend `updateMatrix` checks `enrollment.assignedAuxiliarId === user.id`. 
-                            // So UI should reflect that. Assume if rendered, check backend logic again. 
-                            // Simplification: Render Inputs for all if `isProfessor`. 
-                            // If `isAuxiliar`, render inputs ONLY if `row.auxiliarId` matches current user? 
-                            // We didn't pass current user ID in `permissions` object. Let's rely on standard Auth Context or assume backend filter handled visibility. 
-                            // Let's assume Editable = True for now, Backend will error if not allowed.
+                            // Check backend permissions logic or use state
+                            const canEdit = isProfessor || (isAuxiliar && row.auxiliarId === parseInt(permissions.userId || 0)); // userId not passed currently in permissions object, relying on backend validation mostly, but valid UI check would need userId.
 
                             return (
                                 <tr key={row.id}>
@@ -170,12 +171,11 @@ const ClassMatrix = ({ courseId }) => {
                                         return (
                                             <td key={classNum} className="px-1 py-2 border-l border-gray-100 dark:border-gray-700">
                                                 <div className="flex flex-col space-y-1">
-                                                    {/* Attendance Select */}
                                                     <select
                                                         className={`text-xs p-1 rounded border-none focus:ring-1 focus:ring-blue-500 bg-gray-50 dark:bg-gray-700 dark:text-white font-bold ${attendStatus === 'ASISTE' ? 'text-green-600' :
-                                                                attendStatus === 'AUSENCIA_JUSTIFICADA' ? 'text-yellow-600' :
-                                                                    attendStatus === 'AUSENCIA_NO_JUSTIFICADA' ? 'text-red-500' :
-                                                                        attendStatus === 'BAJA' ? 'text-gray-900 dark:text-gray-300' : ''
+                                                            attendStatus === 'AUSENCIA_JUSTIFICADA' ? 'text-yellow-600' :
+                                                                attendStatus === 'AUSENCIA_NO_JUSTIFICADA' ? 'text-red-500' :
+                                                                    attendStatus === 'BAJA' ? 'text-gray-900 dark:text-gray-300' : ''
                                                             }`}
                                                         defaultValue={attendStatus}
                                                         onChange={(e) => handleUpdate(row.id, 'attendance', classNum, e.target.value)}
@@ -186,8 +186,6 @@ const ClassMatrix = ({ courseId }) => {
                                                         <option value="AUSENCIA_NO_JUSTIFICADA">ASJ</option>
                                                         <option value="BAJA">BJ</option>
                                                     </select>
-
-                                                    {/* Grade Input 1-5 */}
                                                     <input
                                                         type="number"
                                                         min="1"
@@ -226,6 +224,19 @@ const ClassMatrix = ({ courseId }) => {
                                             onBlur={(e) => handleUpdate(row.id, 'finalGrade', null, e.target.value)}
                                         />
                                     </td>
+
+                                    {/* Actions */}
+                                    <td className="px-2 py-4 text-center">
+                                        {canEnroll && (
+                                            <button
+                                                onClick={() => handleDeleteEnrollment(row.id)}
+                                                className="text-red-500 hover:text-red-700 p-1 hover:bg-red-50 rounded"
+                                                title="Eliminar Estudiante"
+                                            >
+                                                <Trash2 size={16} />
+                                            </button>
+                                        )}
+                                    </td>
                                 </tr>
                             );
                         })}
@@ -251,7 +262,7 @@ const ClassMatrix = ({ courseId }) => {
                                     required
                                 >
                                     <option value="">Seleccionar Estudiante...</option>
-                                    {potentialStudents.map(s => (
+                                    {potentialStudents.filter(u => !matrix.some(m => m.studentId === u.id)).map(s => ( // Filter already enrolled
                                         <option key={s.id} value={s.id}>{s.fullName}</option>
                                     ))}
                                 </select>

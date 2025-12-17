@@ -1,7 +1,32 @@
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
+const axios = require('axios');
 
-// Helper to get network IDs (recursive)
+// Helper for Geocoding (Nominatim OpenStreetMap)
+const getCoordinates = async (address, city) => {
+    try {
+        const query = `${address}, ${city}`;
+        const encodedQuery = encodeURIComponent(query);
+        const url = `https://nominatim.openstreetmap.org/search?q=${encodedQuery}&format=json&limit=1`;
+
+        // User-Agent is required by Nominatim
+        const response = await axios.get(url, {
+            headers: { 'User-Agent': 'IglesiaApp/1.0 (admin@iglesia.com)' }
+        });
+
+        if (response.data && response.data.length > 0) {
+            return {
+                lat: parseFloat(response.data[0].lat),
+                lon: parseFloat(response.data[0].lon)
+            };
+        }
+        return { lat: null, lon: null };
+    } catch (error) {
+        console.error('Geocoding error:', error.message);
+        return { lat: null, lon: null };
+    }
+};
+
 // Helper to get network IDs (recursive)
 const getNetworkIds = async (leaderId) => {
     const id = parseInt(leaderId);
@@ -41,32 +66,20 @@ const createCell = async (req, res) => {
             return res.status(400).json({ error: 'Missing defined fields' });
         }
 
-        // Validate permissions
-        // Only SUPER_ADMIN and LIDER_DOCE can create cells usually? 
-        // Or LIDER_CELULA can create their own? 
-        // Assuming Admin/Doce updates structure.
         const { role, id } = req.user;
         if (role !== 'SUPER_ADMIN' && role !== 'LIDER_DOCE') {
             return res.status(403).json({ error: 'Not authorized to create cells' });
         }
 
-        // Validate Leader
-        // Leader must be in network if LIDER_DOCE
         if (role === 'LIDER_DOCE') {
             const networkIds = await getNetworkIds(id);
             if (!networkIds.includes(requestedLeaderId) && requestedLeaderId !== parseInt(id)) {
-                // Allow assigning to self? Usually yes.
                 return res.status(400).json({ error: 'Leader not in your network' });
             }
         }
 
-        // Check availability of Host? 
-        // Host must be in network of Leader?
-        // "Anfitrion, puede ser el lider de celula o un miembro de la misma red"
-        // Network of the SELECTED Leader.
-        if (requestedHostId !== requestedLeaderId) {
-            // Logic can be complex, skip deep validation for speed, trust admin pick from list
-        }
+        // Geocoding
+        const coords = await getCoordinates(address, city);
 
         const newCell = await prisma.cell.create({
             data: {
@@ -75,6 +88,8 @@ const createCell = async (req, res) => {
                 hostId: requestedHostId,
                 address,
                 city,
+                latitude: coords.lat,
+                longitude: coords.lon,
                 dayOfWeek,
                 time
             }
@@ -110,11 +125,11 @@ const getEligibleLeaders = async (req, res) => {
     try {
         const { role, id } = req.user;
         const userId = parseInt(id);
-        let where = {}; // Removed restrict to LIDER_CELULA only, allow ANYONE from network to be assigned
+        let where = {};
 
         if (role === 'LIDER_DOCE') {
             const networkIds = await getNetworkIds(userId);
-            where.id = { in: [...networkIds, userId] }; // proper or self
+            where.id = { in: [...networkIds, userId] };
         } else if (role === 'SUPER_ADMIN') {
             // all
         } else {

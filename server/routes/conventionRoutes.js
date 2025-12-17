@@ -1,18 +1,30 @@
 const express = require('express');
 const router = express.Router();
 const { authenticate } = require('../middleware/auth');
-const conventionController = require('../controllers/conventionController');
+const {
+    getConventions,
+    getConventionById,
+    createConvention,
+    updateConvention,
+    registerUser,
+    addPayment,
+    deleteRegistration,
+    deleteConvention,
+    getConventionBalanceReport
+} = require('../controllers/conventionController');
 
 // All routes require authentication
 router.use(authenticate);
 
-router.get('/', conventionController.getConventions);
-router.post('/', conventionController.createConvention);
-router.get('/:id', conventionController.getConventionById);
-router.post('/:conventionId/register', conventionController.registerUser);
-router.post('/registrations/:registrationId/payments', conventionController.addPayment);
-router.delete('/registrations/:registrationId', conventionController.deleteRegistration);
-router.delete('/:id', conventionController.deleteConvention);
-router.get('/:id/report/balance', conventionController.getConventionBalanceReport);
+router.get('/', getConventions);
+router.post('/', createConvention);
+router.get('/:id', getConventionById);
+router.put('/:id', updateConvention);
+router.delete('/:id', deleteConvention);
+router.get('/:id/report/balance', getConventionBalanceReport);
+
+router.post('/:conventionId/register', registerUser);
+router.post('/registrations/:registrationId/payments', addPayment);
+router.delete('/registrations/:registrationId', deleteRegistration);
 
 module.exports = router;

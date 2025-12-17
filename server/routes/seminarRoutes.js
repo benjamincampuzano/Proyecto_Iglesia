@@ -5,12 +5,14 @@ const classAttendanceController = require('../controllers/classAttendanceControl
 const { authenticate, isAdmin } = require('../middleware/auth');
 
 router.get('/', authenticate, seminarController.getAllModules);
+router.get('/:id', authenticate, seminarController.getModuleDetails); // New
 router.post('/', authenticate, seminarController.createModule);
 router.put('/:id', authenticate, seminarController.updateModule);
 router.delete('/:id', authenticate, seminarController.deleteModule);
 
 // Enrollment routes
 router.post('/:moduleId/enroll', authenticate, seminarController.enrollStudent);
+router.delete('/enrollments/:id', authenticate, seminarController.deleteEnrollment); // New
 router.get('/:moduleId/enrollments', authenticate, seminarController.getModuleEnrollments);
 router.put('/enrollments/:enrollmentId/progress', authenticate, seminarController.updateProgress);
 

@@ -10,8 +10,8 @@ const GuestList = ({ refreshTrigger }) => {
     const [searchTerm, setSearchTerm] = useState('');
     const [statusFilter, setStatusFilter] = useState('');
     const [invitedByFilter, setInvitedByFilter] = useState(null);
+    const [liderDoceFilter, setLiderDoceFilter] = useState(null); // New Filter
     const [editingGuest, setEditingGuest] = useState(null);
-    const [assigningGuest, setAssigningGuest] = useState(null);
     const [currentUser, setCurrentUser] = useState(null);
     const [convertingGuest, setConvertingGuest] = useState(null);
     const [conversionEmail, setConversionEmail] = useState('');
@@ -24,7 +24,7 @@ const GuestList = ({ refreshTrigger }) => {
 
     useEffect(() => {
         fetchGuests();
-    }, [refreshTrigger, statusFilter, invitedByFilter]);
+    }, [refreshTrigger, statusFilter, invitedByFilter, liderDoceFilter]);
 
     const fetchGuests = async () => {
         setLoading(true);
@@ -35,6 +35,7 @@ const GuestList = ({ refreshTrigger }) => {
 
             if (statusFilter) params.append('status', statusFilter);
             if (invitedByFilter) params.append('invitedById', invitedByFilter);
+            if (liderDoceFilter) params.append('liderDoceId', liderDoceFilter);
             if (searchTerm) params.append('search', searchTerm);
 
             const res = await axios.get(`http://localhost:5000/api/guests?${params.toString()}`, {
@@ -79,21 +80,6 @@ const GuestList = ({ refreshTrigger }) => {
             fetchGuests();
         } catch (err) {
             setError(err.response?.data?.message || 'Error al eliminar invitado');
-        }
-    };
-
-    const handleAssignGuest = async (guestId, assignedToId) => {
-        try {
-            const token = localStorage.getItem('token');
-            await axios.put(`http://localhost:5000/api/guests/${guestId}/assign`,
-                { assignedToId },
-                { headers: { Authorization: `Bearer ${token}` } }
-            );
-
-            setAssigningGuest(null);
-            fetchGuests();
-        } catch (err) {
-            setError(err.response?.data?.message || 'Error al asignar invitado');
         }
     };
 
@@ -165,7 +151,7 @@ const GuestList = ({ refreshTrigger }) => {
             )}
 
             {/* Filtros */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
                 <div className="relative">
                     <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
                     <input
@@ -173,7 +159,7 @@ const GuestList = ({ refreshTrigger }) => {
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
                         onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
-                        placeholder="Buscar por nombre o teléfono..."
+                        placeholder="Buscar por nombre..."
                         className="w-full pl-10 pr-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-blue-500"
                     />
                 </div>
@@ -184,7 +170,7 @@ const GuestList = ({ refreshTrigger }) => {
                         onChange={(e) => setStatusFilter(e.target.value)}
                         className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-blue-500"
                     >
-                        <option value="">Todos los estados</option>
+                        <option value="">Estado (Todos)</option>
                         <option value="NUEVO">Nuevo</option>
                         <option value="CONTACTADO">Contactado</option>
                         <option value="EN_CONSOLIDACION">En Consolidación</option>
@@ -196,7 +182,16 @@ const GuestList = ({ refreshTrigger }) => {
                     <UserSearchSelect
                         value={invitedByFilter}
                         onChange={setInvitedByFilter}
-                        placeholder="Filtrar por quien invitó..."
+                        placeholder="Invitado por..."
+                    />
+                </div>
+
+                <div>
+                    <UserSearchSelect
+                        value={liderDoceFilter}
+                        onChange={setLiderDoceFilter}
+                        placeholder="Ministerio de..."
+                        roleFilter="LIDER_DOCE"
                     />
                 </div>
             </div>
@@ -218,14 +213,13 @@ const GuestList = ({ refreshTrigger }) => {
                             <th className="px-4 py-3 text-left text-sm font-semibold text-gray-200">Teléfono</th>
                             <th className="px-4 py-3 text-left text-sm font-semibold text-gray-200">Estado</th>
                             <th className="px-4 py-3 text-left text-sm font-semibold text-gray-200">Invitado Por</th>
-                            <th className="px-4 py-3 text-left text-sm font-semibold text-gray-200">Asignado A</th>
                             <th className="px-4 py-3 text-right text-sm font-semibold text-gray-200">Acciones</th>
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-700">
                         {loading ? (
                             <tr>
-                                <td colSpan="6" className="px-4 py-8 text-center text-gray-400">
+                                <td colSpan="5" className="px-4 py-8 text-center text-gray-400">
                                     <Loader size={24} className="animate-spin mx-auto" />
                                 </td>
                             </tr>
@@ -322,54 +316,6 @@ const GuestList = ({ refreshTrigger }) => {
                                         )}
                                     </td>
                                     <td className="px-4 py-3">
-                                        {editingGuest?.id === guest.id ? (
-                                            <div className="flex items-center space-x-2">
-                                                <UserSearchSelect
-                                                    value={editingGuest.assignedToId}
-                                                    onChange={(userId) => setEditingGuest({ ...editingGuest, assignedToId: userId })}
-                                                    placeholder="Asignar a..."
-                                                />
-                                                {editingGuest.assignedToId && (
-                                                    <button
-                                                        onClick={() => setEditingGuest({ ...editingGuest, assignedToId: null })}
-                                                        className="text-gray-400 hover:text-white"
-                                                    >
-                                                        <X size={16} />
-                                                    </button>
-                                                )}
-                                            </div>
-                                        ) : (
-                                            assigningGuest?.id === guest.id ? (
-                                                <div className="flex items-center space-x-2">
-                                                    <UserSearchSelect
-                                                        value={assigningGuest.assignedToId}
-                                                        onChange={(userId) => {
-                                                            if (userId) {
-                                                                handleAssignGuest(guest.id, userId);
-                                                            }
-                                                        }}
-                                                        placeholder="Seleccionar líder..."
-                                                    />
-                                                    <button
-                                                        onClick={() => setAssigningGuest(null)}
-                                                        className="p-1 text-gray-400 hover:text-white"
-                                                    >
-                                                        <X size={18} />
-                                                    </button>
-                                                </div>
-                                            ) : guest.assignedTo ? (
-                                                <p className="text-white text-sm">{guest.assignedTo.fullName}</p>
-                                            ) : (
-                                                <button
-                                                    onClick={() => setAssigningGuest({ id: guest.id, assignedToId: null })}
-                                                    className="text-blue-400 hover:text-blue-300 text-sm"
-                                                >
-                                                    Asignar
-                                                </button>
-                                            )
-                                        )}
-                                    </td>
-                                    <td className="px-4 py-3">
                                         <div className="flex items-center justify-end space-x-2">
                                             {editingGuest?.id === guest.id ? (
                                                 <>
@@ -380,8 +326,7 @@ const GuestList = ({ refreshTrigger }) => {
                                                                 phone: editingGuest.phone,
                                                                 address: editingGuest.address,
                                                                 status: editingGuest.status,
-                                                                invitedById: editingGuest.invitedById,
-                                                                assignedToId: editingGuest.assignedToId
+                                                                invitedById: editingGuest.invitedById
                                                             })
                                                         }
                                                         className="p-1 text-green-400 hover:text-green-300"
@@ -402,8 +347,7 @@ const GuestList = ({ refreshTrigger }) => {
                                                     <button
                                                         onClick={() => setEditingGuest({
                                                             ...guest,
-                                                            invitedById: guest.invitedBy?.id,
-                                                            assignedToId: guest.assignedTo?.id
+                                                            invitedById: guest.invitedBy?.id
                                                         })}
                                                         className="p-1 text-blue-400 hover:text-blue-300"
                                                         title="Editar"
