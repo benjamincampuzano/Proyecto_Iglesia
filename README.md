@@ -83,24 +83,20 @@ Proyecto_Iglesia/
 
 ## 📸 Capturas de Pantalla
 
-<<<<<<< HEAD
-> *Espacio reservado para capturas de pantalla de la aplicación funcionando.*
-> (Puedes agregar imágenes en la carpeta `/assets` y referenciarlas aquí)
-=======
-> 
->>>>>>> 890ad01ac5e713dbf646f15e8e85b0ea34fa8bb3
 
-| Dashboard | Lista de Invitados |
-|-----------|--------------------|
-| ![Dashboard Placeholder](https://via.placeholder.com/400x200?text=Dashboard) | ![Guests Placeholder](https://via.placeholder.com/400x200?text=Lista+de+Invitados) |
+## 📸 Capturas de Pantalla
+
+| Inicio de Sesión | Dashboard |
+|------------------|-----------|
+| ![Login Screen](C:/Users/Usuario/.gemini/antigravity/brain/a1b7b889-e777-450c-8b5f-35318ef31a91/login_screen_mockup_1765927340454.png) | ![Dashboard (Real)](C:/Users/Usuario/.gemini/antigravity/brain/a1b7b889-e777-450c-8b5f-35318ef31a91/real_dashboard_screenshot_1765927979485.png) |
+
+| Matriz de Clases | Reporte Financiero |
+|------------------|--------------------|
+| ![Class Matrix](C:/Users/Usuario/.gemini/antigravity/brain/a1b7b889-e777-450c-8b5f-35318ef31a91/class_matrix_mockup_1765927365902.png) | ![Financial Report](C:/Users/Usuario/.gemini/antigravity/brain/a1b7b889-e777-450c-8b5f-35318ef31a91/financial_report_mockup_1765927398618.png) |
 
 ## 🎥 Demostración
 
-<<<<<<< HEAD
-> *Espacio reservado para un video o GIF demostrativo del flujo de usuario.*
-=======
-> 
->>>>>>> 890ad01ac5e713dbf646f15e8e85b0ea34fa8bb3
+> *Video demostrativo pendiente de carga.*
 
 ---
 Desarrollado con ❤️ para el crecimiento de la iglesia.
