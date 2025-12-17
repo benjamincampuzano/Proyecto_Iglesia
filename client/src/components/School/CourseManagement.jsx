@@ -148,7 +148,7 @@ const CourseManagement = () => {
                                     value={formData.name}
                                     onChange={e => setFormData({ ...formData, name: e.target.value })}
                                     required
-                                    placeholder="Ej. Vida Discipular 1"
+                                    placeholder="Ej. Familias con Propósito"
                                 />
                             </div>
                             <div>
@@ -158,7 +158,7 @@ const CourseManagement = () => {
                                     value={formData.description}
                                     onChange={e => setFormData({ ...formData, description: e.target.value })}
                                     rows="3"
-                                    placeholder="Breve descripción de la clase..."
+                                    placeholder="Explicación breve de la clase..."
                                 />
                             </div>
                             <div className="grid grid-cols-2 gap-4">
@@ -188,7 +188,7 @@ const CourseManagement = () => {
                                     value={formData.professorId}
                                     onChange={e => setFormData({ ...formData, professorId: e.target.value })}
                                 >
-                                    <option value="">Seleccionar Profesor...</option>
+                                    <option value="">Seleccionar Profesor de la clase.</option>
                                     {leaders.map(l => (
                                         <option key={l.id} value={l.id}>{l.fullName}</option>
                                     ))}
