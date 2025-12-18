@@ -3,6 +3,7 @@ import axios from 'axios';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { useAuth } from "../../context/AuthContext";
 import * as XLSX from 'xlsx';
+import { Download, Users, BookOpen, UserCheck, TrendingUp } from 'lucide-react';
 
 const SchoolLeaderStats = () => {
     const { user } = useAuth();
@@ -113,7 +114,7 @@ const SchoolLeaderStats = () => {
             <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow">
                 <h3 className="text-lg font-semibold mb-6 text-gray-800 dark:text-white">Estudiantes y Aprobados por Líder</h3>
                 <div className="h-80 w-full">
-                    <ResponsiveContainer width="100%" height="100%">
+                    <ResponsiveContainer width="100%" height="100%" minHeight={300}>
                         <BarChart data={data} margin={{ top: 20, right: 30, left: 20, bottom: 50 }}>
                             <CartesianGrid strokeDasharray="3 3" vertical={false} />
                             <XAxis
