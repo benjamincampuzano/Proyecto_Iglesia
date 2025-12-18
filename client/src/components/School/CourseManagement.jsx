@@ -4,6 +4,15 @@ import { Plus, Calendar, Users, Trash2, Edit } from 'lucide-react';
 import { useAuth } from "../../context/AuthContext";
 import ClassMatrix from './ClassMatrix';
 
+const SCHOOL_LEVELS = [
+    { nivel: '1', seccion: 'A', name: 'Pastoreados en su amor', moduleNumber: 1 },
+    { nivel: '1', seccion: 'B', name: 'El poder de una Vision', moduleNumber: 2 },
+    { nivel: '2', seccion: 'A', name: 'La estrategia del Ganar', moduleNumber: 3 },
+    { nivel: '2', seccion: 'B', name: 'Familias con Proposito', moduleNumber: 4 },
+    { nivel: '3', seccion: 'A', name: 'Liderazgo Eficaz', moduleNumber: 5 },
+    { nivel: '3', seccion: 'B', name: 'El Espiritu Santo en Mi', moduleNumber: 6 }
+];
+
 const CourseManagement = () => {
     const { user } = useAuth();
     const [courses, setCourses] = useState([]);
@@ -28,7 +37,10 @@ const CourseManagement = () => {
 
     useEffect(() => {
         fetchCourses();
-        if (user.role === 'SUPER_ADMIN' || user.role === 'LIDER_DOCE') {
+        const isAdmin = user.role === 'SUPER_ADMIN';
+        const isProfesor = user.role === 'PROFESOR';
+
+        if (isAdmin || isProfesor || user.role === 'LIDER_DOCE') {
             fetchLeaders();
         }
     }, [user.role]);
@@ -67,7 +79,7 @@ const CourseManagement = () => {
             });
             fetchCourses();
         } catch (error) {
-            alert('Error deleting course');
+            alert('Error, No se puede eliminar la clase porque existen estudiantes inscritos y notas asociadas. Primero debe desvincular a todos los estudiantes.');
         }
     };
 
@@ -75,18 +87,10 @@ const CourseManagement = () => {
         e.preventDefault();
         try {
             const token = localStorage.getItem('token');
-            // Construct name from Nivel/Seccion if not custom
-            // e.g. "Escuela 1A"
-            const finalName = `Escuela ${formData.nivel}${formData.seccion}`;
-
-            // Map 1A -> 1, 1B -> 2 ... just simple mapping or store as is? 
-            // schoolController expects stored moduleNumber (int). 
-            // We can just send 0 or random if not strictly used as Int ID from frontend
-            // Or mapped: 1A=1, 1B=2, 2A=3, 2B=4, 3A=5, 3B=6
-            const mapping = {
-                '1A': 1, '1B': 2, '2A': 3, '2B': 4, '3A': 5, '3B': 6
-            };
-            const modId = mapping[`${formData.nivel}${formData.seccion}`] || 0;
+            // Construct name and moduleNumber from selected level
+            const selectedLevel = SCHOOL_LEVELS.find(l => l.nivel === formData.nivel && l.seccion === formData.seccion);
+            const finalName = selectedLevel ? `${selectedLevel.name} (Nivel ${selectedLevel.nivel}${selectedLevel.seccion})` : `Escuela ${formData.nivel}${formData.seccion}`;
+            const modId = selectedLevel ? selectedLevel.moduleNumber : 0;
 
             await axios.post('http://localhost:5000/api/school/modules', {
                 ...formData,
@@ -152,7 +156,7 @@ const CourseManagement = () => {
         <div className="space-y-6">
             <div className="flex justify-between items-center">
                 <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-100">Escuelas de Discipulado</h2>
-                {(user.role === 'SUPER_ADMIN' || user.role === 'LIDER_DOCE') && (
+                {(user.role === 'SUPER_ADMIN' || user.role === 'PROFESOR' || user.role === 'LIDER_DOCE') && (
                     <button
                         onClick={() => { setShowCreateModal(true); setFormData({ ...formData, name: '' }); }}
                         className="flex items-center px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg"
@@ -172,7 +176,7 @@ const CourseManagement = () => {
                     >
                         <div className="flex justify-between items-start mb-4">
                             <h3 className="text-xl font-semibold text-gray-800 dark:text-white">{course.name}</h3>
-                            {(user.role === 'SUPER_ADMIN' || user.role === 'LIDER_DOCE') && (
+                            {(user.role === 'SUPER_ADMIN' || user.role === 'PROFESOR' || user.role === 'LIDER_DOCE') && (
                                 <div className="flex space-x-2">
                                     <button
                                         onClick={(e) => openEditModal(e, course)}
@@ -223,28 +227,22 @@ const CourseManagement = () => {
 
                             {/* Nivel/Seccion Selection only for Create */}
                             {!showEditModal && (
-                                <div className="grid grid-cols-2 gap-4">
+                                <div className="grid grid-cols-1 gap-4">
                                     <div>
-                                        <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">Nivel</label>
+                                        <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">Seleccionar Nivel (Clase)</label>
                                         <select
                                             className="w-full px-4 py-2 bg-gray-50/50 dark:bg-gray-700/50 rounded-lg dark:text-white border border-gray-200 dark:border-gray-600"
-                                            value={formData.nivel}
-                                            onChange={e => setFormData({ ...formData, nivel: e.target.value })}
+                                            value={`${formData.nivel}${formData.seccion}`}
+                                            onChange={e => {
+                                                const val = e.target.value;
+                                                setFormData({ ...formData, nivel: val.substring(0, 1), seccion: val.substring(1) });
+                                            }}
                                         >
-                                            <option value="1">1</option>
-                                            <option value="2">2</option>
-                                            <option value="3">3</option>
-                                        </select>
-                                    </div>
-                                    <div>
-                                        <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">Sección</label>
-                                        <select
-                                            className="w-full px-4 py-2 bg-gray-50/50 dark:bg-gray-700/50 rounded-lg dark:text-white border border-gray-200 dark:border-gray-600"
-                                            value={formData.seccion}
-                                            onChange={e => setFormData({ ...formData, seccion: e.target.value })}
-                                        >
-                                            <option value="A">A</option>
-                                            <option value="B">B</option>
+                                            {SCHOOL_LEVELS.map(level => (
+                                                <option key={`${level.nivel}${level.seccion}`} value={`${level.nivel}${level.seccion}`}>
+                                                    {level.nivel}{level.seccion} - {level.name}
+                                                </option>
+                                            ))}
                                         </select>
                                     </div>
                                 </div>

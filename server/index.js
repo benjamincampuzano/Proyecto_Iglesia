@@ -20,6 +20,7 @@ const enviarRoutes = require('./routes/enviarRoutes');
 const conventionRoutes = require('./routes/conventionRoutes');
 const encuentroRoutes = require('./routes/encuentroRoutes');
 const schoolRoutes = require('./routes/schoolRoutes');
+const auditRoutes = require('./routes/auditRoutes');
 
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
@@ -31,6 +32,7 @@ app.use('/api/enviar', enviarRoutes);
 app.use('/api/convenciones', conventionRoutes);
 app.use('/api/encuentros', encuentroRoutes);
 app.use('/api/school', schoolRoutes);
+app.use('/api/audit', auditRoutes);
 
 app.get('/', (req, res) => {
     res.send('API is running...');

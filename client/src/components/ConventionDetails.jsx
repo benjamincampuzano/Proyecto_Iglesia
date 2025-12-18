@@ -294,7 +294,16 @@ const ConventionDetails = ({ convention, onBack, onRefresh }) => {
             {activeTab === 'attendees' ? (
                 <>
                     {/* Actions */}
-                    <div className="flex justify-end">
+                    <div className="flex justify-end gap-3">
+                        {['SUPER_ADMIN', 'LIDER_DOCE'].includes(user?.role) && (
+                            <button
+                                onClick={handleExportToExcel}
+                                className="flex items-center px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors"
+                            >
+                                <Download size={20} className="mr-2" />
+                                Exportar Excel
+                            </button>
+                        )}
                         <button
                             onClick={() => setShowRegisterModal(true)}
                             className="flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"

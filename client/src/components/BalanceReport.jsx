@@ -1,7 +1,9 @@
 import React, { useState, useMemo } from 'react';
 import { Download, Filter, DollarSign, Users, CreditCard } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
 
 const BalanceReport = ({ data, title }) => {
+    const { user } = useAuth();
     const [filterPastor, setFilterPastor] = useState('');
     const [filterDoce, setFilterDoce] = useState('');
     const [filterCelula, setFilterCelula] = useState('');
@@ -148,13 +150,15 @@ const BalanceReport = ({ data, title }) => {
                     <Users size={20} />
                     Detalle de Inscritos ({filteredData.length})
                 </h3>
-                <button
-                    onClick={handleExport}
-                    className="flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors text-sm font-medium"
-                >
-                    <Download size={18} />
-                    Exportar Excel
-                </button>
+                {['SUPER_ADMIN', 'LIDER_DOCE'].includes(user?.role) && (
+                    <button
+                        onClick={handleExport}
+                        className="flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors text-sm font-medium"
+                    >
+                        <Download size={18} />
+                        Exportar Excel
+                    </button>
+                )}
             </div>
 
             {/* Data Table */}
@@ -197,8 +201,8 @@ const BalanceReport = ({ data, title }) => {
                                     </td>
                                     <td className="px-6 py-4 text-right">
                                         <span className={`inline-flex px-2 py-1 rounded-full text-xs font-bold ${item.balance > 0
-                                                ? 'bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400'
-                                                : 'bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400'
+                                            ? 'bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400'
+                                            : 'bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400'
                                             }`}>
                                             ${item.balance.toLocaleString()}
                                         </span>

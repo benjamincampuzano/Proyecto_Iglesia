@@ -1,11 +1,15 @@
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
+const { SCHOOL_LEVELS } = require('../utils/levelConstants');
 
 // --- Module / Class Management ---
 
 const createModule = async (req, res) => {
     try {
-        if (req.user.role !== 'SUPER_ADMIN' && req.user.role !== 'LIDER_DOCE') {
+        const isAdmin = req.user.role === 'SUPER_ADMIN';
+        const isProfesorRole = req.user.role === 'PROFESOR';
+
+        if (!isAdmin && !isProfesorRole && req.user.role !== 'LIDER_DOCE') {
             return res.status(403).json({ error: 'Not authorized to create classes' });
         }
 
@@ -90,7 +94,10 @@ const updateModule = async (req, res) => {
         const { id } = req.params;
         const { name, description, moduleId, professorId, startDate, endDate, auxiliarIds } = req.body;
 
-        if (req.user.role !== 'SUPER_ADMIN' && req.user.role !== 'LIDER_DOCE') {
+        const isAdmin = req.user.role === 'SUPER_ADMIN';
+        const isProfesorRole = req.user.role === 'PROFESOR';
+
+        if (!isAdmin && !isProfesorRole && req.user.role !== 'LIDER_DOCE') {
             return res.status(403).json({ error: 'Not authorized to update classes' });
         }
 
@@ -125,18 +132,62 @@ const updateModule = async (req, res) => {
 const deleteModule = async (req, res) => {
     try {
         const { id } = req.params;
-        if (req.user.role !== 'SUPER_ADMIN' && req.user.role !== 'LIDER_DOCE') {
+        const moduleId = parseInt(id);
+        const isAdmin = req.user.role === 'SUPER_ADMIN';
+        const isProfesorRole = req.user.role === 'PROFESOR';
+
+        if (!isAdmin && !isProfesorRole && req.user.role !== 'LIDER_DOCE') {
             return res.status(403).json({ error: 'Not authorized to delete classes' });
         }
 
-        await prisma.seminarModule.delete({
-            where: { id: parseInt(id) }
+        // Check if there are "notes" or "information" (grades, project notes, etc.)
+        const enrollmentsWithData = await prisma.seminarEnrollment.findMany({
+            where: {
+                moduleId,
+                OR: [
+                    { finalGrade: { not: null } },
+                    { projectNotes: { not: null, not: "" } },
+                    {
+                        classAttendances: {
+                            some: {
+                                OR: [
+                                    { grade: { not: null } },
+                                    { notes: { not: null, not: "" } }
+                                ]
+                            }
+                        }
+                    }
+                ]
+            }
         });
 
-        res.json({ message: 'Module deleted' });
+        if (enrollmentsWithData.length > 0) {
+            return res.status(400).json({
+                error: 'No se puede eliminar la clase, porque existe información en esta clase.'
+            });
+        }
+
+        // If no "information", we can delete. 
+        // We handle the manual cascade for enrollments and attendances.
+        await prisma.$transaction([
+            prisma.classAttendance.deleteMany({
+                where: { enrollment: { moduleId } }
+            }),
+            prisma.seminarEnrollment.deleteMany({
+                where: { moduleId }
+            }),
+            // ClassMaterial is already onDelete: Cascade in schema, but we can be explicit if we want.
+            // But let's let Prisma/DB handle it for those that have it. 
+            // SeminarEnrollment definitely needs manual help here.
+            prisma.seminarModule.delete({
+                where: { id: moduleId }
+            })
+        ]);
+
+        res.json({ message: 'Clase eliminada exitosamente' });
     } catch (error) {
         console.error('Error deleting module:', error);
-        res.status(500).json({ error: 'Error deleting module' });
+        res.status(500).json({ error: 'Error al intentar eliminar la clase' });
     }
 };
 
@@ -296,10 +347,14 @@ const updateMatrixCell = async (req, res) => {
         if (!enrollment) return res.status(404).json({ error: 'Enrollment not found' });
 
         // Permission Check
-        const isProfessor = enrollment.module.professorId === user.id || user.role === 'SUPER_ADMIN';
-        const isAssignedAuxiliar = enrollment.assignedAuxiliarId === user.id;
+        const isAdmin = user.role === 'SUPER_ADMIN';
+        const isProfesorRole = user.role === 'PROFESOR';
+        const isAuxiliarRole = user.role === 'AUXILIAR';
 
-        if (!isProfessor && !isAssignedAuxiliar) {
+        const isProfessorOfModule = enrollment.module.professorId === user.id || isAdmin || isProfesorRole;
+        const isAssignedAuxiliar = enrollment.assignedAuxiliarId === user.id || isAuxiliarRole;
+
+        if (!isProfessorOfModule && !isAssignedAuxiliar) {
             return res.status(403).json({ error: 'Not authorized to edit this student' });
         }
 
@@ -439,6 +494,73 @@ const getSchoolStatsByLeader = async (req, res) => {
     }
 };
 
+// --- Class Materials ---
+
+const getClassMaterials = async (req, res) => {
+    try {
+        const { moduleId } = req.params;
+        const materials = await prisma.classMaterial.findMany({
+            where: { moduleId: parseInt(moduleId) },
+            orderBy: { classNumber: 'asc' }
+        });
+        res.json(materials);
+    } catch (error) {
+        console.error('Error fetching materials:', error);
+        res.status(500).json({ error: 'Error fetching materials' });
+    }
+};
+
+const updateClassMaterial = async (req, res) => {
+    try {
+        const { moduleId, classNumber } = req.params;
+        const { description, documents, videoLinks, quizLinks } = req.body;
+        const user = req.user;
+
+        // Verify module ownership/role
+        const moduleData = await prisma.seminarModule.findUnique({
+            where: { id: parseInt(moduleId) }
+        });
+
+        if (!moduleData) return res.status(404).json({ error: 'Module not found' });
+
+        const isAdmin = user.role === 'SUPER_ADMIN';
+        const isProfesorRole = user.role === 'PROFESOR';
+        const isModuleProfessor = moduleData.professorId === user.id || isAdmin || isProfesorRole;
+
+        if (!isModuleProfessor) {
+            return res.status(403).json({ error: 'Only professors can manage materials' });
+        }
+
+        const material = await prisma.classMaterial.upsert({
+            where: {
+                moduleId_classNumber: {
+                    moduleId: parseInt(moduleId),
+                    classNumber: parseInt(classNumber)
+                }
+            },
+            create: {
+                moduleId: parseInt(moduleId),
+                classNumber: parseInt(classNumber),
+                description,
+                documents: documents || [],
+                videoLinks: videoLinks || [],
+                quizLinks: quizLinks || []
+            },
+            update: {
+                description,
+                documents: documents || [],
+                videoLinks: videoLinks || [],
+                quizLinks: quizLinks || []
+            }
+        });
+
+        res.json(material);
+    } catch (error) {
+        console.error('Error updating materials:', error);
+        res.status(500).json({ error: 'Error updating materials' });
+    }
+};
+
 module.exports = {
     createModule,
     getModules,
@@ -448,5 +570,7 @@ module.exports = {
     deleteModule,
     updateModule,
     unenrollStudent,
-    getSchoolStatsByLeader
+    getSchoolStatsByLeader,
+    getClassMaterials,
+    updateClassMaterial
 };

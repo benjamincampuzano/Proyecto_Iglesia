@@ -4,35 +4,39 @@ const bcrypt = require('bcryptjs');
 const prisma = new PrismaClient();
 
 // Función auxiliar para obtener todos los usuarios en la red de un líder (discípulos y sub-discípulos)
-const getUserNetwork = async (userId) => {
-    const id = parseInt(userId);
+const getUserNetwork = async (leaderId) => {
+    const id = parseInt(leaderId);
     if (isNaN(id)) return [];
 
-    // Find all users who report to this leader via ANY of the hierarchy fields
-    const directDisciples = await prisma.user.findMany({
-        where: {
-            OR: [
-                { leaderId: id },
-                { liderDoceId: id },
-                { liderCelulaId: id },
-                { pastorId: id }
-            ]
-        },
-        select: { id: true }
-    });
+    const network = new Set();
+    const queue = [id];
+    const visited = new Set([id]);
 
-    let networkIds = directDisciples.map(d => d.id);
+    while (queue.length > 0) {
+        const currentId = queue.shift();
 
-    // Recursively find their disciples
-    for (const disciple of directDisciples) {
-        if (disciple.id !== id) {
-            const subNetwork = await getUserNetwork(disciple.id);
-            networkIds = [...networkIds, ...subNetwork];
+        const children = await prisma.user.findMany({
+            where: {
+                OR: [
+                    { leaderId: currentId },
+                    { liderDoceId: currentId },
+                    { liderCelulaId: currentId },
+                    { pastorId: currentId }
+                ]
+            },
+            select: { id: true }
+        });
+
+        for (const child of children) {
+            if (!visited.has(child.id)) {
+                visited.add(child.id);
+                network.add(child.id);
+                queue.push(child.id);
+            }
         }
     }
 
-    // Filter out any undefined/null values as safety measure and deduplicate
-    return [...new Set(networkIds.filter(id => id != null))];
+    return Array.from(network);
 };
 
 // Actualizar perfil propio (nombre, email)

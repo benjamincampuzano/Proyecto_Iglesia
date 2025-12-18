@@ -115,7 +115,7 @@ const Convenciones = () => {
                         Convenciones
                     </h1>
                     <p className="text-gray-500 dark:text-gray-400 mt-1">
-                        Gestión de eventos anuales y registros
+                        Seguimiento de Convenciones anuales
                     </p>
                 </div>
                 {user.role === 'SUPER_ADMIN' && (

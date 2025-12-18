@@ -29,7 +29,11 @@ const AttendanceChart = () => {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             const data = await response.json();
-            setCells(data);
+            if (Array.isArray(data)) {
+                setCells(data);
+            } else {
+                setCells([]);
+            }
         } catch (error) {
             console.error('Error fetching cells:', error);
         }
@@ -49,7 +53,11 @@ const AttendanceChart = () => {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             const data = await response.json();
-            setStats(data);
+            if (Array.isArray(data)) {
+                setStats(data);
+            } else {
+                setStats([]);
+            }
         } catch (error) {
             console.error('Error fetching stats:', error);
         } finally {

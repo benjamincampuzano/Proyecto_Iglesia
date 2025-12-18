@@ -121,12 +121,22 @@ const UserManagementModal = ({ isOpen, onClose }) => {
     const getUserNetworkIds = (userId, allUsers) => {
         const network = new Set([userId]);
         const queue = [userId];
+        const visited = new Set([userId]);
 
         while (queue.length > 0) {
             const currentId = queue.shift();
-            const userDisciples = allUsers.filter(u => u.leaderId === currentId);
+
+            // Find disciples who report to this leader via ANY field
+            const userDisciples = allUsers.filter(u =>
+                u.leaderId === currentId ||
+                u.liderDoceId === currentId ||
+                u.pastorId === currentId ||
+                u.liderCelulaId === currentId
+            );
+
             userDisciples.forEach(d => {
-                if (!network.has(d.id)) {
+                if (!visited.has(d.id)) {
+                    visited.add(d.id);
                     network.add(d.id);
                     queue.push(d.id);
                 }

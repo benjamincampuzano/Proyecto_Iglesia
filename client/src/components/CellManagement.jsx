@@ -11,6 +11,7 @@ const CellManagement = () => {
         name: '',
         leaderId: '',
         hostId: '',
+        liderDoceId: '',
         address: '',
         city: '',
         dayOfWeek: 'Viernes',
@@ -18,15 +19,23 @@ const CellManagement = () => {
     });
     const [eligibleLeaders, setEligibleLeaders] = useState([]);
     const [eligibleHosts, setEligibleHosts] = useState([]);
+    const [eligibleDoceLeaders, setEligibleDoceLeaders] = useState([]);
+
+    // Filtering
+    const [filterDoce, setFilterDoce] = useState('');
 
     // Management State
     const [selectedCell, setSelectedCell] = useState(null);
     const [eligibleMembers, setEligibleMembers] = useState([]);
     const [selectedMember, setSelectedMember] = useState('');
+    const [currentUser, setCurrentUser] = useState(null);
 
     useEffect(() => {
         fetchCells();
         fetchEligibleLeaders();
+        fetchEligibleDoceLeaders();
+        const storedUser = JSON.parse(localStorage.getItem('user'));
+        setCurrentUser(storedUser);
     }, []);
 
     // When leader changes, fetch eligible hosts (members of that leader's network)
@@ -97,6 +106,19 @@ const CellManagement = () => {
         }
     };
 
+    const fetchEligibleDoceLeaders = async () => {
+        try {
+            const token = localStorage.getItem('token');
+            const response = await fetch('http://localhost:5000/api/enviar/eligible-doce-leaders', {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            const data = await response.json();
+            setEligibleDoceLeaders(data);
+        } catch (error) {
+            console.error('Error fetching doce leaders:', error);
+        }
+    };
+
     const handleDeleteCell = async (cellId) => {
         if (!confirm('¿Estás seguro de que deseas eliminar esta célula? Esta acción desvinculará a todos sus miembros.')) return;
 
@@ -146,7 +168,7 @@ const CellManagement = () => {
             alert('Célula creada exitosamente');
             setShowCreateForm(false);
             setFormData({
-                name: '', leaderId: '', hostId: '', address: '', city: '', dayOfWeek: 'Viernes', time: '19:00'
+                name: '', leaderId: '', hostId: '', liderDoceId: '', address: '', city: '', dayOfWeek: 'Viernes', time: '19:00'
             });
             fetchCells();
         } catch (error) {
@@ -178,6 +200,33 @@ const CellManagement = () => {
             alert('Miembro asignado exitosamente');
             setSelectedMember('');
             fetchCells();
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleUpdateCoordinates = async (cellId) => {
+        try {
+            setLoading(true);
+            const token = localStorage.getItem('token');
+            const response = await fetch(`http://localhost:5000/api/enviar/cells/${cellId}/coordinates`, {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+
+            if (!response.ok) {
+                const err = await response.json();
+                throw new Error(err.error || 'Error al actualizar coordenadas');
+            }
+
+            const updatedCell = await response.json();
+            alert('Coordenadas actualizadas exitosamente');
+
+            // Update state locally
+            setCells(prev => prev.map(c => c.id === cellId ? { ...c, ...updatedCell } : c));
+            if (selectedCell && selectedCell.id === cellId) {
+                setSelectedCell(prev => ({ ...prev, ...updatedCell }));
+            }
         } catch (error) {
             alert(error.message);
         } finally {
@@ -209,12 +258,28 @@ const CellManagement = () => {
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-sm text-gray-600 bg-gray-50 p-4 rounded-lg mb-8">
                         <div>
-                            <p className="mb-2"><strong className="text-gray-800">Líder:</strong> {selectedCell.leader?.fullName}</p>
+                            <p className="mb-2"><strong className="text-gray-800">Líder:</strong> {selectedCell.leader?.fullName} <span className="text-xs text-gray-400 capitalize">({selectedCell.leader?.role?.toLowerCase()})</span></p>
+                            <p className="mb-2"><strong className="text-gray-800">Líder 12:</strong> {selectedCell.liderDoce?.fullName || <span className="text-gray-400 italic">No asignado</span>}</p>
                             <p className="mb-2"><strong className="text-gray-800">Día/Hora:</strong> {selectedCell.dayOfWeek} {selectedCell.time}</p>
                         </div>
                         <div>
                             <p className="mb-2"><strong className="text-gray-800">Ciudad:</strong> {selectedCell.city}</p>
                             <p className="mb-2"><strong className="text-gray-800">Dirección:</strong> {selectedCell.address}</p>
+                            <div className="flex items-center gap-3">
+                                <p><strong className="text-gray-800">Coordenadas:</strong> {
+                                    selectedCell.latitude && selectedCell.longitude
+                                        ? `${selectedCell.latitude.toFixed(6)}, ${selectedCell.longitude.toFixed(6)}`
+                                        : <span className="text-red-400 italic">Sin georreferenciar</span>
+                                }</p>
+                                <button
+                                    onClick={() => handleUpdateCoordinates(selectedCell.id)}
+                                    disabled={loading}
+                                    className="text-[10px] bg-blue-600 text-white px-2 py-1 rounded hover:bg-blue-700 disabled:bg-gray-400 font-bold transition-all"
+                                    title="Reintentar obtener coordenadas del mapa"
+                                >
+                                    Georreferenciar Ahora
+                                </button>
+                            </div>
                         </div>
                     </div>
 
@@ -286,6 +351,20 @@ const CellManagement = () => {
                         </div>
 
                         <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Líder G12 Supervisor (Opcional)</label>
+                            <select
+                                value={formData.liderDoceId}
+                                onChange={e => setFormData({ ...formData, liderDoceId: e.target.value })}
+                                className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                            >
+                                <option value="">Seleccionar Líder 12...</option>
+                                {eligibleDoceLeaders.map(l => (
+                                    <option key={l.id} value={l.id}>{l.fullName}</option>
+                                ))}
+                            </select>
+                        </div>
+
+                        <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">Líder de Célula</label>
                             <select
                                 required
@@ -295,7 +374,7 @@ const CellManagement = () => {
                             >
                                 <option value="">Seleccionar Líder...</option>
                                 {eligibleLeaders.map(l => (
-                                    <option key={l.id} value={l.id}>{l.fullName}</option>
+                                    <option key={l.id} value={l.id}>{l.fullName} ({l.role})</option>
                                 ))}
                             </select>
                         </div>
@@ -376,41 +455,85 @@ const CellManagement = () => {
                 </div>
             )}
 
+            <div className="flex flex-col md:flex-row gap-4 items-center">
+                <div className="flex-1 w-full relative">
+                    <Users className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                    <select
+                        value={filterDoce}
+                        onChange={(e) => setFilterDoce(e.target.value)}
+                        className="w-full pl-9 pr-4 py-2 border border-blue-100 rounded-xl focus:ring-2 focus:ring-blue-500 appearance-none bg-white text-sm"
+                    >
+                        <option value="">Todos los Líderes 12</option>
+                        {eligibleDoceLeaders.map(l => (
+                            <option key={l.id} value={l.id}>{l.fullName}</option>
+                        ))}
+                    </select>
+                </div>
+                <p className="text-xs text-gray-500 whitespace-nowrap">
+                    Mostrando {cells.filter(c => !filterDoce || c.liderDoceId === parseInt(filterDoce)).length} células
+                </p>
+            </div>
+
             {/* List of Cells */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {cells.map(cell => (
-                    <div key={cell.id} className="bg-white rounded-lg shadow p-6 border border-gray-100 hover:shadow-md transition-shadow">
-                        <div className="flex justify-between items-start mb-4">
-                            <h3 className="text-lg font-bold text-gray-800">{cell.name}</h3>
-                            <span className="text-xs font-semibold px-2 py-1 bg-blue-100 text-blue-800 rounded-full">
-                                {cell.members ? cell._count?.members || 0 : 0} Miembros
-                            </span>
-                        </div>
+                {cells
+                    .filter(cell => !filterDoce || cell.liderDoceId === parseInt(filterDoce))
+                    .map(cell => (
+                        <div key={cell.id} className="bg-white rounded-lg shadow p-6 border border-gray-100 hover:shadow-md transition-shadow">
+                            <div className="flex justify-between items-start mb-4">
+                                <h3 className="text-lg font-bold text-gray-800">{cell.name}</h3>
+                                <span className="text-xs font-semibold px-2 py-1 bg-blue-100 text-blue-800 rounded-full">
+                                    {cell._count?.members || 0} Miembros
+                                </span>
+                            </div>
 
-                        <div className="space-y-2 text-sm text-gray-600">
-                            <div className="flex items-center gap-2">
-                                <Users size={16} className="text-gray-400" />
-                                <span>Líder: {cell.leader?.fullName}</span>
+                            <div className="space-y-2 text-sm text-gray-600">
+                                <div className="flex items-center gap-2">
+                                    <Users size={16} className="text-gray-400" />
+                                    <span><strong className="text-gray-700">Líder:</strong> {cell.leader?.fullName}</span>
+                                </div>
+                                {cell.liderDoce && (
+                                    <div className="flex items-center gap-2">
+                                        <Users size={16} className="text-blue-300" />
+                                        <span><strong className="text-gray-700">Líder 12:</strong> {cell.liderDoce?.fullName}</span>
+                                    </div>
+                                )}
+                                <div className="flex items-center gap-2">
+                                    <MapPin size={16} className="text-gray-400" />
+                                    <span><strong className="text-gray-700">Ciudad:</strong> {cell.city}</span>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <Clock size={16} className="text-gray-400" />
+                                    <span><strong className="text-gray-700">Horario:</strong> {cell.dayOfWeek} {cell.time}</span>
+                                </div>
+                                <div className="flex items-center gap-2 pt-1">
+                                    <MapPin size={16} className="text-blue-400" />
+                                    <span className="text-xs text-gray-500 italic">
+                                        {cell.latitude && cell.longitude
+                                            ? `${cell.latitude.toFixed(4)}, ${cell.longitude.toFixed(4)}`
+                                            : 'Sin ubicación en mapa'
+                                        }
+                                    </span>
+                                </div>
+                            </div>
+
+                            <div className="mt-4 pt-4 border-t border-gray-100 flex justify-between items-center">
+                                <button
+                                    onClick={() => setSelectedCell(cell)}
+                                    className="text-blue-600 hover:text-blue-800 text-sm font-medium"
+                                >
+                                    Administrar
+                                </button>
+                                <button
+                                    onClick={() => handleDeleteCell(cell.id)}
+                                    className="text-red-500 hover:text-red-700 text-sm font-medium flex items-center gap-1"
+                                >
+                                    <Trash2 size={16} />
+                                    Eliminar
+                                </button>
                             </div>
                         </div>
-
-                        <div className="mt-4 pt-4 border-t border-gray-100 flex justify-between items-center">
-                            <button
-                                onClick={() => setSelectedCell(cell)}
-                                className="text-blue-600 hover:text-blue-800 text-sm font-medium"
-                            >
-                                Administrar
-                            </button>
-                            <button
-                                onClick={() => handleDeleteCell(cell.id)}
-                                className="text-red-500 hover:text-red-700 text-sm font-medium flex items-center gap-1"
-                            >
-                                <Trash2 size={16} />
-                                Eliminar
-                            </button>
-                        </div>
-                    </div>
-                ))}
+                    ))}
             </div>
         </div>
     );

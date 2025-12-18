@@ -36,7 +36,8 @@ const recordCellAttendance = async (req, res) => {
 
         // Check if user is authorized (cell leader or admin)
         const cell = await prisma.cell.findUnique({
-            where: { id: parseInt(cellId) }
+            where: { id: parseInt(cellId) },
+            select: { leaderId: true }
         });
 
         if (!cell) {
@@ -87,14 +88,19 @@ const getCellAttendance = async (req, res) => {
 
         // Check authorization
         const cell = await prisma.cell.findUnique({
-            where: { id: parseInt(cellId) }
+            where: { id: parseInt(cellId) },
+            select: { leaderId: true }
         });
 
         if (!cell) {
             return res.status(404).json({ error: 'Cell not found' });
         }
 
-        if (userRole !== 'SUPER_ADMIN' && userRole !== 'LIDER_DOCE' && cell.leaderId !== userId) {
+        const isMember = await prisma.user.findFirst({
+            where: { id: userId, cellId: parseInt(cellId) }
+        });
+
+        if (userRole !== 'SUPER_ADMIN' && userRole !== 'LIDER_DOCE' && cell.leaderId !== userId && !isMember) {
             return res.status(403).json({ error: 'Not authorized to view this cell attendance' });
         }
 
@@ -142,13 +148,40 @@ const getCells = async (req, res) => {
             // LIDER_DOCE can only see cells where the leader is in their network
             const networkUserIds = await getUserNetwork(userId);
             where.leaderId = { in: networkUserIds };
+        } else if (userRole === 'MIEMBRO') {
+            // MIEMBRO can only see cells they belong to
+            where.members = {
+                some: { id: userId }
+            };
         }
         // SUPER_ADMIN sees all cells (no filter)
 
         const cells = await prisma.cell.findMany({
             where,
-            include: {
+            select: {
+                id: true,
+                name: true,
+                address: true,
+                city: true,
+                latitude: true,
+                longitude: true,
+                dayOfWeek: true,
+                time: true,
                 leader: {
+                    select: {
+                        id: true,
+                        fullName: true,
+                        email: true
+                    }
+                },
+                host: {
+                    select: {
+                        id: true,
+                        fullName: true,
+                        email: true
+                    }
+                },
+                liderDoce: {
                     select: {
                         id: true,
                         fullName: true,
@@ -182,16 +215,14 @@ const getCellMembers = async (req, res) => {
 
         const cell = await prisma.cell.findUnique({
             where: { id: parseInt(cellId) },
-            include: {
+            select: {
+                leaderId: true,
                 members: {
                     select: {
                         id: true,
                         fullName: true,
                         email: true,
                         role: true
-                    },
-                    orderBy: {
-                        fullName: 'asc'
                     }
                 }
             }
@@ -201,7 +232,9 @@ const getCellMembers = async (req, res) => {
             return res.status(404).json({ error: 'Cell not found' });
         }
 
-        if (userRole !== 'SUPER_ADMIN' && userRole !== 'LIDER_DOCE' && cell.leaderId !== userId) {
+        const isMember = cell.members.some(m => m.id === userId);
+
+        if (userRole !== 'SUPER_ADMIN' && userRole !== 'LIDER_DOCE' && cell.leaderId !== userId && !isMember) {
             return res.status(403).json({ error: 'Not authorized to view this cell' });
         }
 
@@ -229,7 +262,8 @@ const getAttendanceStats = async (req, res) => {
         if (cellId) {
             // If specific cell requested, verify access
             const cell = await prisma.cell.findUnique({
-                where: { id: parseInt(cellId) }
+                where: { id: parseInt(cellId) },
+                select: { leaderId: true }
             });
 
             if (!cell) {

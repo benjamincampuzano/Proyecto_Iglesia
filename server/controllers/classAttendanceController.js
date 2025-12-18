@@ -1,5 +1,6 @@
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
+const { SCHOOL_LEVELS } = require('../utils/levelConstants');
 
 // Record class attendance
 const recordClassAttendance = async (req, res) => {
@@ -69,60 +70,81 @@ const getEnrollmentAttendances = async (req, res) => {
     }
 };
 
-// Get student progress
+// Get student progress with RBAC and level tracking
 const getStudentProgress = async (req, res) => {
     try {
         const { userId } = req.params;
+        const requestingUser = req.user;
+        const targetUserId = parseInt(userId);
+
+        // RBAC Check
+        const isSelf = requestingUser.id === targetUserId;
+        const isAdmin = requestingUser.role === 'SUPER_ADMIN';
+        const isPastor = requestingUser.role === 'PASTOR';
+
+        // For Leaders, we'd need to check the network. 
+        // For now, let's assume they can see if they are the leader in the hierarchy.
+        // But the user said: "Lider_Doce, pueda ver informacion de su propa red. Lider_celula, pueda ver la informacion de las personas de su red."
+
+        let canAccess = isSelf || isAdmin || isPastor;
+
+        if (!canAccess) {
+            // Check network
+            const targetUser = await prisma.user.findUnique({
+                where: { id: targetUserId },
+                select: { pastorId: true, liderDoceId: true, liderCelulaId: true }
+            });
+
+            if (targetUser) {
+                if (requestingUser.role === 'LIDER_DOCE' && targetUser.liderDoceId === requestingUser.id) canAccess = true;
+                if (requestingUser.role === 'LIDER_CELULA' && targetUser.liderCelulaId === requestingUser.id) canAccess = true;
+            }
+        }
+
+        if (!canAccess) {
+            return res.status(403).json({ error: 'Not authorized to view this progress' });
+        }
 
         const enrollments = await prisma.seminarEnrollment.findMany({
-            where: {
-                userId: parseInt(userId)
-            },
+            where: { userId: targetUserId },
             include: {
                 module: true,
-                classAttendances: {
-                    orderBy: {
-                        classNumber: 'asc'
-                    }
-                }
+                classAttendances: { orderBy: { classNumber: 'asc' } }
             },
-            orderBy: {
-                createdAt: 'desc'
-            }
+            orderBy: { createdAt: 'desc' }
         });
 
-        // Calculate progress for each enrollment
-        const progress = enrollments.map(enrollment => {
+        // Map enrollments to progress and also check which levels are missing
+        const progressByModuleNumber = {};
+        enrollments.forEach(enrollment => {
             const totalClasses = 10;
-            const attendedClasses = enrollment.classAttendances.filter(
-                att => att.status === 'ASISTE'
-            ).length;
-            const justifiedAbsences = enrollment.classAttendances.filter(
-                att => att.status === 'AUSENCIA_JUSTIFICADA'
-            ).length;
-            const unjustifiedAbsences = enrollment.classAttendances.filter(
-                att => att.status === 'AUSENCIA_NO_JUSTIFICADA'
-            ).length;
-            const dropped = enrollment.classAttendances.filter(
-                att => att.status === 'BAJA'
-            ).length;
+            const attendedClasses = enrollment.classAttendances.filter(att => att.status === 'ASISTE').length;
 
-            return {
+            progressByModuleNumber[enrollment.module.moduleNumber] = {
                 enrollment,
                 stats: {
                     totalClasses,
                     attendedClasses,
-                    justifiedAbsences,
-                    unjustifiedAbsences,
-                    dropped,
-                    attendancePercentage: totalClasses > 0
-                        ? ((attendedClasses / totalClasses) * 100).toFixed(2)
-                        : 0
+                    attendancePercentage: totalClasses > 0 ? ((attendedClasses / totalClasses) * 100).toFixed(2) : 0
                 }
             };
         });
 
-        res.json(progress);
+        // Create the 6-level mapping
+        const schoolLevelProgress = SCHOOL_LEVELS.map(level => {
+            const data = progressByModuleNumber[level.moduleNumber];
+            return {
+                ...level,
+                status: data ? data.enrollment.status : 'FALTA',
+                data: data || null
+            };
+        });
+
+        res.json({
+            userId: targetUserId,
+            levels: schoolLevelProgress,
+            allEnrollments: enrollments // Keep original for backwards compatibility if needed
+        });
     } catch (error) {
         console.error('Error fetching student progress:', error);
         res.status(500).json({ error: 'Error fetching student progress' });

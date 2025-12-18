@@ -1,6 +1,7 @@
 const { PrismaClient } = require('@prisma/client');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const { logActivity } = require('../utils/auditLogger');
 
 const prisma = new PrismaClient();
 
@@ -61,6 +62,15 @@ const login = async (req, res) => {
 
         const token = jwt.sign({ userId: user.id, role: user.role }, process.env.JWT_SECRET, {
             expiresIn: '1d',
+        });
+
+        // Log the login activity
+        await logActivity(user.id, 'LOGIN', 'SESSION');
+
+        // Update last login
+        await prisma.user.update({
+            where: { id: user.id },
+            data: { lastLogin: new Date() }
         });
 
         res.status(200).json({ token, user: { id: user.id, email: user.email, fullName: user.fullName, role: user.role } });

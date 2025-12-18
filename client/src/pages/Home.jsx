@@ -16,9 +16,13 @@ const Home = () => {
     useEffect(() => {
         if (user?.role === 'SUPER_ADMIN') {
             fetchPastores();
-        } else if (user?.role === 'PASTOR' || user?.role === 'LIDER_DOCE' || user?.role === 'LIDER_CELULA') {
-            // Automatically load their own network
-            handleSelectLeader(user);
+        } else if (['PASTOR', 'LIDER_DOCE', 'LIDER_CELULA', 'MIEMBRO'].includes(user?.role)) {
+            // Automatically load their network context
+            // If member, try to show their Doce leader's network, or just their own
+            const leaderId = (user.role === 'MIEMBRO')
+                ? (user.liderDoceId || user.pastorId || user.id)
+                : user.id;
+            handleSelectLeader({ id: leaderId, fullName: user.fullName, role: user.role });
             setLoading(false);
         } else {
             setLoading(false);
@@ -88,7 +92,7 @@ const Home = () => {
         );
     }
 
-    const canViewNetwork = ['SUPER_ADMIN', 'PASTOR', 'LIDER_DOCE', 'LIDER_CELULA'].includes(user?.role);
+    const canViewNetwork = ['SUPER_ADMIN', 'PASTOR', 'LIDER_DOCE', 'LIDER_CELULA', 'MIEMBRO'].includes(user?.role);
     const canViewReport = ['SUPER_ADMIN', 'PASTOR', 'LIDER_DOCE'].includes(user?.role);
 
     return (

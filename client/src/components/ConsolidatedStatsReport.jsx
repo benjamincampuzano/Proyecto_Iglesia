@@ -56,6 +56,10 @@ const ConsolidatedStatsReport = ({ simpleMode = false }) => {
         return date.toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: 'numeric' });
     };
 
+    const formatCurrency = (amount) => {
+        return new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(amount);
+    };
+
     // Restricted Access View
     if (!hasAccess) {
         return (
@@ -94,8 +98,8 @@ const ConsolidatedStatsReport = ({ simpleMode = false }) => {
     // Prepare Chart Data
     const attendanceData = transformToChartData(stats.attendanceByMonth);
     const guestsData = transformGuestsData(stats.guestsByLeader);
-    const encuentrosData = transformToChartData(stats.encuentrosByMonth);
-    const conventionsData = transformToChartData(stats.conventionsByYear);
+    // const encuentrosData = transformToChartData(stats.encuentrosByMonth);
+    // const conventionsData = transformToChartData(stats.conventionsByYear);
 
     // Extract all unique leaders for dynamic Lines/Bars
     const getAllLeaders = (dataObj) => {
@@ -107,8 +111,8 @@ const ConsolidatedStatsReport = ({ simpleMode = false }) => {
     };
 
     const attendanceLeaders = getAllLeaders(stats.attendanceByMonth || {});
-    const encuentrosLeaders = getAllLeaders(stats.encuentrosByMonth || {});
-    const conventionsLeaders = getAllLeaders(stats.conventionsByYear || {});
+    // const encuentrosLeaders = getAllLeaders(stats.encuentrosByMonth || {});
+    // const conventionsLeaders = getAllLeaders(stats.conventionsByYear || {});
 
     const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#6366f1', '#14b8a6'];
     const getColor = (index) => COLORS[index % COLORS.length];
@@ -279,49 +283,81 @@ const ConsolidatedStatsReport = ({ simpleMode = false }) => {
                     </div>
                 </div>
 
-                {/* 5. Encuentros Grouped by Leader */}
+                {/* 5. Informacion Encuentros */}
                 <div className="mb-10 page-break-inside-avoid">
                     <h2 className="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
-                        <Award className="text-purple-600" /> Asistencia a Encuentros (Por Mes)
+                        <Award className="text-purple-600" /> Informacion Encuentros
                     </h2>
-                    <div className="h-64 w-full">
-                        {encuentrosData.length > 0 ? (
-                            <ResponsiveContainer width="100%" height="100%">
-                                <BarChart data={encuentrosData}>
-                                    <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                                    <XAxis dataKey="name" />
-                                    <YAxis allowDecimals={false} />
-                                    <Tooltip />
-                                    <Legend />
-                                    {encuentrosLeaders.map((leader, index) => (
-                                        <Bar key={leader} dataKey={leader} stackId="b" fill={getColor(index + 2)} />
-                                    ))}
-                                </BarChart>
-                            </ResponsiveContainer>
-                        ) : <p className="text-gray-400 italic text-center pt-10">No hay datos de encuentros.</p>}
+                    <div className="overflow-x-auto">
+                        <table className="w-full text-sm text-left border rounded-lg overflow-hidden">
+                            <thead className="bg-gray-50 text-gray-700 uppercase">
+                                <tr>
+                                    <th className="p-3">Lider Doce</th>
+                                    <th className="p-3">Célula</th>
+                                    <th className="p-3 text-center">Inscritos</th>
+                                    <th className="p-3 text-right">Recaudado</th>
+                                    <th className="p-3 text-right">Saldo</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-gray-100">
+                                {Object.keys(stats.encuentrosInfo || {}).map((leader) => (
+                                    Object.keys(stats.encuentrosInfo[leader]).map((cell, idx) => {
+                                        const data = stats.encuentrosInfo[leader][cell];
+                                        return (
+                                            <tr key={`${leader}-${cell}`} className="hover:bg-gray-50">
+                                                {idx === 0 && (
+                                                    <td className="p-3 font-medium border-r" rowSpan={Object.keys(stats.encuentrosInfo[leader]).length}>
+                                                        {leader}
+                                                    </td>
+                                                )}
+                                                <td className="p-3 text-gray-600">{cell}</td>
+                                                <td className="p-3 text-center font-bold">{data.count}</td>
+                                                <td className="p-3 text-right text-green-600 font-medium">{formatCurrency(data.totalPaid)}</td>
+                                                <td className="p-3 text-right text-red-500 font-medium">{formatCurrency(data.balance)}</td>
+                                            </tr>
+                                        );
+                                    })
+                                ))}
+                                {(!stats.encuentrosInfo || Object.keys(stats.encuentrosInfo).length === 0) && (
+                                    <tr><td colSpan="5" className="p-4 text-center text-gray-400">Sin datos de encuentros</td></tr>
+                                )}
+                            </tbody>
+                        </table>
                     </div>
                 </div>
 
-                {/* 6. Conventions by Year */}
+                {/* 6. Informacion Convenciones */}
                 <div className="mb-10 page-break-inside-avoid">
                     <h2 className="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
-                        <Award className="text-pink-600" /> Asistencia a Convenciones (Por Año)
+                        <Award className="text-pink-600" /> Informacion Convenciones
                     </h2>
-                    <div className="h-64 w-full">
-                        {conventionsData.length > 0 ? (
-                            <ResponsiveContainer width="100%" height="100%">
-                                <BarChart data={conventionsData}>
-                                    <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                                    <XAxis dataKey="name" />
-                                    <YAxis allowDecimals={false} />
-                                    <Tooltip />
-                                    <Legend />
-                                    {conventionsLeaders.map((leader, index) => (
-                                        <Bar key={leader} dataKey={leader} stackId="c" fill={getColor(index + 4)} />
-                                    ))}
-                                </BarChart>
-                            </ResponsiveContainer>
-                        ) : <p className="text-gray-400 italic text-center pt-10">No hay datos de convenciones.</p>}
+                    <div className="overflow-x-auto">
+                        <table className="w-full text-sm text-left border rounded-lg overflow-hidden">
+                            <thead className="bg-gray-50 text-gray-700 uppercase">
+                                <tr>
+                                    <th className="p-3">Lider Doce</th>
+                                    <th className="p-3 text-center">Cant. Inscritos</th>
+                                    <th className="p-3 text-right">Total Recaudado</th>
+                                    <th className="p-3 text-right">Saldo Pendiente</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-gray-100">
+                                {Object.keys(stats.conventionsInfo || {}).map((leader) => {
+                                    const data = stats.conventionsInfo[leader];
+                                    return (
+                                        <tr key={leader} className="hover:bg-gray-50">
+                                            <td className="p-3 font-medium">{leader}</td>
+                                            <td className="p-3 text-center font-bold">{data.count}</td>
+                                            <td className="p-3 text-right text-green-600 font-medium">{formatCurrency(data.totalPaid)}</td>
+                                            <td className="p-3 text-right text-red-500 font-medium">{formatCurrency(data.balance)}</td>
+                                        </tr>
+                                    );
+                                })}
+                                {(!stats.conventionsInfo || Object.keys(stats.conventionsInfo).length === 0) && (
+                                    <tr><td colSpan="4" className="p-4 text-center text-gray-400">Sin datos de convenciones</td></tr>
+                                )}
+                            </tbody>
+                        </table>
                     </div>
                 </div>
 

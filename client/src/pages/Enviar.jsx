@@ -1,16 +1,18 @@
 import { useState } from 'react';
+import { useAuth } from '../context/AuthContext';
 import CellAttendance from '../components/CellAttendance';
 import AttendanceChart from '../components/AttendanceChart';
 import CellManagement from '../components/CellManagement';
 
 const Enviar = () => {
+    const { user } = useAuth();
     const [activeTab, setActiveTab] = useState('attendance');
 
     const tabs = [
         { id: 'attendance', label: 'Asistencia a la Célula', component: CellAttendance },
-        { id: 'stats', label: 'Estadísticas', component: AttendanceChart },
-        { id: 'gestion', label: 'Gestión de Células', component: CellManagement }
-    ];
+        { id: 'stats', label: 'Estadísticas', component: AttendanceChart, roles: ['SUPER_ADMIN', 'PASTOR', 'LIDER_DOCE', 'LIDER_CELULA'] },
+        { id: 'gestion', label: 'Gestión de Células', component: CellManagement, roles: ['SUPER_ADMIN', 'PASTOR', 'LIDER_DOCE'] }
+    ].filter(tab => !tab.roles || tab.roles.includes(user?.role));
 
     const ActiveComponent = tabs.find(tab => tab.id === activeTab)?.component;
 

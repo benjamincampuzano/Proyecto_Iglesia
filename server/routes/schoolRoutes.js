@@ -10,7 +10,9 @@ const {
     deleteModule,
     updateModule,
     unenrollStudent,
-    getSchoolStatsByLeader
+    getSchoolStatsByLeader,
+    getClassMaterials,
+    updateClassMaterial
 } = require('../controllers/schoolController');
 
 router.use(authenticate); // Protect all routes
@@ -24,6 +26,10 @@ router.get('/modules/:id/matrix', getModuleMatrix);
 router.post('/enroll', enrollStudent);
 router.delete('/enrollments/:enrollmentId', unenrollStudent); // New
 router.post('/matrix/update', updateMatrixCell);
+
+// Materials
+router.get('/modules/:moduleId/materials', getClassMaterials);
+router.post('/modules/:moduleId/materials/:classNumber', updateClassMaterial);
 
 // Stats
 router.get('/stats/leader', getSchoolStatsByLeader); // New

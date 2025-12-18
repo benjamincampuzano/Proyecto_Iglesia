@@ -1,7 +1,7 @@
 import { Outlet, Link, useLocation } from 'react-router-dom';
 import { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { Home, Users, UserPlus, Heart, Send, Calendar, BookOpen, LogOut, Network } from 'lucide-react';
+import { Home, Users, UserPlus, Heart, Send, Calendar, BookOpen, LogOut, Network, Activity } from 'lucide-react';
 import UserMenu from '../components/UserMenu';
 import UserProfileModal from '../components/UserProfileModal';
 import UserManagementModal from '../components/UserManagementModal';
@@ -36,6 +36,9 @@ const Layout = () => {
         { to: '/enviar', icon: Send, label: 'Enviar' },
         { to: '/encuentros', icon: Users, label: 'Encuentros' },
         { to: '/convenciones', icon: Calendar, label: 'Convenciones' },
+        ...(user.role === 'SUPER_ADMIN' || user.role === 'PASTOR'
+            ? [{ to: '/auditoria', icon: Activity, label: 'Auditoría' }]
+            : [])
     ];
 
     return (

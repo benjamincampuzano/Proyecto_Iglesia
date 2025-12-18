@@ -1,15 +1,17 @@
 import { useState } from 'react';
+import { useAuth } from '../context/AuthContext';
 import ChurchAttendance from '../components/ChurchAttendance';
 import ChurchAttendanceChart from '../components/ChurchAttendanceChart';
 
 
 const Consolidar = () => {
+    const { user } = useAuth();
     const [activeTab, setActiveTab] = useState('attendance');
 
     const tabs = [
         { id: 'attendance', label: 'Asistencia a la Iglesia', component: ChurchAttendance },
-        { id: 'stats', label: 'Estadísticas', component: ChurchAttendanceChart }
-    ];
+        { id: 'stats', label: 'Estadísticas', component: ChurchAttendanceChart, roles: ['SUPER_ADMIN', 'PASTOR', 'LIDER_DOCE', 'LIDER_CELULA'] }
+    ].filter(tab => !tab.roles || tab.roles.includes(user?.role));
 
     const ActiveComponent = tabs.find(tab => tab.id === activeTab)?.component;
 

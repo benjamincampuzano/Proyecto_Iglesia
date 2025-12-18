@@ -1,11 +1,12 @@
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 const axios = require('axios');
+const { logActivity } = require('../utils/auditLogger');
 
 // Helper for Geocoding (Nominatim OpenStreetMap)
 const getCoordinates = async (address, city) => {
     try {
-        const query = `${address}, ${city}`;
+        const query = `${address}, ${city}, Colombia`;
         const encodedQuery = encodeURIComponent(query);
         const url = `https://nominatim.openstreetmap.org/search?q=${encodedQuery}&format=json&limit=1`;
 
@@ -15,11 +16,13 @@ const getCoordinates = async (address, city) => {
         });
 
         if (response.data && response.data.length > 0) {
+            console.log(`Geocoding successful for ${query}:`, response.data[0].lat, response.data[0].lon);
             return {
                 lat: parseFloat(response.data[0].lat),
                 lon: parseFloat(response.data[0].lon)
             };
         }
+        console.warn(`Geocoding failed for ${query}: No results`);
         return { lat: null, lon: null };
     } catch (error) {
         console.error('Geocoding error:', error.message);
@@ -58,9 +61,10 @@ const getNetworkIds = async (leaderId) => {
 // Create a new cell
 const createCell = async (req, res) => {
     try {
-        const { name, leaderId, hostId, address, city, dayOfWeek, time } = req.body;
+        const { name, leaderId, hostId, address, city, dayOfWeek, time, liderDoceId } = req.body;
         const requestedLeaderId = parseInt(leaderId);
         const requestedHostId = parseInt(hostId);
+        const requestedLiderDoceId = liderDoceId ? parseInt(liderDoceId) : null;
 
         if (!name || !leaderId || !address || !city || !dayOfWeek || !time) {
             return res.status(400).json({ error: 'Missing defined fields' });
@@ -86,6 +90,7 @@ const createCell = async (req, res) => {
                 name,
                 leaderId: requestedLeaderId,
                 hostId: requestedHostId,
+                liderDoceId: requestedLiderDoceId,
                 address,
                 city,
                 latitude: coords.lat,
@@ -94,6 +99,8 @@ const createCell = async (req, res) => {
                 time
             }
         });
+
+        await logActivity(id, 'CREATE', 'CELL', newCell.id, { name: newCell.name });
 
         res.json(newCell);
 
@@ -113,6 +120,9 @@ const assignMember = async (req, res) => {
             data: { cellId: parseInt(cellId) }
         });
 
+        const { id: currentUserId } = req.user;
+        await logActivity(currentUserId, 'UPDATE', 'USER', parseInt(userId), { action: 'ASSIGN_CELL', cellId: parseInt(cellId) });
+
         res.json({ message: 'Member assigned successfully' });
     } catch (error) {
         console.error('Error assigning member:', error);
@@ -130,15 +140,17 @@ const getEligibleLeaders = async (req, res) => {
         if (role === 'LIDER_DOCE') {
             const networkIds = await getNetworkIds(userId);
             where.id = { in: [...networkIds, userId] };
+            where.role = 'LIDER_CELULA';
         } else if (role === 'SUPER_ADMIN') {
-            // all
+            // Admins can assign to LIDER_DOCE or LIDER_CELULA
+            where.role = { in: ['LIDER_CELULA', 'LIDER_DOCE'] };
         } else {
             return res.json([]);
         }
 
         const leaders = await prisma.user.findMany({
             where,
-            select: { id: true, fullName: true }
+            select: { id: true, fullName: true, role: true }
         });
         res.json(leaders);
     } catch (error) {
@@ -203,7 +215,10 @@ const deleteCell = async (req, res) => {
         }
 
         // Find cell to verify ownership/existence
-        const cell = await prisma.cell.findUnique({ where: { id: cellId } });
+        const cell = await prisma.cell.findUnique({
+            where: { id: cellId },
+            select: { leaderId: true }
+        });
         if (!cell) {
             return res.status(404).json({ error: 'Cell not found' });
         }
@@ -232,9 +247,12 @@ const deleteCell = async (req, res) => {
 
             // C. Delete cell
             await tx.cell.delete({
-                where: { id: cellId }
+                where: { id: cellId },
+                select: { id: true, name: true }
             });
         });
+
+        await logActivity(userId, 'DELETE', 'CELL', cellId, { name: cell.name });
 
         res.json({ message: 'Cell deleted successfully' });
 
@@ -244,11 +262,73 @@ const deleteCell = async (req, res) => {
     }
 };
 
+// Update coordinates for an existing cell
+const updateCellCoordinates = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const cellId = parseInt(id);
+
+        const cell = await prisma.cell.findUnique({
+            where: { id: cellId },
+            select: { address: true, city: true }
+        });
+
+        if (!cell) {
+            return res.status(404).json({ error: 'Célula no encontrada' });
+        }
+
+        const coords = await getCoordinates(cell.address, cell.city);
+
+        if (coords.lat === null) {
+            return res.status(400).json({ error: 'No se pudieron obtener coordenadas para esta dirección. Verifique que la dirección y ciudad sean correctas.' });
+        }
+
+        const updatedCell = await prisma.cell.update({
+            where: { id: cellId },
+            data: {
+                latitude: coords.lat,
+                longitude: coords.lon
+            }
+        });
+
+        res.json(updatedCell);
+    } catch (error) {
+        console.error('Error updating coordinates:', error);
+        res.status(500).json({ error: 'Error al actualizar coordenadas' });
+    }
+};
+
+// Get Eligible Doce Leaders
+const getEligibleDoceLeaders = async (req, res) => {
+    try {
+        const { role, id } = req.user;
+        let where = { role: 'LIDER_DOCE' };
+
+        if (role === 'LIDER_DOCE') {
+            // A LIDER_DOCE can only assign themselves or someone in their network if they were higher? 
+            // Usually, they just assign themselves or its assigned by SUPER_ADMIN.
+            where.id = parseInt(id);
+        } else if (role !== 'SUPER_ADMIN') {
+            return res.json([]);
+        }
+
+        const leaders = await prisma.user.findMany({
+            where,
+            select: { id: true, fullName: true, role: true }
+        });
+        res.json(leaders);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+};
+
 module.exports = {
     createCell,
     deleteCell,
     assignMember,
     getEligibleLeaders,
     getEligibleHosts,
-    getEligibleMembers
+    getEligibleMembers,
+    updateCellCoordinates,
+    getEligibleDoceLeaders
 };

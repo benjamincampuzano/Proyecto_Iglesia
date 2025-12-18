@@ -1,5 +1,6 @@
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
+const { logActivity } = require('../utils/auditLogger');
 
 const getConventions = async (req, res) => {
     try {
@@ -11,13 +12,25 @@ const getConventions = async (req, res) => {
 
         const conventions = await prisma.convention.findMany({
             where,
-            include: {
+            select: {
+                id: true,
+                type: true,
+                year: true,
+                theme: true,
+                cost: true,
+                startDate: true,
+                endDate: true,
+                liderDoceIds: true,
                 _count: {
                     select: { registrations: true }
                 },
                 registrations: {
-                    include: {
-                        payments: true
+                    select: {
+                        id: true,
+                        discountPercentage: true,
+                        payments: {
+                            select: { amount: true }
+                        }
                     }
                 }
             },
@@ -97,11 +110,37 @@ const getConventionById = async (req, res) => {
     try {
         const convention = await prisma.convention.findUnique({
             where: { id: parseInt(id) },
-            include: {
+            select: {
+                id: true,
+                type: true,
+                year: true,
+                theme: true,
+                cost: true,
+                startDate: true,
+                endDate: true,
+                liderDoceIds: true,
                 registrations: {
-                    include: {
-                        user: true,
+                    select: {
+                        id: true,
+                        userId: true,
+                        discountPercentage: true,
+                        needsTransport: true,
+                        needsAccommodation: true,
+                        user: {
+                            select: {
+                                id: true,
+                                fullName: true,
+                                email: true,
+                                role: true
+                            }
+                        },
                         payments: {
+                            select: {
+                                id: true,
+                                amount: true,
+                                date: true,
+                                notes: true
+                            },
                             orderBy: { date: 'desc' }
                         }
                     }
@@ -163,7 +202,8 @@ const createConvention = async (req, res) => {
                     type,
                     year: parseInt(year)
                 }
-            }
+            },
+            select: { id: true }
         });
 
         if (existing) {
@@ -181,6 +221,8 @@ const createConvention = async (req, res) => {
                 liderDoceIds: liderDoceIds || []
             }
         });
+
+        await logActivity(req.user.id, 'CREATE', 'CONVENTION', convention.id, { type, year });
 
         res.status(201).json(convention);
     } catch (error) {
@@ -210,8 +252,11 @@ const updateConvention = async (req, res) => {
 
         const convention = await prisma.convention.update({
             where: { id: parseInt(id) },
-            data: updateData
+            data: updateData,
+            select: { id: true, type: true, year: true }
         });
+
+        await logActivity(req.user.id, 'UPDATE', 'CONVENTION', convention.id, { type: convention.type, year: convention.year });
 
         res.json(convention);
     } catch (error) {
@@ -231,7 +276,8 @@ const registerUser = async (req, res) => {
                     userId: parseInt(userId),
                     conventionId: parseInt(conventionId)
                 }
-            }
+            },
+            select: { id: true }
         });
 
         if (existing) {
@@ -246,10 +292,19 @@ const registerUser = async (req, res) => {
                 needsTransport: needsTransport || false,
                 needsAccommodation: needsAccommodation || false
             },
-            include: {
-                user: true
+            select: {
+                id: true,
+                user: {
+                    select: {
+                        id: true,
+                        fullName: true,
+                        email: true
+                    }
+                }
             }
         });
+
+        await logActivity(req.user.id, 'CREATE', 'CONVENTION_REGISTRATION', registration.id, { userId, conventionId });
 
         res.status(201).json(registration);
     } catch (error) {
@@ -287,9 +342,12 @@ const deleteRegistration = async (req, res) => {
             return res.status(403).json({ error: 'Not authorized to delete registrations' });
         }
 
-        await prisma.conventionRegistration.delete({
-            where: { id: parseInt(registrationId) }
+        const registration = await prisma.conventionRegistration.delete({
+            where: { id: parseInt(registrationId) },
+            select: { id: true, userId: true, conventionId: true }
         });
+
+        await logActivity(req.user.id, 'DELETE', 'CONVENTION_REGISTRATION', registration.id, { userId: registration.userId, conventionId: registration.conventionId });
 
         res.json({ message: 'Registration deleted successfully' });
     } catch (error) {
@@ -307,9 +365,12 @@ const deleteConvention = async (req, res) => {
             return res.status(403).json({ error: 'Not authorized to delete conventions' });
         }
 
-        await prisma.convention.delete({
-            where: { id: parseInt(id) }
+        const convention = await prisma.convention.delete({
+            where: { id: parseInt(id) },
+            select: { id: true, type: true, year: true }
         });
+
+        await logActivity(req.user.id, 'DELETE', 'CONVENTION', convention.id, { type: convention.type, year: convention.year });
 
         res.json({ message: 'Convention deleted successfully' });
     } catch (error) {
@@ -325,18 +386,30 @@ const getConventionBalanceReport = async (req, res) => {
 
         const convention = await prisma.convention.findUnique({
             where: { id: parseInt(id) },
-            include: {
+            select: {
+                cost: true,
                 registrations: {
-                    include: {
+                    select: {
+                        id: true,
+                        userId: true,
+                        discountPercentage: true,
                         user: {
-                            include: {
+                            select: {
+                                fullName: true,
+                                role: true,
                                 leader: { select: { fullName: true } },
                                 liderDoce: { select: { fullName: true } },
                                 liderCelula: { select: { fullName: true } },
                                 pastor: { select: { fullName: true } }
                             }
                         },
-                        payments: true
+                        payments: {
+                            select: {
+                                amount: true,
+                                date: true,
+                                notes: true
+                            }
+                        }
                     }
                 }
             }

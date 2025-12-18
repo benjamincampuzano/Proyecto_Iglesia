@@ -127,11 +127,23 @@ const getGeneralStats = async (req, res) => {
 
         // 4. CELLS: Count, Attendance, Location Map by Lider_Doce
         const cells = await prisma.cell.findMany({
-            include: {
+            select: {
+                id: true,
+                name: true,
+                address: true,
+                city: true,
+                latitude: true,
+                longitude: true,
                 leader: {
-                    include: { liderDoce: true, leader: true }
+                    select: {
+                        fullName: true,
+                        liderDoce: { select: { fullName: true } },
+                        leader: { select: { fullName: true } }
+                    }
                 },
-                attendances: true
+                attendances: {
+                    select: { date: true, status: true }
+                }
             }
         });
 
@@ -186,61 +198,90 @@ const getGeneralStats = async (req, res) => {
             delete data.cellCountWithAttendance;
         });
 
-        // 5. ENCUENTROS: Attendees by Month by Lider_Doce
+        // 5. ENCUENTROS: Break down by Leader -> Cell -> Registrations Count -> Financials
         const encuentroRegs = await prisma.encuentroRegistration.findMany({
             where: {
-                status: 'ATTENDED',
+                status: { not: 'CANCELLED' },
                 encuentro: {
                     startDate: { gte: start, lte: end }
                 }
             },
             include: {
                 encuentro: true,
+                payments: true,
                 guest: {
                     include: {
                         invitedBy: {
-                            include: { liderDoce: true, leader: true }
+                            include: {
+                                liderDoce: { select: { fullName: true } },
+                                leader: { select: { fullName: true } },
+                                cell: { select: { name: true } }
+                            }
                         }
                     }
                 }
             }
         });
 
-        const encuentrosByMonth = {};
+        const encuentrosInfo = {};
         encuentroRegs.forEach(reg => {
-            const date = new Date(reg.encuentro.startDate);
-            const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
             const leaderName = getLiderName(reg.guest.invitedBy);
+            const cellName = reg.guest.invitedBy.cell ? reg.guest.invitedBy.cell.name : 'Sin Célula';
 
-            if (!encuentrosByMonth[monthKey]) encuentrosByMonth[monthKey] = {};
-            encuentrosByMonth[monthKey][leaderName] = (encuentrosByMonth[monthKey][leaderName] || 0) + 1;
+            if (!encuentrosInfo[leaderName]) encuentrosInfo[leaderName] = {};
+            if (!encuentrosInfo[leaderName][cellName]) {
+                encuentrosInfo[leaderName][cellName] = { count: 0, totalCost: 0, totalPaid: 0, balance: 0 };
+            }
+
+            const stats = encuentrosInfo[leaderName][cellName];
+            stats.count++;
+
+            const finalCost = reg.encuentro.cost * (1 - (reg.discountPercentage || 0) / 100);
+            const paid = reg.payments.reduce((sum, p) => sum + p.amount, 0);
+
+            stats.totalCost += finalCost;
+            stats.totalPaid += paid;
+            stats.balance += (finalCost - paid);
         });
 
-        // 6. CONVENTIONS: Attendees by Year by Lider_Doce
+        // 6. CONVENTIONS: Break down by Leader -> Registrations Count -> Financials
         const conventionRegs = await prisma.conventionRegistration.findMany({
             where: {
-                status: 'ATTENDED',
+                status: { not: 'CANCELLED' },
                 convention: {
                     startDate: { gte: start }
                 }
             },
             include: {
                 convention: true,
+                payments: true,
                 user: {
-                    include: { liderDoce: true, leader: true }
+                    include: {
+                        liderDoce: { select: { fullName: true } },
+                        leader: { select: { fullName: true } }
+                    }
                 }
             }
         });
 
-        const conventionsByYear = {};
+        const conventionsInfo = {};
         conventionRegs.forEach(reg => {
-            const year = reg.convention.year;
             const leaderName = getLiderName(reg.user);
 
-            if (!conventionsByYear[year]) conventionsByYear[year] = {};
-            conventionsByYear[year][leaderName] = (conventionsByYear[year][leaderName] || 0) + 1;
-        });
+            if (!conventionsInfo[leaderName]) {
+                conventionsInfo[leaderName] = { count: 0, totalCost: 0, totalPaid: 0, balance: 0 };
+            }
 
+            const stats = conventionsInfo[leaderName];
+            stats.count++;
+
+            const finalCost = reg.convention.cost * (1 - (reg.discountPercentage || 0) / 100);
+            const paid = reg.payments.reduce((sum, p) => sum + p.amount, 0);
+
+            stats.totalCost += finalCost;
+            stats.totalPaid += paid;
+            stats.balance += (finalCost - paid);
+        });
 
         res.json({
             period: { start, end },
@@ -248,8 +289,8 @@ const getGeneralStats = async (req, res) => {
             attendanceByMonth,
             studentStats,
             cellsByLeader,
-            encuentrosByMonth,
-            conventionsByYear,
+            encuentrosInfo,
+            conventionsInfo,
             summary: {
                 totalMembers: await prisma.user.count({ where: { role: { not: 'SUPER_ADMIN' } } }),
                 activeStudents: await prisma.seminarEnrollment.count({ where: { status: 'EN_PROGRESO' } }),

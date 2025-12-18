@@ -1,10 +1,12 @@
 import { useState, useEffect } from 'react';
 import { Calendar, Download, Users, TrendingUp, UserCheck, Loader } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
+import { useAuth } from '../context/AuthContext';
 import * as XLSX from 'xlsx';
 import axios from 'axios';
 
 const GuestStats = () => {
+    const { user } = useAuth();
     const [stats, setStats] = useState(null);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
@@ -144,16 +146,18 @@ const GuestStats = () => {
                             className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-blue-500"
                         />
                     </div>
-                    <div className="flex items-end">
-                        <button
-                            onClick={exportToExcel}
-                            disabled={!stats || loading}
-                            className="w-full flex items-center justify-center space-x-2 bg-green-600 hover:bg-green-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white px-4 py-2 rounded-lg transition-colors"
-                        >
-                            <Download size={20} />
-                            <span>Exportar a Excel</span>
-                        </button>
-                    </div>
+                    {['SUPER_ADMIN', 'LIDER_DOCE'].includes(user?.role) && (
+                        <div className="flex items-end">
+                            <button
+                                onClick={exportToExcel}
+                                disabled={!stats || loading}
+                                className="w-full flex items-center justify-center space-x-2 bg-green-600 hover:bg-green-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white px-4 py-2 rounded-lg transition-colors"
+                            >
+                                <Download size={20} />
+                                <span>Exportar a Excel</span>
+                            </button>
+                        </div>
+                    )}
                 </div>
 
                 {loading ? (

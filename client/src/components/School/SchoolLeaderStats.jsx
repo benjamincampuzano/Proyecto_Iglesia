@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-import { Download, Users, BookOpen, UserCheck, TrendingUp } from 'lucide-react';
+import { useAuth } from "../../context/AuthContext";
 import * as XLSX from 'xlsx';
 
 const SchoolLeaderStats = () => {
+    const { user } = useAuth();
     const [data, setData] = useState([]);
     const [loading, setLoading] = useState(true);
 
@@ -49,13 +50,15 @@ const SchoolLeaderStats = () => {
                     <h2 className="text-2xl font-bold text-gray-800 dark:text-white">Reporte Estadístico por Líder</h2>
                     <p className="text-gray-500 dark:text-gray-400">Desempeño de estudiantes agrupado por Líder de 12</p>
                 </div>
-                <button
-                    onClick={downloadExcel}
-                    className="flex items-center px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg shadow transition-all"
-                >
-                    <Download size={18} className="mr-2" />
-                    Exportar Excel
-                </button>
+                {['SUPER_ADMIN', 'LIDER_DOCE'].includes(user?.role) && (
+                    <button
+                        onClick={downloadExcel}
+                        className="flex items-center px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg shadow transition-all"
+                    >
+                        <Download size={18} className="mr-2" />
+                        Exportar Excel
+                    </button>
+                )}
             </div>
 
             {/* Summary Cards */}
@@ -161,8 +164,8 @@ const SchoolLeaderStats = () => {
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300 text-center">
                                         <span className={`px-2 py-1 rounded-full text-xs font-bold ${parseFloat(item.avgGrade) >= 4.0 ? 'bg-green-100 text-green-800' :
-                                                parseFloat(item.avgGrade) >= 3.0 ? 'bg-yellow-100 text-yellow-800' :
-                                                    'bg-red-100 text-red-800'
+                                            parseFloat(item.avgGrade) >= 3.0 ? 'bg-yellow-100 text-yellow-800' :
+                                                'bg-red-100 text-red-800'
                                             }`}>
                                             {item.avgGrade}
                                         </span>

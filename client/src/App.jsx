@@ -12,6 +12,7 @@ import Enviar from './pages/Enviar';
 import NetworkAssignment from './components/NetworkAssignment';
 import Convenciones from './pages/Convenciones';
 import Encuentros from './pages/Encuentros';
+import AuditDashboard from './pages/AuditDashboard';
 
 // Placeholder components for now
 
@@ -19,6 +20,12 @@ const PrivateRoute = ({ children }) => {
   const { user, loading } = useAuth();
   if (loading) return <div>Loading...</div>;
   return user ? children : <Navigate to="/login" />;
+};
+
+const AdminRoute = ({ children }) => {
+  const { user, loading } = useAuth();
+  if (loading) return <div>Loading...</div>;
+  return user && (user.role === 'SUPER_ADMIN' || user.role === 'PASTOR') ? children : <Navigate to="/" />;
 };
 
 function App() {
@@ -39,6 +46,7 @@ function App() {
               <Route path="encuentros" element={<Encuentros />} />
               <Route path="convenciones" element={<Convenciones />} />
               <Route path="network" element={<NetworkAssignment />} />
+              <Route path="auditoria" element={<AdminRoute><AuditDashboard /></AdminRoute>} />
             </Route>
           </Routes>
         </AuthProvider>

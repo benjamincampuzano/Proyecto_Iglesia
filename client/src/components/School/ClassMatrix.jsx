@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Save, UserPlus, Trash2 } from 'lucide-react';
+import { Save, UserPlus, Trash2, BookOpen, ExternalLink } from 'lucide-react';
+import ClassMaterialManager from './ClassMaterialManager';
 
 const ClassMatrix = ({ courseId }) => {
     const [data, setData] = useState(null);
@@ -8,6 +9,9 @@ const ClassMatrix = ({ courseId }) => {
     const [error, setError] = useState(null);
     const [potentialStudents, setPotentialStudents] = useState([]);
     const [showEnrollModal, setShowEnrollModal] = useState(false);
+    const [showMaterialModal, setShowMaterialModal] = useState(false);
+    const [selectedClassNum, setSelectedClassNum] = useState(null);
+    const [classMaterials, setClassMaterials] = useState([]);
 
     // Enrollment Form
     const [enrollForm, setEnrollForm] = useState({
@@ -18,6 +22,7 @@ const ClassMatrix = ({ courseId }) => {
     useEffect(() => {
         fetchMatrix();
         fetchUsers();
+        fetchMaterials();
     }, [courseId]);
 
     const fetchMatrix = async () => {
@@ -32,6 +37,18 @@ const ClassMatrix = ({ courseId }) => {
         } catch (err) {
             setError('Error loading matrix');
             setLoading(false);
+        }
+    };
+
+    const fetchMaterials = async () => {
+        try {
+            const token = localStorage.getItem('token');
+            const res = await axios.get(`http://localhost:5000/api/school/modules/${courseId}/materials`, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            setClassMaterials(res.data);
+        } catch (err) {
+            console.error(err);
         }
     };
 
@@ -132,11 +149,31 @@ const ClassMatrix = ({ courseId }) => {
                             <th className="px-2 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider w-32">
                                 Auxiliar
                             </th>
-                            {[...Array(10)].map((_, i) => (
-                                <th key={i} className="px-1 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider min-w-[80px]">
-                                    Clase {i + 1}
-                                </th>
-                            ))}
+                            {[...Array(10)].map((_, i) => {
+                                const classNum = i + 1;
+                                const hasMaterial = classMaterials.some(m => m.classNumber === classNum);
+                                return (
+                                    <th key={i} className="px-1 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider min-w-[80px]">
+                                        <div className="flex flex-col items-center gap-1">
+                                            <span>Clase {classNum}</span>
+                                            {isProfessor && (
+                                                <button
+                                                    onClick={() => { setSelectedClassNum(classNum); setShowMaterialModal(true); }}
+                                                    className={`p-1 rounded transition-colors ${hasMaterial ? 'text-blue-600 bg-blue-50' : 'text-gray-400 hover:text-blue-500'}`}
+                                                    title="Gestionar Material"
+                                                >
+                                                    <BookOpen size={14} />
+                                                </button>
+                                            )}
+                                            {(!isProfessor && hasMaterial) && (
+                                                <div className="text-blue-500" title="Material Disponible">
+                                                    <BookOpen size={14} />
+                                                </div>
+                                            )}
+                                        </div>
+                                    </th>
+                                );
+                            })}
                             <th className="px-2 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider min-w-[150px]">
                                 Proyecto
                             </th>
@@ -287,6 +324,17 @@ const ClassMatrix = ({ courseId }) => {
                         </form>
                     </div>
                 </div>
+            )}
+            {/* Material Modal */}
+            {showMaterialModal && (
+                <ClassMaterialManager
+                    moduleId={courseId}
+                    classNumber={selectedClassNum}
+                    onClose={() => {
+                        setShowMaterialModal(false);
+                        fetchMaterials();
+                    }}
+                />
             )}
         </div>
     );

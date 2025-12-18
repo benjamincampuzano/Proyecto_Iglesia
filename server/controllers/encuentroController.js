@@ -1,5 +1,6 @@
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
+const { logActivity } = require('../utils/auditLogger');
 
 const getEncuentros = async (req, res) => {
     try {
@@ -81,6 +82,9 @@ const createEncuentro = async (req, res) => {
                 endDate: new Date(endDate)
             }
         });
+
+        await logActivity(req.user.id, 'CREATE', 'ENCUENTRO', encuentro.id, { name: encuentro.name, type: encuentro.type });
+
         res.status(201).json(encuentro);
     } catch (error) {
         console.error(error);
@@ -95,7 +99,13 @@ const deleteEncuentro = async (req, res) => {
         if (req.user.role !== 'SUPER_ADMIN') {
             return res.status(403).json({ error: 'Not authorized' });
         }
-        await prisma.encuentro.delete({ where: { id: parseInt(id) } });
+        const encuentro = await prisma.encuentro.delete({
+            where: { id: parseInt(id) },
+            select: { id: true, name: true }
+        });
+
+        await logActivity(req.user.id, 'DELETE', 'ENCUENTRO', encuentro.id, { name: encuentro.name });
+
         res.json({ message: 'Deleted' });
     } catch (error) {
         res.status(500).json({ error: 'Error deleting' });
@@ -123,8 +133,11 @@ const updateEncuentro = async (req, res) => {
 
         const encuentro = await prisma.encuentro.update({
             where: { id: parseInt(id) },
-            data: updateData
+            data: updateData,
+            select: { id: true, name: true }
         });
+
+        await logActivity(req.user.id, 'UPDATE', 'ENCUENTRO', encuentro.id, { name: encuentro.name });
 
         res.json(encuentro);
     } catch (error) {
@@ -146,6 +159,9 @@ const registerGuest = async (req, res) => {
             },
             include: { guest: true }
         });
+
+        await logActivity(req.user.id, 'CREATE', 'ENCUENTRO_REGISTRATION', registration.id, { guestId, encuentroId });
+
         res.status(201).json(registration);
     } catch (error) {
         console.error(error);
@@ -162,7 +178,13 @@ const deleteRegistration = async (req, res) => {
         if (req.user.role !== 'SUPER_ADMIN') {
             return res.status(403).json({ error: 'Not authorized' });
         }
-        await prisma.encuentroRegistration.delete({ where: { id: parseInt(registrationId) } });
+        const registration = await prisma.encuentroRegistration.delete({
+            where: { id: parseInt(registrationId) },
+            select: { id: true, guestId: true, encuentroId: true }
+        });
+
+        await logActivity(req.user.id, 'DELETE', 'ENCUENTRO_REGISTRATION', registration.id, { guestId: registration.guestId, encuentroId: registration.encuentroId });
+
         res.json({ message: 'Deleted' });
     } catch (error) {
         res.status(500).json({ error: 'Delete failed' });
