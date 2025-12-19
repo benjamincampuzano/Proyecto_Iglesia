@@ -203,15 +203,15 @@ const CellAttendance = () => {
                 </div>
                 <button
                     onClick={handleSubmit}
-                    disabled={saving || !selectedCell || user?.role === 'MIEMBRO'}
+                    disabled={saving || !selectedCell || user?.role === 'Miembro'}
                     className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-400 transition-colors"
                 >
-                    {saving ? 'Guardando...' : (user?.role === 'MIEMBRO' ? 'Solo Lectura' : 'Guardar Asistencia')}
+                    {saving ? 'Guardando...' : (user?.role === 'Miembro' ? 'Solo Lectura' : 'Guardar Asistencia')}
                 </button>
             </div>
 
             {loading ? (
-                <div className="text-center py-8">Cargando miembros...</div>
+                <div className="text-center py-8">Cargando Miembros...</div>
             ) : (
                 <div className="bg-white rounded-lg shadow overflow-hidden">
                     <table className="min-w-full divide-y divide-gray-200">
@@ -244,14 +244,14 @@ const CellAttendance = () => {
                                             <div className="flex justify-center gap-2">
                                                 <button
                                                     onClick={() => handleAttendanceChange(member.id, 'PRESENTE')}
-                                                    disabled={user?.role === 'MIEMBRO'}
+                                                    disabled={user?.role === 'Miembro'}
                                                     className={`
                                                       inline-flex items-center gap-2 px-3 py-1.5 rounded-lg font-medium transition-colors
                                                       ${status === 'PRESENTE'
                                                             ? 'bg-green-100 text-green-800 ring-2 ring-green-500'
                                                             : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                                                         }
-                                                        ${user?.role === 'MIEMBRO' ? 'cursor-not-allowed opacity-80' : ''}
+                                                        ${user?.role === 'Miembro' ? 'cursor-not-allowed opacity-80' : ''}
                                                     `}
                                                 >
                                                     <Check className="w-4 h-4" />
@@ -259,14 +259,14 @@ const CellAttendance = () => {
                                                 </button>
                                                 <button
                                                     onClick={() => handleAttendanceChange(member.id, 'AUSENTE')}
-                                                    disabled={user?.role === 'MIEMBRO'}
+                                                    disabled={user?.role === 'Miembro'}
                                                     className={`
                                                       inline-flex items-center gap-2 px-3 py-1.5 rounded-lg font-medium transition-colors
                                                       ${status === 'AUSENTE'
                                                             ? 'bg-red-100 text-red-800 ring-2 ring-red-500'
                                                             : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                                                         }
-                                                        ${user?.role === 'MIEMBRO' ? 'cursor-not-allowed opacity-80' : ''}
+                                                        ${user?.role === 'Miembro' ? 'cursor-not-allowed opacity-80' : ''}
                                                     `}
                                                 >
                                                     <X className="w-4 h-4" />

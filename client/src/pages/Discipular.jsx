@@ -12,7 +12,7 @@ const Discipular = () => {
         { id: 'management', label: 'Clases y Notas', icon: BookOpen },
         { id: 'stats', label: 'Reporte Estadístico', icon: BarChart2 }
     ].filter(tab => {
-        if (user?.role === 'MIEMBRO' && tab.id === 'stats') return false;
+        if (user?.role === 'Miembro' && tab.id === 'stats') return false;
         return true;
     });
 

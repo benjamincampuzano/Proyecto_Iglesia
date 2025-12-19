@@ -71,11 +71,11 @@ const createCell = async (req, res) => {
         }
 
         const { role, id } = req.user;
-        if (role !== 'SUPER_ADMIN' && role !== 'LIDER_DOCE') {
+        if (role !== 'SUPER_ADMIN' && role !== 'LIDER_DOCE' && role !== 'PASTOR') {
             return res.status(403).json({ error: 'Not authorized to create cells' });
         }
 
-        if (role === 'LIDER_DOCE') {
+        if (role === 'LIDER_DOCE' || role === 'PASTOR') {
             const networkIds = await getNetworkIds(id);
             if (!networkIds.includes(requestedLeaderId) && requestedLeaderId !== parseInt(id)) {
                 return res.status(400).json({ error: 'Leader not in your network' });
@@ -137,10 +137,10 @@ const getEligibleLeaders = async (req, res) => {
         const userId = parseInt(id);
         let where = {};
 
-        if (role === 'LIDER_DOCE') {
+        if (role === 'LIDER_DOCE' || role === 'PASTOR') {
             const networkIds = await getNetworkIds(userId);
             where.id = { in: [...networkIds, userId] };
-            where.role = 'LIDER_CELULA';
+            where.role = { in: ['LIDER_CELULA', 'LIDER_DOCE', 'PASTOR'] }; // Pastors can assign themselves or others
         } else if (role === 'SUPER_ADMIN') {
             // Admins can assign to LIDER_DOCE or LIDER_CELULA
             where.role = { in: ['LIDER_CELULA', 'LIDER_DOCE'] };
@@ -168,8 +168,15 @@ const getEligibleHosts = async (req, res) => {
         const networkIds = await getNetworkIds(parseInt(leaderId));
         const ids = [parseInt(leaderId), ...networkIds];
 
+        const where = { id: { in: ids } };
+
+        // PASTOR requirement: only LIDER_DOCE can be hosts in their network cells
+        if (req.user.role === 'PASTOR') {
+            where.role = 'LIDER_DOCE';
+        }
+
         const hosts = await prisma.user.findMany({
-            where: { id: { in: ids } },
+            where,
             select: { id: true, fullName: true, role: true }
         });
         res.json(hosts);
@@ -188,12 +195,21 @@ const getEligibleMembers = async (req, res) => {
             // Can search anyone ideally, but let's limit to query if needed or return all
             const allUsers = await prisma.user.findMany({ select: { id: true, fullName: true, cellId: true } });
             return res.json(allUsers);
-        } else {
+        } else if (role === 'LIDER_DOCE' || role === 'PASTOR' || role === 'LIDER_CELULA') {
             networkIds = await getNetworkIds(id);
+        } else {
+            networkIds = [parseInt(id)];
+        }
+
+        const where = { id: { in: networkIds } };
+
+        // PASTOR requirement: only LIDER_DOCE can be members in cells created by PASTOR
+        if (role === 'PASTOR') {
+            where.role = 'LIDER_DOCE';
         }
 
         const members = await prisma.user.findMany({
-            where: { id: { in: networkIds } },
+            where,
             select: { id: true, fullName: true, role: true, cellId: true, cell: { select: { name: true } } }
         });
         res.json(members);
@@ -223,8 +239,8 @@ const deleteCell = async (req, res) => {
             return res.status(404).json({ error: 'Cell not found' });
         }
 
-        // If LIDER_DOCE, verify cell is in their network
-        if (role === 'LIDER_DOCE') {
+        // If LIDER_DOCE or PASTOR, verify cell is in their network
+        if (role === 'LIDER_DOCE' || role === 'PASTOR') {
             // Check if cell leader is in their network or is themselves
             const networkIds = await getNetworkIds(userId);
             if (!networkIds.includes(cell.leaderId) && cell.leaderId !== userId) {
@@ -302,13 +318,17 @@ const updateCellCoordinates = async (req, res) => {
 const getEligibleDoceLeaders = async (req, res) => {
     try {
         const { role, id } = req.user;
-        let where = { role: 'LIDER_DOCE' };
+        let where = {};
 
-        if (role === 'LIDER_DOCE') {
-            // A LIDER_DOCE can only assign themselves or someone in their network if they were higher? 
-            // Usually, they just assign themselves or its assigned by SUPER_ADMIN.
+        if (role === 'PASTOR') {
+            // Requirement: PASTOR selects from other Pastors
+            where.role = 'PASTOR';
+        } else if (role === 'LIDER_DOCE') {
+            where.role = 'LIDER_DOCE';
             where.id = parseInt(id);
-        } else if (role !== 'SUPER_ADMIN') {
+        } else if (role === 'SUPER_ADMIN') {
+            where.role = 'LIDER_DOCE';
+        } else {
             return res.json([]);
         }
 

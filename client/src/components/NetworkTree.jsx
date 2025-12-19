@@ -82,7 +82,7 @@ const NetworkNode = ({ node, level, currentUser, onAddUser, onRemoveUser }) => {
      * SUPER_ADMIN: Can manage all nodes
      * LIDER_DOCE: Can add to their own node and to LIDER_CELULA in their network
      * LIDER_CELULA: Can add to their own node
-     * MIEMBRO: Cannot manage
+     * Miembro: Cannot manage
      */
     const canAddToNode = () => {
         if (!currentUser) return false;
@@ -116,7 +116,7 @@ const NetworkNode = ({ node, level, currentUser, onAddUser, onRemoveUser }) => {
      * SUPER_ADMIN: Can remove any node (except root)
      * LIDER_DOCE: Can remove any disciple in their network (any level)
      * LIDER_CELULA: Can remove any disciple in their network (any level)
-     * MIEMBRO: Cannot remove users
+     * Miembro: Cannot remove users
      */
     const canRemoveNode = () => {
         if (!currentUser || level === 0) return false; // Cannot remove root node

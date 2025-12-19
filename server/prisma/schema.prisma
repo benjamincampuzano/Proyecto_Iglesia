@@ -15,7 +15,7 @@ enum Role {
   PASTOR
   LIDER_DOCE
   LIDER_CELULA
-  MIEMBRO
+  Miembro
   PROFESOR
   AUXILIAR
 }
@@ -56,7 +56,7 @@ model User {
   email          String   @unique
   password       String
   fullName       String
-  role           Role     @default(MIEMBRO)
+  role           Role     @default(Miembro)
   sex            Sex?
   phone          String?
   address        String?
@@ -77,15 +77,15 @@ model User {
   // NEW: Hierarchical network structure
   pastorId       Int?
   pastor         User?    @relation("Pastor", fields: [pastorId], references: [id], onDelete: SetNull)
-  miembrosPastor User[]   @relation("Pastor")
+  MiembrosPastor User[]   @relation("Pastor")
   
   liderDoceId    Int?
   liderDoce      User?    @relation("LiderDoce", fields: [liderDoceId], references: [id], onDelete: SetNull)
-  miembrosDoce   User[]   @relation("LiderDoce")
+  MiembrosDoce   User[]   @relation("LiderDoce")
   
   liderCelulaId  Int?
   liderCelula    User?    @relation("LiderCelula", fields: [liderCelulaId], references: [id], onDelete: SetNull)
-  miembrosCelula User[]   @relation("LiderCelula")
+  MiembrosCelula User[]   @relation("LiderCelula")
 
   cellId         Int?
   cell           Cell?    @relation("CellMembers", fields: [cellId], references: [id])

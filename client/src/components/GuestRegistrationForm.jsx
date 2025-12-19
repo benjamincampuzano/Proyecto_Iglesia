@@ -20,11 +20,32 @@ const GuestRegistrationForm = ({ onGuestCreated }) => {
         const user = JSON.parse(localStorage.getItem('user'));
         setCurrentUser(user);
 
-        // Auto-set invitedById for LIDER_CELULA and MIEMBRO
-        if (user && (user.role === 'LIDER_CELULA' || user.role === 'MIEMBRO')) {
+        // Auto-set invitedById for LIDER_CELULA and Miembro (case-insensitive)
+        const role = user?.role?.toUpperCase();
+        if (user && (role === 'LIDER_CELULA' || role === 'MIEMBRO')) {
             setFormData(prev => ({ ...prev, invitedById: user.id }));
         }
     }, []);
+
+    // PASTOR no puede crear invitados - mostrar mensaje informativo
+    if (currentUser && currentUser.role.toUpperCase() === 'PASTOR') {
+        return (
+            <div className="bg-gray-800 rounded-lg p-6 border border-gray-700">
+                <h2 className="text-2xl font-bold text-white mb-4">Registrar Nuevo Invitado</h2>
+                <div className="bg-blue-900/20 border border-blue-500 text-blue-300 px-4 py-3 rounded">
+                    <p className="font-semibold mb-2">Información</p>
+                    <p>Los usuarios con rol PASTOR no pueden crear invitados directamente.</p>
+                    <p className="mt-2">Los invitados deben ser creados por:</p>
+                    <ul className="list-disc list-inside ml-4 mt-1">
+                        <li>LIDER_DOCE</li>
+                        <li>LIDER_CELULA</li>
+                        <li>MIEMBRO</li>
+                    </ul>
+                    <p className="mt-2 text-sm">Puede ver todos los invitados de su red en la lista de invitados.</p>
+                </div>
+            </div>
+        );
+    }
 
     const handleChange = (e) => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -38,11 +59,12 @@ const GuestRegistrationForm = ({ onGuestCreated }) => {
         setError('');
         setSuccess('');
 
-        // Validation is handled by backend for LIDER_CELULA/MIEMBRO
-        if ((currentUser?.role === 'SUPER_ADMIN' || currentUser?.role === 'LIDER_DOCE') && !formData.invitedById) {
-            setError('Debe seleccionar quién invitó al invitado');
-            setLoading(false);
-            return;
+        // Validation is handled by backend for LIDER_CELULA/Miembro
+        const role = currentUser?.role?.toUpperCase();
+        if (['SUPER_ADMIN', 'LIDER_DOCE'].includes(role) && !formData.invitedById) {
+            // Default to current user if none selected (handled in backend but good for UI too)
+            // But if there is a search select, we might want to remind them.
+            // For now, let's keep it consistent with requirements.
         }
 
         try {
@@ -145,13 +167,13 @@ const GuestRegistrationForm = ({ onGuestCreated }) => {
                     />
                 </div>
 
-                {currentUser && (currentUser.role === 'SUPER_ADMIN' || currentUser.role === 'LIDER_DOCE') && (
+                {currentUser && ['SUPER_ADMIN', 'LIDER_DOCE'].includes(currentUser.role.toUpperCase()) && (
                     <div>
                         <UserSearchSelect
                             label={<>Invitado Por <span className="text-red-400">*</span></>}
                             value={formData.invitedById}
                             onChange={(userId) => setFormData({ ...formData, invitedById: userId })}
-                            placeholder="Seleccionar miembro que invitó..."
+                            placeholder="Seleccionar Miembro que invitó..."
                         />
                     </div>
                 )}

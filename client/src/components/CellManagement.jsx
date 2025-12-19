@@ -47,6 +47,16 @@ const CellManagement = () => {
         }
     }, [formData.leaderId]);
 
+    // Handle default values for PASTOR role when opening create form
+    useEffect(() => {
+        if (showCreateForm && currentUser?.role?.toUpperCase() === 'PASTOR') {
+            setFormData(prev => ({
+                ...prev,
+                leaderId: currentUser.id.toString()
+            }));
+        }
+    }, [showCreateForm, currentUser]);
+
     // Fetch eligible members when manage view opens
     useEffect(() => {
         if (selectedCell) {
@@ -120,7 +130,7 @@ const CellManagement = () => {
     };
 
     const handleDeleteCell = async (cellId) => {
-        if (!confirm('¿Estás seguro de que deseas eliminar esta célula? Esta acción desvinculará a todos sus miembros.')) return;
+        if (!confirm('¿Estás seguro de que deseas eliminar esta célula? Esta acción desvinculará a todos sus Miembros.')) return;
 
         try {
             setLoading(true);
@@ -249,7 +259,7 @@ const CellManagement = () => {
                     <div className="flex justify-between items-start mb-6">
                         <div>
                             <h2 className="text-2xl font-bold text-gray-800">{selectedCell.name}</h2>
-                            <p className="text-gray-500">Gestión de miembros y detalles</p>
+                            <p className="text-gray-500">Gestión de Miembros y detalles</p>
                         </div>
                         <span className="text-sm font-semibold px-3 py-1 bg-blue-100 text-blue-800 rounded-full">
                             {selectedCell._count?.members || 0} Miembros Actuales
@@ -295,7 +305,7 @@ const CellManagement = () => {
                                     onChange={(e) => setSelectedMember(e.target.value)}
                                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                                 >
-                                    <option value="">Seleccionar miembro de la red...</option>
+                                    <option value="">Seleccionar Miembro de la red...</option>
                                     {eligibleMembers.map(m => (
                                         <option key={m.id} value={m.id}>
                                             {m.fullName} {m.cellId ? `(Ya en: ${m.cell?.name})` : '(Sin célula)'} - {m.role}
@@ -303,7 +313,7 @@ const CellManagement = () => {
                                     ))}
                                 </select>
                                 <p className="text-xs text-gray-500 mt-1">
-                                    Se muestran miembros de tu red. Puedes reasignar miembros de otras células.
+                                    Se muestran Miembros de tu red. Puedes reasignar Miembros de otras células.
                                 </p>
                             </div>
                             <button
@@ -351,13 +361,17 @@ const CellManagement = () => {
                         </div>
 
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Líder G12 Supervisor (Opcional)</label>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                                {currentUser?.role?.toUpperCase() === 'PASTOR' ? 'Pastor' : 'Líder G12 Supervisor (Opcional)'}
+                            </label>
                             <select
                                 value={formData.liderDoceId}
                                 onChange={e => setFormData({ ...formData, liderDoceId: e.target.value })}
                                 className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
                             >
-                                <option value="">Seleccionar Líder 12...</option>
+                                <option value="">
+                                    {currentUser?.role?.toUpperCase() === 'PASTOR' ? 'Seleccionar Pastor...' : 'Seleccionar Líder 12...'}
+                                </option>
                                 {eligibleDoceLeaders.map(l => (
                                     <option key={l.id} value={l.id}>{l.fullName}</option>
                                 ))}
@@ -463,7 +477,7 @@ const CellManagement = () => {
                         onChange={(e) => setFilterDoce(e.target.value)}
                         className="w-full pl-9 pr-4 py-2 border border-blue-100 rounded-xl focus:ring-2 focus:ring-blue-500 appearance-none bg-white text-sm"
                     >
-                        <option value="">Todos los Líderes 12</option>
+                        <option value="">{currentUser?.role?.toUpperCase() === 'PASTOR' ? 'Todos los Pastores' : 'Todos los Líderes 12'}</option>
                         {eligibleDoceLeaders.map(l => (
                             <option key={l.id} value={l.id}>{l.fullName}</option>
                         ))}

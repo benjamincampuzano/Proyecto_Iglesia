@@ -1,13 +1,13 @@
 # Plataforma de Gestión Mision Carismática Internacional
 
-Bienvenido al repositorio de la Plataforma de Gestión de la Misión Carismática Internacional. Esta aplicación está diseñada para facilitar la administración de miembros, células, discipulado y eventos (encuentros, convenciones) dentro de la organización de la MCI en Manizales.
+Bienvenido al repositorio de la Plataforma de Gestión de la Misión Carismática Internacional. Esta aplicación está diseñada para facilitar la administración de Miembros, células, discipulado y eventos (encuentros, convenciones) dentro de la organización de la MCI en Manizales.
 
 ## 📋 Descripción del Proyecto
 
 Este sistema permite a los líderes y administradores gestionar de manera eficiente:
 - **Usuarios y Roles**: Gestión de perfiles con roles jerárquicos (Super Admin, Líder de 12, Líder de Célula, Miembro).
 - **Discipulado**: Visualización y gestión de la estructura del liderazgo de la iglesoa.
-- **Invitados**: Registro y seguimiento de nuevos invitados, desde su primer contacto hasta su conversión a miembros (proceso de "Ganar").
+- **Invitados**: Registro y seguimiento de nuevos invitados, desde su primer contacto hasta su conversión a Miembros (proceso de "Ganar").
 - **Eventos**: Administración de Encuentros y Convenciones.
 - **Reportes**: Visualización de estadísticas de crecimiento y asistencia.
 

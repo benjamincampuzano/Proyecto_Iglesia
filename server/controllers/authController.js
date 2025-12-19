@@ -20,7 +20,7 @@ const register = async (req, res) => {
             email,
             password: hashedPassword,
             fullName,
-            role: role || 'MIEMBRO',
+            role: role || 'Miembro',
             sex,
             phone,
             address,

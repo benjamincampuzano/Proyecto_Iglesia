@@ -119,8 +119,30 @@ const ConsolidatedStatsReport = ({ simpleMode = false }) => {
 
     return (
         <div className={`space-y-8 ${simpleMode ? 'p-0' : 'p-4'} print:p-0`}>
-            {/* Header / Actions - Simplified without Date Inputs */}
-            <div className={`flex flex-col ${simpleMode ? 'gap-2' : 'md:flex-row justify-end items-center gap-4'} print:hidden`}>
+            {/* Header / Actions - With Date Inputs */}
+            <div className={`flex flex-col ${simpleMode ? 'gap-2' : 'md:flex-row justify-between items-center bg-white p-4 rounded-lg shadow-sm gap-4'} print:hidden`}>
+                <div className="flex flex-col md:flex-row items-center gap-4">
+                    <div className="flex items-center gap-2">
+                        <Calendar size={20} className="text-gray-500" />
+                        <span className="text-sm font-medium text-gray-700 whitespace-nowrap">Desde:</span>
+                        <input
+                            type="date"
+                            value={startDate}
+                            onChange={(e) => setStartDate(e.target.value)}
+                            className="px-3 py-2 border rounded-md text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+                        />
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <span className="text-sm font-medium text-gray-700 whitespace-nowrap">Hasta:</span>
+                        <input
+                            type="date"
+                            value={endDate}
+                            onChange={(e) => setEndDate(e.target.value)}
+                            className="px-3 py-2 border rounded-md text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+                        />
+                    </div>
+                </div>
+
                 {!simpleMode && (
                     <button
                         onClick={handlePrint}

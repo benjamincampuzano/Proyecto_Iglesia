@@ -100,13 +100,13 @@ const NetworkAssignment = () => {
             SUPER_ADMIN: 'Super Admin',
             LIDER_DOCE: 'Líder de 12',
             LIDER_CELULA: 'Líder de Célula',
-            MIEMBRO: 'Miembro',
+            Miembro: 'Miembro',
         };
         return labels[role] || role;
     };
 
     const usersWithoutLeader = users.filter(u =>
-        !u.leaderId && (u.role === 'LIDER_CELULA' || u.role === 'MIEMBRO')
+        !u.leaderId && (u.role === 'LIDER_CELULA' || u.role === 'Miembro')
     );
 
     const renderNetworkTree = () => {
@@ -190,7 +190,7 @@ const NetworkAssignment = () => {
             <div>
                 <h1 className="text-3xl font-bold text-gray-800 dark:text-gray-100">Red de Discipulado</h1>
                 <p className="text-gray-600 dark:text-gray-400 mt-1">
-                    Asigna líderes de célula y miembros a los líderes de 12
+                    Asigna líderes de célula y Miembros a los líderes de 12
                 </p>
             </div>
 

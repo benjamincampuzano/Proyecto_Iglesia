@@ -52,7 +52,7 @@ const Ganar = () => {
                     <Users size={20} />
                     <span>Lista de Invitados</span>
                 </button>
-                {(user.role !== 'MIEMBRO') && (
+                {(user.role !== 'Miembro') && (
                     <button
                         onClick={() => {
                             setActiveTab('stats');

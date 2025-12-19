@@ -146,7 +146,7 @@ const GuestStats = () => {
                             className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-blue-500"
                         />
                     </div>
-                    {['SUPER_ADMIN', 'LIDER_DOCE'].includes(user?.role) && (
+                    {['SUPER_ADMIN', 'LIDER_DOCE', 'PASTOR'].includes(user?.role) && (
                         <div className="flex items-end">
                             <button
                                 onClick={exportToExcel}
@@ -177,6 +177,17 @@ const GuestStats = () => {
                                     <Users className="text-blue-500" size={32} />
                                 </div>
                             </div>
+
+                            <div className="bg-gray-700 rounded-lg p-4 border border-gray-600">
+                                <div className="flex items-center justify-between">
+                                    <div>
+                                        <p className="text-gray-400 text-sm">Pr. Mensual</p>
+                                        <p className="text-3xl font-bold text-white mt-1">{stats.monthlyAverage || 0}</p>
+                                    </div>
+                                    <TrendingUp className="text-purple-500" size={32} />
+                                </div>
+                            </div>
+
 
                             <div className="bg-gray-700 rounded-lg p-4 border border-gray-600">
                                 <div className="flex items-center justify-between">
@@ -251,12 +262,32 @@ const GuestStats = () => {
                                     </BarChart>
                                 </ResponsiveContainer>
                             </div>
+
+                            {/* Invitations by LIDER_DOCE */}
+                            {stats.invitationsByLiderDoce && stats.invitationsByLiderDoce.length > 0 && (
+                                <div className="bg-gray-700 rounded-lg p-6 border border-gray-600 col-span-1 lg:col-span-2">
+                                    <h3 className="text-lg font-semibold text-white mb-4">Invitaciones por Líder 12</h3>
+                                    <ResponsiveContainer width="100%" height={300}>
+                                        <BarChart data={stats.invitationsByLiderDoce}>
+                                            <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+                                            <XAxis dataKey="name" stroke="#9CA3AF" />
+                                            <YAxis stroke="#9CA3AF" />
+                                            <Tooltip
+                                                contentStyle={{ backgroundColor: '#1F2937', border: '1px solid #374151' }}
+                                                labelStyle={{ color: '#F3F4F6' }}
+                                            />
+                                            <Bar dataKey="count" fill="#10B981" name="Invitados" />
+                                        </BarChart>
+                                    </ResponsiveContainer>
+                                </div>
+                            )}
+
                         </div>
 
                         {/* Top Inviters Table */}
                         {stats.topInviters && stats.topInviters.length > 0 && (
                             <div className="bg-gray-700 rounded-lg p-6 border border-gray-600">
-                                <h3 className="text-lg font-semibold text-white mb-4">Detalle de Invitadores</h3>
+                                <h3 className="text-lg font-semibold text-white">Detalle de Invitadores</h3>
                                 <div className="overflow-x-auto">
                                     <table className="w-full">
                                         <thead className="bg-gray-600">
@@ -282,7 +313,7 @@ const GuestStats = () => {
                     </>
                 ) : null}
             </div>
-        </div>
+        </div >
     );
 };
 

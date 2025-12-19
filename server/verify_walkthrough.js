@@ -23,10 +23,10 @@ async function verifyWalkthrough() {
 
         const liderDoce = await create('LiderDoce', 'LIDER_DOCE');
         const liderCelula = await create('LiderCelula', 'LIDER_CELULA', liderDoce);
-        const miembro = await create('Miembro', 'MIEMBRO', liderDoce); // Assigned to Doce for simplicity
+        const Miembro = await create('Miembro', 'Miembro', liderDoce); // Assigned to Doce for simplicity
         const outsider = await create('Outsider', 'LIDER_DOCE'); // Independent leader
 
-        console.log(`Created: Doce(${liderDoce.id}), Celula(${liderCelula.id}), Miembro(${miembro.id}), Outsider(${outsider.id})`);
+        console.log(`Created: Doce(${liderDoce.id}), Celula(${liderCelula.id}), Miembro(${Miembro.id}), Outsider(${outsider.id})`);
 
         console.log('\n--- 2. Verify Network Scope Logic ---');
         // Helper to get network (simulating controller logic)
@@ -43,7 +43,7 @@ async function verifyWalkthrough() {
         const doceNetwork = await getNetworkIds(liderDoce.id);
         console.log(`LiderDoce Network IDs: ${doceNetwork}`);
 
-        if (doceNetwork.includes(liderCelula.id) && doceNetwork.includes(miembro.id)) {
+        if (doceNetwork.includes(liderCelula.id) && doceNetwork.includes(Miembro.id)) {
             console.log('✅ LiderDoce sees their downline.');
         } else {
             console.log('❌ LiderDoce missing downline elements.');
@@ -68,7 +68,7 @@ async function verifyWalkthrough() {
         });
 
         // Register Miembro (in network) and Outsider (out of network)
-        await prisma.conventionRegistration.create({ data: { userId: miembro.id, conventionId: conv.id } });
+        await prisma.conventionRegistration.create({ data: { userId: Miembro.id, conventionId: conv.id } });
         await prisma.conventionRegistration.create({ data: { userId: outsider.id, conventionId: conv.id } });
 
         // Simulate "getConventionBalanceReport" filtering logic
@@ -79,7 +79,7 @@ async function verifyWalkthrough() {
 
         console.log(`Total Regs: ${allRegs.length}. Visible to Doce: ${visibleToDoce.length}`);
 
-        if (visibleToDoce.find(r => r.userId === miembro.id) && !visibleToDoce.find(r => r.userId === outsider.id)) {
+        if (visibleToDoce.find(r => r.userId === Miembro.id) && !visibleToDoce.find(r => r.userId === outsider.id)) {
             console.log('✅ Report Filter works: Sees Miembro, does NOT see Outsider.');
         } else {
             console.log('❌ Report Filter failed.');
@@ -89,7 +89,7 @@ async function verifyWalkthrough() {
         console.log('\n--- Cleanup ---');
         await prisma.conventionRegistration.deleteMany({ where: { conventionId: conv.id } });
         await prisma.convention.delete({ where: { id: conv.id } });
-        await prisma.user.deleteMany({ where: { id: { in: [liderDoce.id, liderCelula.id, miembro.id, outsider.id] } } });
+        await prisma.user.deleteMany({ where: { id: { in: [liderDoce.id, liderCelula.id, Miembro.id, outsider.id] } } });
         console.log('✅ Test Data Cleaned.');
 
     } catch (error) {

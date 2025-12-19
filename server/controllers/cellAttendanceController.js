@@ -15,7 +15,14 @@ const getUserNetwork = async (userId) => {
         network.push(currentId);
 
         const disciples = await prisma.user.findMany({
-            where: { leaderId: currentId },
+            where: {
+                OR: [
+                    { leaderId: currentId },
+                    { liderDoceId: currentId },
+                    { liderCelulaId: currentId },
+                    { pastorId: currentId }
+                ]
+            },
             select: { id: true }
         });
 
@@ -47,7 +54,7 @@ const recordCellAttendance = async (req, res) => {
         const userRole = req.user.role;
         const userId = req.user.userId;
 
-        if (userRole !== 'SUPER_ADMIN' && userRole !== 'LIDER_DOCE' && cell.leaderId !== userId) {
+        if (userRole !== 'SUPER_ADMIN' && userRole !== 'LIDER_DOCE' && userRole !== 'PASTOR' && cell.leaderId !== userId) {
             return res.status(403).json({ error: 'Not authorized to record attendance for this cell' });
         }
 
@@ -100,7 +107,7 @@ const getCellAttendance = async (req, res) => {
             where: { id: userId, cellId: parseInt(cellId) }
         });
 
-        if (userRole !== 'SUPER_ADMIN' && userRole !== 'LIDER_DOCE' && cell.leaderId !== userId && !isMember) {
+        if (userRole !== 'SUPER_ADMIN' && userRole !== 'LIDER_DOCE' && userRole !== 'PASTOR' && cell.leaderId !== userId && !isMember) {
             return res.status(403).json({ error: 'Not authorized to view this cell attendance' });
         }
 
@@ -144,12 +151,12 @@ const getCells = async (req, res) => {
         if (userRole === 'LIDER_CELULA') {
             // LIDER_CELULA can only see their own cells
             where.leaderId = userId;
-        } else if (userRole === 'LIDER_DOCE') {
-            // LIDER_DOCE can only see cells where the leader is in their network
+        } else if (userRole === 'LIDER_DOCE' || userRole === 'PASTOR') {
+            // LIDER_DOCE y PASTOR pueden ver todas las células de su red
             const networkUserIds = await getUserNetwork(userId);
             where.leaderId = { in: networkUserIds };
-        } else if (userRole === 'MIEMBRO') {
-            // MIEMBRO can only see cells they belong to
+        } else if (userRole === 'Miembro') {
+            // Miembro can only see cells they belong to
             where.members = {
                 some: { id: userId }
             };
@@ -234,7 +241,7 @@ const getCellMembers = async (req, res) => {
 
         const isMember = cell.members.some(m => m.id === userId);
 
-        if (userRole !== 'SUPER_ADMIN' && userRole !== 'LIDER_DOCE' && cell.leaderId !== userId && !isMember) {
+        if (userRole !== 'SUPER_ADMIN' && userRole !== 'LIDER_DOCE' && userRole !== 'PASTOR' && cell.leaderId !== userId && !isMember) {
             return res.status(403).json({ error: 'Not authorized to view this cell' });
         }
 
@@ -273,7 +280,7 @@ const getAttendanceStats = async (req, res) => {
             // Check authorization
             if (userRole === 'LIDER_CELULA' && cell.leaderId !== userId) {
                 return res.status(403).json({ error: 'Not authorized to view this cell' });
-            } else if (userRole === 'LIDER_DOCE') {
+            } else if (userRole === 'LIDER_DOCE' || userRole === 'PASTOR') {
                 const networkUserIds = await getUserNetwork(userId);
                 if (!networkUserIds.includes(cell.leaderId)) {
                     return res.status(403).json({ error: 'Not authorized to view this cell' });
@@ -289,7 +296,7 @@ const getAttendanceStats = async (req, res) => {
                     select: { id: true }
                 });
                 cellFilter.cellId = { in: userCells.map(c => c.id) };
-            } else if (userRole === 'LIDER_DOCE') {
+            } else if (userRole === 'LIDER_DOCE' || userRole === 'PASTOR') {
                 const networkUserIds = await getUserNetwork(userId);
                 const networkCells = await prisma.cell.findMany({
                     where: { leaderId: { in: networkUserIds } },

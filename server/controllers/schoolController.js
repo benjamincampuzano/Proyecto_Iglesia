@@ -63,7 +63,7 @@ const getModules = async (req, res) => {
             };
         } else {
             // Students: See classes they are enrolled in
-            // Auxiliars (who might be MIEMBRO): See classes where they are Auxiliar
+            // Auxiliars (who might be Miembro): See classes where they are Auxiliar
             whereClause = {
                 type: 'ESCUELA',
                 OR: [

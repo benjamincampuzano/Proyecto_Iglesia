@@ -115,8 +115,8 @@ const deleteEncuentro = async (req, res) => {
 const updateEncuentro = async (req, res) => {
     try {
         const { id } = req.params;
-        // Check permissions (SUPER_ADMIN or LIDER_DOCE)
-        if (req.user.role !== 'SUPER_ADMIN' && req.user.role !== 'LIDER_DOCE') {
+        // Check permissions (SUPER_ADMIN, LIDER_DOCE or PASTOR)
+        if (req.user.role !== 'SUPER_ADMIN' && req.user.role !== 'LIDER_DOCE' && req.user.role !== 'PASTOR') {
             return res.status(403).json({ error: 'Not authorized' });
         }
 
@@ -310,7 +310,7 @@ const getEncuentroBalanceReport = async (req, res) => {
 
         if (user.role === 'SUPER_ADMIN') {
             // All
-        } else if (user.role === 'LIDER_DOCE' || user.role === 'LIDER_CELULA') {
+        } else if (user.role === 'LIDER_DOCE' || user.role === 'LIDER_CELULA' || user.role === 'PASTOR') {
             const userId = parseInt(user.id);
             const networkIds = await getNetworkIds(userId);
             const allowedIds = new Set([...networkIds, userId]);

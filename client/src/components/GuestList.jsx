@@ -101,7 +101,7 @@ const GuestList = ({ refreshTrigger }) => {
             setConversionEmail('');
             setConversionPassword('');
             fetchGuests();
-            alert('Invitado ganado a miembro exitosamente');
+            alert('Invitado ganado a Miembro exitosamente');
         } catch (err) {
             setError(err.response?.data?.message || 'Error al convertir invitado');
         }
@@ -129,14 +129,14 @@ const GuestList = ({ refreshTrigger }) => {
 
     // Funciones auxiliares de permisos
     const canEditAllFields = (guest) => {
-        return currentUser?.role === 'SUPER_ADMIN' || currentUser?.role === 'LIDER_DOCE';
+        return currentUser?.role === 'SUPER_ADMIN' || currentUser?.role === 'LIDER_DOCE' || currentUser?.role === 'PASTOR';
     };
 
     const canDelete = (guest) => {
-        if (currentUser?.role === 'SUPER_ADMIN' || currentUser?.role === 'LIDER_DOCE') {
+        if (currentUser?.role === 'SUPER_ADMIN' || currentUser?.role === 'LIDER_DOCE' || currentUser?.role === 'PASTOR') {
             return true;
         }
-        // LIDER_CELULA/MIEMBRO solo pueden eliminar invitados que invitaron
+        // LIDER_CELULA/Miembro solo pueden eliminar invitados que invitaron
         return guest.invitedBy?.id === currentUser?.id;
     };
 
@@ -190,8 +190,8 @@ const GuestList = ({ refreshTrigger }) => {
                     <UserSearchSelect
                         value={liderDoceFilter}
                         onChange={setLiderDoceFilter}
-                        placeholder="Ministerio de..."
-                        roleFilter="LIDER_DOCE"
+                        placeholder={currentUser?.role === 'PASTOR' ? "Líder de Célula..." : "Ministerio de..."}
+                        roleFilter={currentUser?.role === 'PASTOR' ? "LIDER_DOCE,PASTOR" : "LIDER_DOCE"}
                     />
                 </div>
             </div>

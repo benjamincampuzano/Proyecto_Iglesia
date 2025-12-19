@@ -119,7 +119,7 @@ const getAllMembers = async (req, res) => {
         const userId = parseInt(id);
         let where = {};
 
-        if (role === 'LIDER_DOCE') {
+        if (role === 'LIDER_DOCE' || role === 'PASTOR') {
             const networkIds = await getNetworkIds(userId);
             // Include both the network and the leader themselves
             where = {
@@ -181,7 +181,7 @@ const getAttendanceStats = async (req, res) => {
             };
         }
 
-        if (role === 'LIDER_DOCE' || role === 'LIDER_CELULA') {
+        if (role === 'LIDER_DOCE' || role === 'PASTOR' || role === 'LIDER_CELULA') {
             const networkIds = await getNetworkIds(id);
             where.userId = { in: networkIds };
         } else if (role !== 'SUPER_ADMIN') {
@@ -222,7 +222,7 @@ const getDailyStats = async (req, res) => {
         };
 
         const { role, id } = req.user;
-        if (role === 'LIDER_DOCE' || role === 'LIDER_CELULA') {
+        if (role === 'LIDER_DOCE' || role === 'PASTOR' || role === 'LIDER_CELULA') {
             const networkIds = await getNetworkIds(id);
             where.userId = { in: networkIds };
         } else if (role !== 'SUPER_ADMIN') {

@@ -11,13 +11,25 @@ const createGuest = async (req, res) => {
             return res.status(400).json({ message: 'Name and phone are required' });
         }
 
-        // LIDER_CELULA y MIEMBRO solo pueden crear invitados con ellos mismos como invitedBy
-        if (user.role === 'LIDER_CELULA' || user.role === 'MIEMBRO') {
+        // Case-insensitive role check
+        const userRole = user.role.toUpperCase();
+
+        // PASTOR no puede crear invitados directamente
+        // Solo puede ver invitados creados por su red (LIDER_DOCE, LIDER_CELULA, MIEMBRO)
+        if (userRole === 'PASTOR') {
+            return res.status(403).json({
+                message: 'Los usuarios con rol PASTOR no pueden crear invitados directamente. Los invitados deben ser creados por LIDER_DOCE, LIDER_CELULA o MIEMBRO.'
+            });
+        }
+
+        if (userRole === 'LIDER_CELULA' || userRole === 'MIEMBRO') {
+            // LIDER_CELULA y MIEMBRO solo pueden crear invitados para sí mismos
             invitedById = user.id;
         } else {
             // SUPER_ADMIN y LIDER_DOCE pueden especificar invitedById
+            // Si no se especifica, por defecto es el usuario actual
             if (!invitedById) {
-                return res.status(400).json({ message: 'invitedById is required' });
+                invitedById = user.id;
             }
         }
 
@@ -90,8 +102,8 @@ const getAllGuests = async (req, res) => {
         if (user.role === 'SUPER_ADMIN') {
             // Super admin puede ver todos los invitados
             securityFilter = {};
-        } else if (user.role === 'LIDER_DOCE') {
-            // LIDER_DOCE puede ver invitados invitados/asignados a cualquiera en su red
+        } else if (user.role === 'LIDER_DOCE' || user.role === 'PASTOR') {
+            // LIDER_DOCE y PASTOR pueden ver invitados invitados/asignados a cualquiera en su red
             const userId = parseInt(user.id);
             const networkUserIds = await getUserNetwork(userId);
             securityFilter = {
@@ -101,7 +113,7 @@ const getAllGuests = async (req, res) => {
                 ]
             };
         } else {
-            // LIDER_CELULA y MIEMBRO solo pueden ver:
+            // LIDER_CELULA y Miembro solo pueden ver:
             // 1. Invitados que ellos invitaron Y no están asignados a alguien más
             // 2. Invitados asignados a ellos
             securityFilter = {
@@ -235,11 +247,13 @@ const updateGuest = async (req, res) => {
                 ...(invitedById && { invitedById: parseInt(invitedById) }),
                 ...(assignedToId !== undefined && { assignedToId: assignedToId ? parseInt(assignedToId) : null }),
             };
-        } else if (user.role === 'LIDER_DOCE') {
-            // LIDER_DOCE puede actualizar todos los campos para invitados en su red
+        } else if (user.role === 'LIDER_DOCE' || user.role === 'PASTOR') {
+            // LIDER_DOCE y PASTOR pueden actualizar todos los campos para invitados en su red
             const networkUserIds = await getUserNetwork(user.id);
             const isInNetwork = networkUserIds.includes(existingGuest.invitedById) ||
-                (existingGuest.assignedToId && networkUserIds.includes(existingGuest.assignedToId));
+                (existingGuest.assignedToId && networkUserIds.includes(existingGuest.assignedToId)) ||
+                existingGuest.invitedById === user.id ||
+                existingGuest.assignedToId === user.id;
 
             if (!isInNetwork) {
                 return res.status(403).json({ message: 'You can only update guests in your network' });
@@ -255,7 +269,7 @@ const updateGuest = async (req, res) => {
                 ...(assignedToId !== undefined && { assignedToId: assignedToId ? parseInt(assignedToId) : null }),
             };
         } else {
-            // LIDER_CELULA y MIEMBRO solo pueden actualizar campo de estado
+            // LIDER_CELULA y Miembro solo pueden actualizar campo de estado
             // Y solo para invitados que ellos invitaron o les fueron asignados
             const canEdit = existingGuest.invitedById === user.id || existingGuest.assignedToId === user.id;
 
@@ -309,17 +323,19 @@ const deleteGuest = async (req, res) => {
         // Verificar permisos de eliminación basados en rol
         if (user.role === 'SUPER_ADMIN') {
             // Super admin puede eliminar cualquier invitado
-        } else if (user.role === 'LIDER_DOCE') {
-            // LIDER_DOCE puede eliminar invitados en su red
+        } else if (user.role === 'LIDER_DOCE' || user.role === 'PASTOR') {
+            // LIDER_DOCE y PASTOR pueden eliminar invitados en su red
             const networkUserIds = await getUserNetwork(user.id);
             const isInNetwork = networkUserIds.includes(existingGuest.invitedById) ||
-                (existingGuest.assignedToId && networkUserIds.includes(existingGuest.assignedToId));
+                (existingGuest.assignedToId && networkUserIds.includes(existingGuest.assignedToId)) ||
+                existingGuest.invitedById === user.id ||
+                existingGuest.assignedToId === user.id;
 
             if (!isInNetwork) {
                 return res.status(403).json({ message: 'You can only delete guests in your network' });
             }
         } else {
-            // LIDER_CELULA y MIEMBRO solo pueden eliminar invitados que ellos invitaron (no asignados)
+            // LIDER_CELULA y Miembro solo pueden eliminar invitados que ellos invitaron (no asignados)
             if (existingGuest.invitedById !== user.id) {
                 return res.status(403).json({ message: 'You can only delete guests you invited' });
             }
@@ -368,7 +384,7 @@ const assignGuest = async (req, res) => {
     }
 };
 
-// Convertir invitado a miembro (crear cuenta de usuario)
+// Convertir invitado a Miembro (crear cuenta de usuario)
 const convertGuestToMember = async (req, res) => {
     try {
         const { id } = req.params;
@@ -406,7 +422,7 @@ const convertGuestToMember = async (req, res) => {
                 email,
                 password: hashedPassword,
                 fullName: guest.name,
-                role: 'MIEMBRO',
+                role: 'Miembro',
                 // Asignar a la persona que los invitó
                 leaderId: guest.invitedById
             }

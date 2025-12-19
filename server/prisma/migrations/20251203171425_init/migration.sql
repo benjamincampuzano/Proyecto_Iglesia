@@ -1,5 +1,5 @@
 -- CreateEnum
-CREATE TYPE "Role" AS ENUM ('SUPER_ADMIN', 'LIDER_DOCE', 'LIDER_CELULA', 'MIEMBRO');
+CREATE TYPE "Role" AS ENUM ('SUPER_ADMIN', 'LIDER_DOCE', 'LIDER_CELULA', 'Miembro');
 
 -- CreateTable
 CREATE TABLE "User" (
@@ -7,7 +7,7 @@ CREATE TABLE "User" (
     "email" TEXT NOT NULL,
     "password" TEXT NOT NULL,
     "fullName" TEXT NOT NULL,
-    "role" "Role" NOT NULL DEFAULT 'MIEMBRO',
+    "role" "Role" NOT NULL DEFAULT 'Miembro',
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 

@@ -56,7 +56,7 @@ async function reproDuplication() {
                 fullName: `TestMember_${timestamp}`,
                 email: `member_${timestamp}@test.com`,
                 password: 'hash',
-                role: 'MIEMBRO',
+                role: 'Miembro',
                 liderCelulaId: leaderCel.id,
                 liderDoceId: leaderDoc.id // <--- THE DOUBLE LINK
             }

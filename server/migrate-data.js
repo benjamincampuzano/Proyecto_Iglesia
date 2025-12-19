@@ -23,7 +23,7 @@ async function migrateData() {
 
         console.log(`Found ${users.length} users with leaders\n`);
 
-        let miembrosUpdated = 0;
+        let MiembrosUpdated = 0;
         let liderCelulaUpdated = 0;
         let liderDoceUpdated = 0;
 
@@ -35,9 +35,9 @@ async function migrateData() {
             console.log(`Processing: ${user.fullName} (${user.role}) → Leader: ${leader.fullName} (${leader.role})`);
 
             // Determine how to populate the new fields based on user role and leader role
-            if (user.role === 'MIEMBRO') {
+            if (user.role === 'Miembro') {
                 if (leader.role === 'LIDER_CELULA') {
-                    // MIEMBRO under LIDER_CELULA
+                    // Miembro under LIDER_CELULA
                     // liderCelulaId = current leaderId
                     // liderDoceId = LIDER_CELULA's leaderId (if exists)
                     // pastorId = LIDER_DOCE's leaderId (if exists)
@@ -54,10 +54,10 @@ async function migrateData() {
                         }
                     });
                     console.log(`  ✓ Set liderCelulaId=${leader.id}, liderDoceId=${liderDoce?.id || 'null'}, pastorId=${pastor?.id || 'null'}`);
-                    miembrosUpdated++;
+                    MiembrosUpdated++;
 
                 } else if (leader.role === 'LIDER_DOCE') {
-                    // MIEMBRO directly under LIDER_DOCE (no LIDER_CELULA)
+                    // Miembro directly under LIDER_DOCE (no LIDER_CELULA)
                     // liderDoceId = current leaderId
                     // pastorId = LIDER_DOCE's leaderId (if exists)
 
@@ -71,7 +71,7 @@ async function migrateData() {
                         }
                     });
                     console.log(`  ✓ Set liderDoceId=${leader.id}, pastorId=${pastor?.id || 'null'}`);
-                    miembrosUpdated++;
+                    MiembrosUpdated++;
                 }
 
             } else if (user.role === 'LIDER_CELULA') {
@@ -113,10 +113,10 @@ async function migrateData() {
         console.log('\n========================================');
         console.log('Data Migration Summary');
         console.log('========================================');
-        console.log(`MIEMBRO updated: ${miembrosUpdated}`);
+        console.log(`Miembro updated: ${MiembrosUpdated}`);
         console.log(`LIDER_CELULA updated: ${liderCelulaUpdated}`);
         console.log(`LIDER_DOCE updated: ${liderDoceUpdated}`);
-        console.log(`Total: ${miembrosUpdated + liderCelulaUpdated + liderDoceUpdated}`);
+        console.log(`Total: ${MiembrosUpdated + liderCelulaUpdated + liderDoceUpdated}`);
         console.log('========================================\n');
 
     } catch (error) {

@@ -33,31 +33,74 @@ const getNetworkIds = async (leaderId) => {
 const getGeneralStats = async (req, res) => {
     try {
         const { startDate, endDate } = req.query;
-        // const { role, id } = req.user; 
+        const userRole = req.user.role?.toUpperCase();
+        const currentUserId = parseInt(req.user.id);
 
+        let networkIds = [];
+        if (userRole === 'LIDER_DOCE' || userRole === 'PASTOR') {
+            networkIds = await getNetworkIds(currentUserId);
+            networkIds.push(currentUserId);
+        }
+
+        const networkFilter = (path = 'invitedById') => {
+            if (userRole === 'SUPER_ADMIN') return {};
+            return { [path]: { in: networkIds } };
+        };
         // Default date range
         const end = endDate ? new Date(endDate) : new Date();
-        const start = startDate ? new Date(startDate) : new Date(new Date().setFullYear(new Date().getFullYear() - 1));
+        if (endDate) end.setUTCHours(23, 59, 59, 999);
 
-        // Helper to format Lider Name
+        const start = startDate ? new Date(startDate) : new Date(new Date().setFullYear(new Date().getFullYear() - 1));
+        if (startDate) start.setUTCHours(0, 0, 0, 0);
+
+        // Helper to format Lider Name following hierarchy: User -> LiderCelula -> LiderDoce
         const getLiderName = (user) => {
             if (!user) return 'Sin Asignar';
-            // Prefer liderDoce, fallback to direct leader if structure is mixed
-            const leader = user.liderDoce || user.leader;
-            return leader ? leader.fullName : 'Sin Asignar';
+
+            const role = user.role?.toUpperCase();
+
+            // 1. If user is Lider Doce
+            if (role === 'LIDER_DOCE') return user.fullName;
+
+            // 2. Direct Lider Doce
+            if (user.liderDoce) return user.liderDoce.fullName;
+
+            // 3. Via Cell Leader
+            if (user.liderCelula && user.liderCelula.liderDoce) {
+                return user.liderCelula.liderDoce.fullName;
+            }
+
+            // 4. Fallback to Pastor if no Lider Doce found
+            if (user.pastor) return user.pastor.fullName;
+            if (role === 'PASTOR') return user.fullName;
+
+            // 5. Fallback to legacy leader relation if any
+            if (user.leader) return user.leader.fullName;
+
+            return 'Sin Asignar';
         };
 
         // 1. GUESTS: Invited Guests grouped by Lider_Doce
         const guests = await prisma.guest.findMany({
             where: {
-                createdAt: { gte: start, lte: end }
+                AND: [
+                    { createdAt: { gte: start, lte: end } },
+                    networkFilter('invitedById')
+                ]
             },
             include: {
                 invitedBy: {
-                    include: { liderDoce: true, leader: true }
+                    include: {
+                        liderDoce: true,
+                        liderCelula: { include: { liderDoce: true } },
+                        pastor: true,
+                        leader: true
+                    }
                 }
             }
         });
+
+
 
         const guestsByLeader = {};
         guests.forEach(guest => {
@@ -65,15 +108,25 @@ const getGeneralStats = async (req, res) => {
             guestsByLeader[leaderName] = (guestsByLeader[leaderName] || 0) + 1;
         });
 
+
+
         // 2. CHURCH ATTENDANCE: By Month, Lider_Doce
         const attendances = await prisma.churchAttendance.findMany({
             where: {
-                date: { gte: start, lte: end },
-                status: 'PRESENTE'
+                AND: [
+                    { date: { gte: start, lte: end } },
+                    { status: 'PRESENTE' },
+                    networkFilter('userId')
+                ]
             },
             include: {
                 user: {
-                    include: { liderDoce: true, leader: true }
+                    include: {
+                        liderDoce: true,
+                        liderCelula: { include: { liderDoce: true } },
+                        pastor: true,
+                        leader: true
+                    }
                 }
             }
         });
@@ -92,6 +145,9 @@ const getGeneralStats = async (req, res) => {
         const modules = await prisma.seminarModule.findMany({
             include: {
                 enrollments: {
+                    where: {
+                        createdAt: { gte: start, lte: end }
+                    },
                     include: {
                         classAttendances: true
                     }
@@ -127,6 +183,7 @@ const getGeneralStats = async (req, res) => {
 
         // 4. CELLS: Count, Attendance, Location Map by Lider_Doce
         const cells = await prisma.cell.findMany({
+            where: networkFilter('leaderId'), // Approximated filter for cells
             select: {
                 id: true,
                 name: true,
@@ -137,11 +194,17 @@ const getGeneralStats = async (req, res) => {
                 leader: {
                     select: {
                         fullName: true,
+                        role: true,
                         liderDoce: { select: { fullName: true } },
+                        liderCelula: { include: { liderDoce: { select: { fullName: true } } } },
+                        pastor: { select: { fullName: true } },
                         leader: { select: { fullName: true } }
                     }
                 },
                 attendances: {
+                    where: {
+                        date: { gte: start, lte: end }
+                    },
                     select: { date: true, status: true }
                 }
             }
@@ -204,6 +267,9 @@ const getGeneralStats = async (req, res) => {
                 status: { not: 'CANCELLED' },
                 encuentro: {
                     startDate: { gte: start, lte: end }
+                },
+                guest: {
+                    invitedById: userRole === 'SUPER_ADMIN' ? undefined : { in: networkIds }
                 }
             },
             include: {
@@ -214,6 +280,8 @@ const getGeneralStats = async (req, res) => {
                         invitedBy: {
                             include: {
                                 liderDoce: { select: { fullName: true } },
+                                liderCelula: { include: { liderDoce: { select: { fullName: true } } } },
+                                pastor: { select: { fullName: true } },
                                 leader: { select: { fullName: true } },
                                 cell: { select: { name: true } }
                             }
@@ -249,7 +317,10 @@ const getGeneralStats = async (req, res) => {
             where: {
                 status: { not: 'CANCELLED' },
                 convention: {
-                    startDate: { gte: start }
+                    startDate: { gte: start, lte: end }
+                },
+                user: {
+                    id: userRole === 'SUPER_ADMIN' ? undefined : { in: networkIds }
                 }
             },
             include: {
@@ -258,6 +329,8 @@ const getGeneralStats = async (req, res) => {
                 user: {
                     include: {
                         liderDoce: { select: { fullName: true } },
+                        liderCelula: { include: { liderDoce: { select: { fullName: true } } } },
+                        pastor: { select: { fullName: true } },
                         leader: { select: { fullName: true } }
                     }
                 }
@@ -307,17 +380,37 @@ const getGeneralStats = async (req, res) => {
 const getSeminarStatsByLeader = async (req, res) => {
     try {
 
+        const userRole = req.user.role?.toUpperCase();
+        const currentUserId = parseInt(req.user.id);
+        let networkIds = [];
+        if (userRole === 'LIDER_DOCE' || userRole === 'PASTOR') {
+            networkIds = await getNetworkIds(currentUserId);
+            networkIds.push(currentUserId);
+        }
+
         // Helper to get Leader Name (reused)
         const getLiderName = (user) => {
             if (!user) return 'Sin Asignar';
-            const leader = user.liderDoce || user.leader;
-            return leader ? leader.fullName : 'Sin Asignar';
+            const role = user.role?.toUpperCase();
+            if (role === 'LIDER_DOCE') return user.fullName;
+            if (user.liderDoce) return user.liderDoce.fullName;
+            if (user.liderCelula && user.liderCelula.liderDoce) return user.liderCelula.liderDoce.fullName;
+            if (user.pastor) return user.pastor.fullName;
+            if (role === 'PASTOR') return user.fullName;
+            if (user.leader) return user.leader.fullName;
+            return 'Sin Asignar';
         };
 
         const enrollments = await prisma.seminarEnrollment.findMany({
+            where: userRole === 'SUPER_ADMIN' ? {} : { userId: { in: networkIds } },
             include: {
                 user: {
-                    include: { liderDoce: true, leader: true }
+                    include: {
+                        liderDoce: true,
+                        liderCelula: { include: { liderDoce: true } },
+                        pastor: true,
+                        leader: true
+                    }
                 },
                 module: true,
                 classAttendances: true

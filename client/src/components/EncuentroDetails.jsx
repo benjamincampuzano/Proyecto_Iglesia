@@ -152,7 +152,7 @@ const EncuentroDetails = ({ encuentro, onBack, onRefresh }) => {
             });
             setShowConvertModal(false);
             setConvertData({ email: '', password: '' });
-            alert('Invitado convertido a miembro exitosamente!');
+            alert('Invitado convertido a Miembro exitosamente!');
             onRefresh();
         } catch (error) {
             console.error('Error converting guest:', error);
@@ -584,7 +584,7 @@ const EncuentroDetails = ({ encuentro, onBack, onRefresh }) => {
                         </div>
                         <div className="px-6 pt-4">
                             <p className="text-sm text-gray-500 dark:text-gray-400">
-                                Estás convirtiendo a <strong className="text-gray-900 dark:text-white">{selectedRegistration.guest.name}</strong> en un usuario miembro de la plataforma.
+                                Estás convirtiendo a <strong className="text-gray-900 dark:text-white">{selectedRegistration.guest.name}</strong> en un usuario Miembro de la plataforma.
                             </p>
                         </div>
                         <form onSubmit={handleConvertMember} className="p-6 space-y-4">

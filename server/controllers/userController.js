@@ -119,10 +119,11 @@ const getAllUsers = async (req, res) => {
         let where = {};
 
         // Security Filter
+        // Security Filter
         if (currentUser.role === 'SUPER_ADMIN') {
             // See all
             where = {};
-        } else if (currentUser.role === 'LIDER_DOCE' || currentUser.role === 'LIDER_CELULA') {
+        } else if (currentUser.role === 'PASTOR' || currentUser.role === 'LIDER_DOCE' || currentUser.role === 'LIDER_CELULA') {
             const networkIds = await getUserNetwork(currentUser.id);
             // Include self and network
             where = {
@@ -133,9 +134,13 @@ const getAllUsers = async (req, res) => {
             where = { id: currentUser.id };
         }
 
-        // Apple role filter if provided
+        // Apply role filter if provided
         if (role) {
-            where.role = role;
+            if (role.includes(',')) {
+                where.role = { in: role.split(',') };
+            } else {
+                where.role = role;
+            }
         }
 
         const users = await prisma.user.findMany({
@@ -145,6 +150,10 @@ const getAllUsers = async (req, res) => {
                 email: true,
                 fullName: true,
                 role: true,
+                sex: true,
+                phone: true,
+                address: true,
+                city: true,
                 leaderId: true,
                 createdAt: true,
                 updatedAt: true,
@@ -238,11 +247,11 @@ const updateUser = async (req, res) => {
             return res.status(404).json({ message: 'User not found' });
         }
 
-        // Si es LIDER_DOCE, validar que solo pueda actualizar usuarios en su red
-        if (req.user.role === 'LIDER_DOCE') {
+        // Si es LIDER_DOCE o PASTOR, validar que solo pueda actualizar usuarios en su red
+        if (req.user.role === 'LIDER_DOCE' || req.user.role === 'PASTOR') {
             const networkUserIds = await getUserNetwork(req.user.id);
 
-            if (!networkUserIds.includes(userToUpdate.id)) {
+            if (!networkUserIds.includes(userToUpdate.id) && userToUpdate.id !== req.user.id) {
                 return res.status(403).json({
                     message: 'You can only update users in your network'
                 });
@@ -300,7 +309,7 @@ const createUser = async (req, res) => {
             email,
             password: hashedPassword,
             fullName,
-            role: role || 'MIEMBRO',
+            role: role || 'Miembro',
             sex,
             phone,
             address,
@@ -309,6 +318,15 @@ const createUser = async (req, res) => {
 
         if (liderDoceId) {
             userData.liderDoceId = parseInt(liderDoceId);
+            userData.leaderId = parseInt(liderDoceId); // Asignar también como líder directo por defecto
+        }
+        if (req.body.pastorId) {
+            userData.pastorId = parseInt(req.body.pastorId);
+            userData.leaderId = parseInt(req.body.pastorId);
+        }
+        if (req.body.liderCelulaId) {
+            userData.liderCelulaId = parseInt(req.body.liderCelulaId);
+            userData.leaderId = parseInt(req.body.liderCelulaId);
         }
 
         const user = await prisma.user.create({
@@ -436,10 +454,10 @@ const assignLeader = async (req, res) => {
             return res.status(404).json({ message: 'User not found' });
         }
 
-        // Validar: no se puede asignar líder a roles SUPER_ADMIN o LIDER_DOCE
-        if (user.role === 'SUPER_ADMIN' || user.role === 'LIDER_DOCE') {
+        // Validar: no se puede asignar líder a roles SUPER_ADMIN o PASTOR (ellos son cabeza)
+        if (user.role === 'SUPER_ADMIN' || user.role === 'PASTOR') {
             return res.status(400).json({
-                message: 'Cannot assign leader to SUPER_ADMIN or LIDER_DOCE roles'
+                message: 'Cannot assign leader to SUPER_ADMIN or PASTOR roles'
             });
         }
 
@@ -454,10 +472,10 @@ const assignLeader = async (req, res) => {
                 return res.status(404).json({ message: 'Leader not found' });
             }
 
-            // El líder debe ser LIDER_DOCE o LIDER_CELULA
-            if (leader.role !== 'LIDER_DOCE' && leader.role !== 'LIDER_CELULA') {
+            // El líder debe ser PASTOR, LIDER_DOCE o LIDER_CELULA
+            if (leader.role !== 'LIDER_DOCE' && leader.role !== 'LIDER_CELULA' && leader.role !== 'PASTOR') {
                 return res.status(400).json({
-                    message: 'Leader must have LIDER_DOCE or LIDER_CELULA role'
+                    message: 'Leader must have PASTOR, LIDER_DOCE or LIDER_CELULA role'
                 });
             }
 
@@ -468,7 +486,7 @@ const assignLeader = async (req, res) => {
                 });
             }
 
-            // MIEMBRO solo puede ser asignado a LIDER_CELULA o LIDER_DOCE
+            // Miembro solo puede ser asignado a LIDER_CELULA o LIDER_DOCE
             // LIDER_CELULA solo puede ser asignado a LIDER_DOCE
             if (user.role === 'LIDER_CELULA' && leader.role !== 'LIDER_DOCE') {
                 return res.status(400).json({
@@ -477,10 +495,26 @@ const assignLeader = async (req, res) => {
             }
         }
 
-        // Actualizar el leaderId del usuario
+        // Actualizar el leaderId del usuario (y mantener coherencia con campos antiguos si es necesario)
+        let updateData = {
+            leaderId: leaderId ? parseInt(leaderId) : null
+        };
+
+        // Sincronizar campos específicos para compatibilidad
+        if (leaderId) {
+            const leader = await prisma.user.findUnique({ where: { id: parseInt(leaderId) } });
+            if (leader.role === 'PASTOR') updateData.pastorId = parseInt(leaderId);
+            else if (leader.role === 'LIDER_DOCE') updateData.liderDoceId = parseInt(leaderId);
+            else if (leader.role === 'LIDER_CELULA') updateData.liderCelulaId = parseInt(leaderId);
+        } else {
+            updateData.pastorId = null;
+            updateData.liderDoceId = null;
+            updateData.liderCelulaId = null;
+        }
+
         const updatedUser = await prisma.user.update({
             where: { id: parseInt(id) },
-            data: { leaderId: leaderId ? parseInt(leaderId) : null },
+            data: updateData,
             include: {
                 leader: {
                     select: { id: true, fullName: true, role: true }
