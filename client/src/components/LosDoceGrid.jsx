@@ -1,7 +1,7 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { Users, ChevronRight } from 'lucide-react';
 
-const LosDoceGrid = ({ losDoce, onSelectLeader }) => {
+const LosDoceGrid = React.memo(({ losDoce, onSelectLeader }) => {
     const [selectedId, setSelectedId] = useState(null);
 
     const handleClick = (leader) => {
@@ -52,6 +52,6 @@ const LosDoceGrid = ({ losDoce, onSelectLeader }) => {
             ))}
         </div>
     );
-};
+});
 
 export default LosDoceGrid;

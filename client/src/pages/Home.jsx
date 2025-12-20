@@ -1,8 +1,10 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense, lazy } from 'react';
 import { useAuth } from '../context/AuthContext';
 import LosDoceGrid from '../components/LosDoceGrid';
 import NetworkTree from '../components/NetworkTree';
-import ConsolidatedStatsReport from '../components/ConsolidatedStatsReport';
+
+// Lazy load heavy chart component
+const ConsolidatedStatsReport = lazy(() => import('../components/ConsolidatedStatsReport'));
 
 const Home = () => {
     const { user } = useAuth();
@@ -112,7 +114,7 @@ const Home = () => {
                     {canViewNetwork ? (
                         <>
                             {user?.role === 'SUPER_ADMIN' && (
-                                <div>
+                                <div className="min-h-[200px]">
                                     <h2 className="text-2xl font-semibold text-gray-800 mb-4">
                                         Pastores
                                     </h2>
@@ -121,25 +123,27 @@ const Home = () => {
                             )}
 
                             {networkLoading ? (
-                                <div className="flex items-center justify-center h-32">
+                                <div className="flex items-center justify-center h-[500px] bg-gray-50 rounded-lg">
                                     <div className="text-gray-500">Cargando red de discipulado...</div>
                                 </div>
                             ) : (
-                                network && (
-                                    <div>
-                                        <h2 className="text-2xl font-semibold text-gray-800 mb-4">
-                                            {user?.role === 'SUPER_ADMIN'
-                                                ? `Red de ${selectedLeader?.fullName}`
-                                                : 'Mi Red'
-                                            }
-                                        </h2>
-                                        <NetworkTree
-                                            network={network}
-                                            currentUser={user}
-                                            onNetworkChange={() => handleSelectLeader(selectedLeader || user)}
-                                        />
-                                    </div>
-                                )
+                                <div className="min-h-[500px]">
+                                    {network && (
+                                        <div>
+                                            <h2 className="text-2xl font-semibold text-gray-800 mb-4">
+                                                {user?.role === 'SUPER_ADMIN'
+                                                    ? `Red de ${selectedLeader?.fullName}`
+                                                    : 'Mi Red'
+                                                }
+                                            </h2>
+                                            <NetworkTree
+                                                network={network}
+                                                currentUser={user}
+                                                onNetworkChange={() => handleSelectLeader(selectedLeader || user)}
+                                            />
+                                        </div>
+                                    )}
+                                </div>
                             )}
                         </>
                     ) : (
@@ -152,8 +156,10 @@ const Home = () => {
 
                 {/* Bottom Section: Consolidated Report & Stats */}
                 {canViewReport && (
-                    <div>
-                        <ConsolidatedStatsReport simpleMode={false} />
+                    <div className="min-h-[600px]">
+                        <Suspense fallback={<div className="h-[600px] flex items-center justify-center bg-gray-50 rounded-lg">Cargando Estadísticas...</div>}>
+                            <ConsolidatedStatsReport simpleMode={false} />
+                        </Suspense>
                     </div>
                 )}
             </div>

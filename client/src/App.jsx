@@ -1,18 +1,22 @@
+import { Suspense, lazy } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { ThemeProvider } from './context/ThemeContext';
 import Layout from './layouts/Layout';
-import Login from './pages/Login';
-import Register from './pages/Register';
-import Ganar from './pages/Ganar';
-import Home from './pages/Home';
-import Consolidar from './pages/Consolidar';
-import Discipular from './pages/Discipular';
-import Enviar from './pages/Enviar';
-import NetworkAssignment from './components/NetworkAssignment';
-import Convenciones from './pages/Convenciones';
-import Encuentros from './pages/Encuentros';
-import AuditDashboard from './pages/AuditDashboard';
+import ConnectivityHandler from './components/ConnectivityHandler';
+
+// Lazy load pages
+const Login = lazy(() => import('./pages/Login'));
+const Register = lazy(() => import('./pages/Register'));
+const Ganar = lazy(() => import('./pages/Ganar'));
+const Home = lazy(() => import('./pages/Home'));
+const Consolidar = lazy(() => import('./pages/Consolidar'));
+const Discipular = lazy(() => import('./pages/Discipular'));
+const Enviar = lazy(() => import('./pages/Enviar'));
+const NetworkAssignment = lazy(() => import('./components/NetworkAssignment'));
+const Convenciones = lazy(() => import('./pages/Convenciones'));
+const Encuentros = lazy(() => import('./pages/Encuentros'));
+const AuditDashboard = lazy(() => import('./pages/AuditDashboard'));
 
 // Placeholder components for now
 
@@ -28,27 +32,36 @@ const AdminRoute = ({ children }) => {
   return user && (user.role === 'SUPER_ADMIN' || user.role === 'PASTOR') ? children : <Navigate to="/" />;
 };
 
+const PageLoader = () => (
+  <div className="flex items-center justify-center h-screen">
+    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+  </div>
+);
+
 function App() {
   return (
     <ThemeProvider>
       <BrowserRouter>
         <AuthProvider>
-          <Routes>
-            <Route path="/login" element={<Login />} />
-            <Route path="/register" element={<Register />} />
+          <ConnectivityHandler />
+          <Suspense fallback={<PageLoader />}>
+            <Routes>
+              <Route path="/login" element={<Login />} />
+              <Route path="/register" element={<Register />} />
 
-            <Route path="/" element={<PrivateRoute><Layout /></PrivateRoute>}>
-              <Route index element={<Home />} />
-              <Route path="ganar" element={<Ganar />} />
-              <Route path="consolidar" element={<Consolidar />} />
-              <Route path="discipular" element={<Discipular />} />
-              <Route path="enviar" element={<Enviar />} />
-              <Route path="encuentros" element={<Encuentros />} />
-              <Route path="convenciones" element={<Convenciones />} />
-              <Route path="network" element={<NetworkAssignment />} />
-              <Route path="auditoria" element={<AdminRoute><AuditDashboard /></AdminRoute>} />
-            </Route>
-          </Routes>
+              <Route path="/" element={<PrivateRoute><Layout /></PrivateRoute>}>
+                <Route index element={<Home />} />
+                <Route path="ganar" element={<Ganar />} />
+                <Route path="consolidar" element={<Consolidar />} />
+                <Route path="discipular" element={<Discipular />} />
+                <Route path="enviar" element={<Enviar />} />
+                <Route path="encuentros" element={<Encuentros />} />
+                <Route path="convenciones" element={<Convenciones />} />
+                <Route path="network" element={<NetworkAssignment />} />
+                <Route path="auditoria" element={<AdminRoute><AuditDashboard /></AdminRoute>} />
+              </Route>
+            </Routes>
+          </Suspense>
         </AuthProvider>
       </BrowserRouter>
     </ThemeProvider>

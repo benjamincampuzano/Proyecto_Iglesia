@@ -26,6 +26,15 @@ const GuestList = ({ refreshTrigger }) => {
         fetchGuests();
     }, [refreshTrigger, statusFilter, invitedByFilter, liderDoceFilter]);
 
+    // Debounce search term
+    useEffect(() => {
+        const delayDebounceFn = setTimeout(() => {
+            fetchGuests();
+        }, 500);
+
+        return () => clearTimeout(delayDebounceFn);
+    }, [searchTerm]);
+
     const fetchGuests = async () => {
         setLoading(true);
         setError('');
