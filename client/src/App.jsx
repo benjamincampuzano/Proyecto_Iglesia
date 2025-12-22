@@ -1,9 +1,13 @@
-import { Suspense, lazy } from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { Suspense, lazy, useEffect, useState, useRef } from 'react';
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import { useLoading } from './context/LoadingContext';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { ThemeProvider } from './context/ThemeContext';
+import { LoadingProvider } from './context/LoadingContext';
 import Layout from './layouts/Layout';
 import ConnectivityHandler from './components/ConnectivityHandler';
+import LoadingOverlay from './components/LoadingOverlay';
+import TransitionLoader from './components/TransitionLoader';
 
 // Lazy load pages
 const Login = lazy(() => import('./pages/Login'));
@@ -38,32 +42,71 @@ const PageLoader = () => (
   </div>
 );
 
+const RouteTransitionHandler = () => {
+  const location = useLocation();
+  const { startLoading, stopLoading, updateProgress } = useLoading();
+  const prevPathRef = useRef(location.pathname);
+
+  useEffect(() => {
+    if (location.pathname !== prevPathRef.current) {
+      startLoading();
+      prevPathRef.current = location.pathname;
+
+      let currentProgress = 0;
+      const interval = setInterval(() => {
+        currentProgress += Math.random() * 20;
+        if (currentProgress > 90) {
+          currentProgress = 95;
+          clearInterval(interval);
+        }
+        updateProgress(Math.floor(currentProgress));
+      }, 40);
+
+      const timeout = setTimeout(() => {
+        stopLoading();
+        clearInterval(interval);
+      }, 1000);
+
+      return () => {
+        clearTimeout(timeout);
+        clearInterval(interval);
+      };
+    }
+  }, [location.pathname, startLoading, stopLoading, updateProgress]);
+
+  return null;
+};
+
 function App() {
   return (
     <ThemeProvider>
-      <BrowserRouter>
-        <AuthProvider>
-          <ConnectivityHandler />
-          <Suspense fallback={<PageLoader />}>
-            <Routes>
-              <Route path="/login" element={<Login />} />
-              <Route path="/register" element={<Register />} />
+      <LoadingProvider>
+        <BrowserRouter>
+          <AuthProvider>
+            <ConnectivityHandler />
+            <RouteTransitionHandler />
+            <LoadingOverlay />
+            <Suspense fallback={<TransitionLoader />}>
+              <Routes>
+                <Route path="/login" element={<Login />} />
+                <Route path="/register" element={<Register />} />
 
-              <Route path="/" element={<PrivateRoute><Layout /></PrivateRoute>}>
-                <Route index element={<Home />} />
-                <Route path="ganar" element={<Ganar />} />
-                <Route path="consolidar" element={<Consolidar />} />
-                <Route path="discipular" element={<Discipular />} />
-                <Route path="enviar" element={<Enviar />} />
-                <Route path="encuentros" element={<Encuentros />} />
-                <Route path="convenciones" element={<Convenciones />} />
-                <Route path="network" element={<NetworkAssignment />} />
-                <Route path="auditoria" element={<AdminRoute><AuditDashboard /></AdminRoute>} />
-              </Route>
-            </Routes>
-          </Suspense>
-        </AuthProvider>
-      </BrowserRouter>
+                <Route path="/" element={<PrivateRoute><Layout /></PrivateRoute>}>
+                  <Route index element={<Home />} />
+                  <Route path="ganar" element={<Ganar />} />
+                  <Route path="consolidar" element={<Consolidar />} />
+                  <Route path="discipular" element={<Discipular />} />
+                  <Route path="enviar" element={<Enviar />} />
+                  <Route path="encuentros" element={<Encuentros />} />
+                  <Route path="convenciones" element={<Convenciones />} />
+                  <Route path="network" element={<NetworkAssignment />} />
+                  <Route path="auditoria" element={<AdminRoute><AuditDashboard /></AdminRoute>} />
+                </Route>
+              </Routes>
+            </Suspense>
+          </AuthProvider>
+        </BrowserRouter>
+      </LoadingProvider>
     </ThemeProvider>
   );
 }
