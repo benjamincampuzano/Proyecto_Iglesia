@@ -62,14 +62,20 @@ const RouteTransitionHandler = () => {
         updateProgress(Math.floor(currentProgress));
       }, 40);
 
-      const timeout = setTimeout(() => {
-        stopLoading();
-        clearInterval(interval);
-      }, 1000);
+      let isFinished = false;
+      const finish = () => {
+        if (!isFinished) {
+          isFinished = true;
+          stopLoading();
+          clearInterval(interval);
+        }
+      };
+
+      const timeout = setTimeout(finish, 1000);
 
       return () => {
         clearTimeout(timeout);
-        clearInterval(interval);
+        finish();
       };
     }
   }, [location.pathname, startLoading, stopLoading, updateProgress]);
