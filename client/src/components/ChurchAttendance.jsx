@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Calendar, Check, X } from 'lucide-react';
+import api from '../utils/api';
 
 const ChurchAttendance = () => {
     const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
@@ -16,12 +17,8 @@ const ChurchAttendance = () => {
     const fetchMembers = async () => {
         try {
             setLoading(true);
-            const token = localStorage.getItem('token');
-            const response = await fetch('http://localhost:5000/api/consolidar/church-attendance/members/all', {
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
-            const data = await response.json();
-            setMembers(data);
+            const response = await api.get('/consolidar/church-attendance/members/all');
+            setMembers(response.data);
         } catch (error) {
             console.error('Error fetching members:', error);
         } finally {
@@ -31,11 +28,8 @@ const ChurchAttendance = () => {
 
     const fetchAttendance = async () => {
         try {
-            const token = localStorage.getItem('token');
-            const response = await fetch(`http://localhost:5000/api/consolidar/church-attendance/${date}`, {
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
-            const data = await response.json();
+            const response = await api.get(`/consolidar/church-attendance/${date}`);
+            const data = response.data;
 
             const attendanceMap = {};
             data.forEach(att => {
@@ -78,16 +72,9 @@ const ChurchAttendance = () => {
                 return;
             }
 
-            await fetch('http://localhost:5000/api/consolidar/church-attendance', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
-                body: JSON.stringify({
-                    date,
-                    attendances: attendanceData
-                })
+            await api.post('/consolidar/church-attendance', {
+                date,
+                attendances: attendanceData
             });
 
             alert('Asistencia guardada exitosamente');

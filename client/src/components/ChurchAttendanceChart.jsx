@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import api from '../utils/api';
 import { Calendar, TrendingUp } from 'lucide-react';
 
 const ChurchAttendanceChart = () => {
@@ -19,28 +20,17 @@ const ChurchAttendanceChart = () => {
     const fetchStats = async () => {
         try {
             setLoading(true);
-            const token = localStorage.getItem('token');
-            const params = new URLSearchParams({
-                startDate,
-                endDate
-            });
 
             // Verificación de fechas
             if (new Date(startDate) > new Date(endDate)) {
                 console.error("La fecha de inicio no puede ser posterior a la fecha de fin.");
                 return;
             }
-            console.log("Start Date:", startDate);
-            console.log("End Date:", endDate);
 
-            const response = await fetch(`http://localhost:5000/api/consolidar/church-attendance/daily-stats?${params}`, {
-                headers: { 'Authorization': `Bearer ${token}` }
+            const response = await api.get('/consolidar/church-attendance/daily-stats', {
+                params: { startDate, endDate }
             });
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
-            const data = await response.json();
-            setStats(data);
+            setStats(response.data);
         } catch (error) {
             console.error('Error fetching stats:', error);
         } finally {

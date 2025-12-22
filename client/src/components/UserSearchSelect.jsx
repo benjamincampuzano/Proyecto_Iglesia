@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { Search, ChevronDown, X } from 'lucide-react';
-import axios from 'axios';
+import api from '../utils/api';
 
 const UserSearchSelect = ({ value, onChange, label, placeholder = "Buscar usuario...", roleFilter }) => {
     const [isOpen, setIsOpen] = useState(false);
@@ -42,20 +42,14 @@ const UserSearchSelect = ({ value, onChange, label, placeholder = "Buscar usuari
     const fetchUsers = async () => {
         setLoading(true);
         try {
-            const token = localStorage.getItem('token');
-            const params = new URLSearchParams();
+            const params = {};
+            if (roleFilter) params.role = roleFilter;
 
-            // Add role filter if provided
-            if (roleFilter) {
-                params.append('role', roleFilter);
-            }
-
-            const url = `http://localhost:5000/api/users${params.toString() ? '?' + params.toString() : ''}`;
-            const res = await axios.get(url, {
-                headers: { Authorization: `Bearer ${token}` },
+            const response = await api.get('/users', {
+                params: params
             });
 
-            let filteredUsers = res.data.users;
+            let filteredUsers = response.data.users;
             if (searchTerm) {
                 filteredUsers = filteredUsers.filter(user =>
                     user.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -73,10 +67,7 @@ const UserSearchSelect = ({ value, onChange, label, placeholder = "Buscar usuari
 
     const fetchUserById = async (userId) => {
         try {
-            const token = localStorage.getItem('token');
-            const res = await axios.get(`http://localhost:5000/api/users/${userId}`, {
-                headers: { Authorization: `Bearer ${token}` },
-            });
+            const res = await api.get(`/users/${userId}`);
             setSelectedUser(res.data.user);
         } catch (error) {
             console.error('Error fetching user:', error);

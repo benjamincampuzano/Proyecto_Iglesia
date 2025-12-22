@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import api from '../../utils/api';
 import { Plus, Calendar, Users, Trash2, Edit } from 'lucide-react';
 import { useAuth } from "../../context/AuthContext";
 import ClassMatrix from './ClassMatrix';
@@ -47,10 +47,7 @@ const CourseManagement = () => {
 
     const fetchCourses = async () => {
         try {
-            const token = localStorage.getItem('token');
-            const res = await axios.get('http://localhost:5000/api/school/modules', {
-                headers: { Authorization: `Bearer ${token}` }
-            });
+            const res = await api.get('/school/modules');
             setCourses(res.data);
         } catch (error) {
             console.error('Error fetching courses', error);
@@ -59,10 +56,7 @@ const CourseManagement = () => {
 
     const fetchLeaders = async () => {
         try {
-            const token = localStorage.getItem('token');
-            const res = await axios.get('http://localhost:5000/api/users', {
-                headers: { Authorization: `Bearer ${token}` }
-            });
+            const res = await api.get('/users');
             setLeaders(res.data.users || []);
         } catch (error) {
             console.error('Error fetching users', error);
@@ -73,10 +67,7 @@ const CourseManagement = () => {
         e.stopPropagation();
         if (!window.confirm('¿Estás seguro de eliminar esta clase? Se perderán todas las inscripciones y notas.')) return;
         try {
-            const token = localStorage.getItem('token');
-            await axios.delete(`http://localhost:5000/api/school/modules/${id}`, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
+            await api.delete(`/school/modules/${id}`);
             fetchCourses();
         } catch (error) {
             alert('Error, No se puede eliminar la clase porque existen estudiantes inscritos y notas asociadas. Primero debe desvincular a todos los estudiantes.');
@@ -86,18 +77,15 @@ const CourseManagement = () => {
     const handleCreate = async (e) => {
         e.preventDefault();
         try {
-            const token = localStorage.getItem('token');
             // Construct name and moduleNumber from selected level
             const selectedLevel = SCHOOL_LEVELS.find(l => l.nivel === formData.nivel && l.seccion === formData.seccion);
             const finalName = selectedLevel ? `${selectedLevel.name} (Nivel ${selectedLevel.nivel}${selectedLevel.seccion})` : `Escuela ${formData.nivel}${formData.seccion}`;
             const modId = selectedLevel ? selectedLevel.moduleNumber : 0;
 
-            await axios.post('http://localhost:5000/api/school/modules', {
+            await api.post('/school/modules', {
                 ...formData,
                 name: finalName,
                 moduleId: modId
-            }, {
-                headers: { Authorization: `Bearer ${token}` }
             });
             setShowCreateModal(false);
             setFormData({ ...formData, name: '', description: '', professorId: '', auxiliarIds: [], startDate: '', endDate: '' });
@@ -126,10 +114,7 @@ const CourseManagement = () => {
     const handleUpdate = async (e) => {
         e.preventDefault();
         try {
-            const token = localStorage.getItem('token');
-            await axios.put(`http://localhost:5000/api/school/modules/${editingCourse.id}`, formData, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
+            await api.put(`/school/modules/${editingCourse.id}`, formData);
             setShowEditModal(false);
             setEditingCourse(null);
             fetchCourses();

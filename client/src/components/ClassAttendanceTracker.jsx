@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { ClipboardList } from 'lucide-react';
+import api from '../utils/api';
 
 const ClassAttendanceTracker = () => {
     const [modules, setModules] = useState([]);
@@ -29,11 +30,8 @@ const ClassAttendanceTracker = () => {
 
     const fetchModules = async () => {
         try {
-            const token = localStorage.getItem('token');
-            const response = await fetch('http://localhost:5000/api/consolidar/seminar/modules', {
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
-            const data = await response.json();
+            const response = await api.get('/consolidar/seminar/modules');
+            const data = response.data;
             setModules(data);
             if (data.length > 0) {
                 setSelectedModule(data[0].id);
@@ -46,19 +44,12 @@ const ClassAttendanceTracker = () => {
     const fetchEnrollments = async () => {
         try {
             setLoading(true);
-            const token = localStorage.getItem('token');
-            const response = await fetch(`http://localhost:5000/api/consolidar/seminar/enrollments/module/${selectedModule}`, {
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
-            const data = await response.json();
-            setEnrollments(data);
+            const response = await api.get(`/consolidar/seminar/enrollments/module/${selectedModule}`);
+            setEnrollments(response.data);
 
             // Fetch existing attendances for this class
-            const attendanceResponse = await fetch(
-                `http://localhost:5000/api/consolidar/seminar/class-attendance/module/${selectedModule}/class/${selectedClass}`,
-                { headers: { 'Authorization': `Bearer ${token}` } }
-            );
-            const attendanceData = await attendanceResponse.json();
+            const attendanceResponse = await api.get(`/consolidar/seminar/class-attendance/module/${selectedModule}/class/${selectedClass}`);
+            const attendanceData = attendanceResponse.data;
 
             const attendanceMap = {};
             attendanceData.forEach(att => {
@@ -82,18 +73,10 @@ const ClassAttendanceTracker = () => {
     const handleSave = async (enrollmentId) => {
         try {
             setSaving(true);
-            const token = localStorage.getItem('token');
-            await fetch('http://localhost:5000/api/consolidar/seminar/class-attendance', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
-                body: JSON.stringify({
-                    enrollmentId,
-                    classNumber: selectedClass,
-                    status: attendances[enrollmentId] || 'ASISTE'
-                })
+            await api.post('/consolidar/seminar/class-attendance', {
+                enrollmentId,
+                classNumber: selectedClass,
+                status: attendances[enrollmentId] || 'ASISTE'
             });
             alert('Asistencia guardada');
         } catch (error) {

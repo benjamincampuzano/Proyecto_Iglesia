@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Calendar, Check, X, Users, Map as MapIcon } from 'lucide-react';
+import api from '../utils/api';
 import CellMap from './CellMap';
 
 const CellAttendance = () => {
@@ -28,16 +29,8 @@ const CellAttendance = () => {
 
     const fetchCells = async () => {
         try {
-            const token = localStorage.getItem('token');
-            const response = await fetch('http://localhost:5000/api/enviar/cells', {
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
-
-            if (!response.ok) {
-                throw new Error(`Error: ${response.status}`);
-            }
-
-            const data = await response.json();
+            const response = await api.get('/enviar/cells');
+            const data = response.data;
             if (Array.isArray(data)) {
                 setCells(data);
                 if (data.length > 0) {
@@ -55,11 +48,8 @@ const CellAttendance = () => {
     const fetchCellMembers = async () => {
         try {
             setLoading(true);
-            const token = localStorage.getItem('token');
-            const response = await fetch(`http://localhost:5000/api/enviar/cells/${selectedCell}/members`, {
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
-            const data = await response.json();
+            const response = await api.get(`/enviar/cells/${selectedCell}/members`);
+            const data = response.data;
             if (Array.isArray(data)) {
                 setMembers(data);
             } else {
@@ -75,11 +65,8 @@ const CellAttendance = () => {
 
     const fetchCellAttendance = async () => {
         try {
-            const token = localStorage.getItem('token');
-            const response = await fetch(`http://localhost:5000/api/enviar/cell-attendance/${selectedCell}/${date}`, {
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
-            const data = await response.json();
+            const response = await api.get(`/enviar/cell-attendance/${selectedCell}/${date}`);
+            const data = response.data;
 
             const attendanceMap = {};
             if (Array.isArray(data)) {
@@ -127,17 +114,10 @@ const CellAttendance = () => {
                 return;
             }
 
-            await fetch('http://localhost:5000/api/enviar/cell-attendance', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
-                body: JSON.stringify({
-                    date,
-                    cellId: selectedCell,
-                    attendances: attendanceData
-                })
+            await api.post('/enviar/cell-attendance', {
+                date,
+                cellId: selectedCell,
+                attendances: attendanceData
             });
 
             alert('Asistencia de célula guardada exitosamente');

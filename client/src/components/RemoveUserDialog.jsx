@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { X, AlertTriangle, Loader2, UserMinus } from 'lucide-react';
+import api from '../utils/api';
 
 /**
  * Confirmation dialog for removing users from a network
@@ -13,20 +14,8 @@ const RemoveUserDialog = ({ isOpen, onClose, user, onUserRemoved }) => {
         try {
             setSubmitting(true);
             setError(null);
-            const token = localStorage.getItem('token');
-            const response = await fetch(`http://localhost:5000/api/network/remove/${user.id}`, {
-                method: 'DELETE',
-                headers: {
-                    'Authorization': `Bearer ${token}`
-                }
-            });
-
-            if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.error || 'Error al remover usuario');
-            }
-
-            const data = await response.json();
+            const response = await api.delete(`/network/remove/${user.id}`);
+            const data = response.data;
 
             // Show success notification
             alert(`✓ ${data.message}`);

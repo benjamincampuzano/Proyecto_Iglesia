@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { Lock, Mail, User } from 'lucide-react';
+import api from '../utils/api';
 
 const Register = () => {
     const [formData, setFormData] = useState({
@@ -23,11 +24,8 @@ const Register = () => {
     useState(() => {
         const fetchLeaders = async () => {
             try {
-                const response = await fetch('http://localhost:5000/api/auth/leaders');
-                if (response.ok) {
-                    const data = await response.json();
-                    setLideresDoce(data);
-                }
+                const response = await api.get('/auth/leaders');
+                setLideresDoce(response.data);
             } catch (err) {
                 console.error('Error fetching leaders:', err);
             }

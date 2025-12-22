@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Users, Phone, Home, Calendar, Filter, PieChart, BarChart2 } from 'lucide-react';
+import api from '../utils/api';
 
 const GuestTrackingStats = () => {
     const [stats, setStats] = useState([]);
@@ -14,19 +15,13 @@ const GuestTrackingStats = () => {
     const fetchStats = async () => {
         try {
             setLoading(true);
-            const token = localStorage.getItem('token');
-            let url = 'http://localhost:5000/api/consolidar/stats/guest-tracking';
             const params = new URLSearchParams();
             if (startDate) params.append('startDate', startDate);
             if (endDate) params.append('endDate', endDate);
 
-            if (params.toString()) url += `?${params.toString()}`;
-
-            const response = await fetch(url, {
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
-            const data = await response.json();
-            setStats(Array.isArray(data) ? data : []);
+            const url = `/consolidar/stats/guest-tracking${params.toString() ? '?' + params.toString() : ''}`;
+            const response = await api.get(url);
+            setStats(Array.isArray(response.data) ? response.data : []);
         } catch (error) {
             console.error('Error fetching guest tracking stats:', error);
         } finally {

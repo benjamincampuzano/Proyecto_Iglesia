@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Users, UserPlus, X, Check } from 'lucide-react';
-import axios from 'axios';
+import api from '../utils/api';
 
 const NetworkAssignment = () => {
     const [users, setUsers] = useState([]);
@@ -22,10 +22,7 @@ const NetworkAssignment = () => {
         setLoading(true);
         setError('');
         try {
-            const token = localStorage.getItem('token');
-            const res = await axios.get('http://localhost:5000/api/users', {
-                headers: { Authorization: `Bearer ${token}` },
-            });
+            const res = await api.get('/users');
 
             const allUsers = res.data.users;
             const user = JSON.parse(localStorage.getItem('user'));
@@ -73,15 +70,10 @@ const NetworkAssignment = () => {
 
     const handleAssignLeader = async (userId, leaderId) => {
         try {
-            const token = localStorage.getItem('token');
-            await axios.post(
-                'http://localhost:5000/api/network/assign',
-                {
-                    userId: userId,
-                    leaderId: leaderId ? parseInt(leaderId) : null
-                },
-                { headers: { Authorization: `Bearer ${token}` } }
-            );
+            await api.post('/network/assign', {
+                userId: userId,
+                leaderId: leaderId ? parseInt(leaderId) : null
+            });
 
             setSuccess('Líder asignado exitosamente');
             setAssigningUser(null);

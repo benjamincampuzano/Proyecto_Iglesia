@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Phone, Home, User, MessageSquare, AlertCircle, Edit2, Calendar } from 'lucide-react';
+import api from '../utils/api';
 import { useAuth } from '../context/AuthContext';
 
 const GuestTracking = () => {
@@ -22,12 +23,8 @@ const GuestTracking = () => {
     const fetchGuests = async () => {
         try {
             setLoading(true);
-            const token = localStorage.getItem('token');
-            const response = await fetch('http://localhost:5000/api/guests', {
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
-            const data = await response.json();
-            setGuests(data.guests || []);
+            const response = await api.get('/guests');
+            setGuests(response.data.guests || []);
         } catch (error) {
             console.error('Error fetching guests:', error);
         } finally {
@@ -48,25 +45,12 @@ const GuestTracking = () => {
 
     const handleUpdate = async () => {
         try {
-            const token = localStorage.getItem('token');
-            const response = await fetch(`http://localhost:5000/api/guests/${selectedGuest.id}`, {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
-                body: JSON.stringify(editData)
-            });
-
-            if (response.ok) {
-                setIsModalOpen(false);
-                fetchGuests();
-            } else {
-                alert('Error al actualizar el seguimiento');
-            }
+            await api.put(`/guests/${selectedGuest.id}`, editData);
+            setIsModalOpen(false);
+            fetchGuests();
         } catch (error) {
             console.error('Error updating guest tracking:', error);
-            alert('Error al conectar con el servidor');
+            alert('Error al actualizar el seguimiento: ' + (error.response?.data?.error || error.message));
         }
     };
 
@@ -143,8 +127,8 @@ const GuestTracking = () => {
                                         </td>
                                         <td className="px-6 py-4 text-center">
                                             <span className={`px-2 py-1 text-xs font-medium rounded-full ${guest.called
-                                                    ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
-                                                    : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'
+                                                ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
+                                                : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'
                                                 }`}>
                                                 {guest.called ? 'Sí' : 'No'}
                                             </span>
@@ -156,8 +140,8 @@ const GuestTracking = () => {
                                         </td>
                                         <td className="px-6 py-4 text-center">
                                             <span className={`px-2 py-1 text-xs font-medium rounded-full ${guest.visited
-                                                    ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400'
-                                                    : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'
+                                                ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400'
+                                                : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'
                                                 }`}>
                                                 {guest.visited ? 'Sí' : 'No'}
                                             </span>

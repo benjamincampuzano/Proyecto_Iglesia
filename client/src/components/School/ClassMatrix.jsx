@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import api from '../../utils/api';
 import { Save, UserPlus, Trash2, BookOpen, ExternalLink } from 'lucide-react';
 import ClassMaterialManager from './ClassMaterialManager';
 
@@ -28,10 +28,7 @@ const ClassMatrix = ({ courseId }) => {
     const fetchMatrix = async () => {
         try {
             setLoading(true);
-            const token = localStorage.getItem('token');
-            const res = await axios.get(`http://localhost:5000/api/school/modules/${courseId}/matrix`, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
+            const res = await api.get(`/school/modules/${courseId}/matrix`);
             setData(res.data);
             setLoading(false);
         } catch (err) {
@@ -42,10 +39,7 @@ const ClassMatrix = ({ courseId }) => {
 
     const fetchMaterials = async () => {
         try {
-            const token = localStorage.getItem('token');
-            const res = await axios.get(`http://localhost:5000/api/school/modules/${courseId}/materials`, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
+            const res = await api.get(`/school/modules/${courseId}/materials`);
             setClassMaterials(res.data);
         } catch (err) {
             console.error(err);
@@ -54,10 +48,7 @@ const ClassMatrix = ({ courseId }) => {
 
     const fetchUsers = async () => {
         try {
-            const token = localStorage.getItem('token');
-            const res = await axios.get('http://localhost:5000/api/users', {
-                headers: { Authorization: `Bearer ${token}` }
-            });
+            const res = await api.get('/users');
             setPotentialStudents(res.data.users || []);
         } catch (err) {
             console.error(err);
@@ -67,11 +58,8 @@ const ClassMatrix = ({ courseId }) => {
     const handleUpdate = async (enrollmentId, type, key, value) => {
         // Optimistic update could happen here
         try {
-            const token = localStorage.getItem('token');
-            await axios.post('http://localhost:5000/api/school/matrix/update', {
+            await api.post('/school/matrix/update', {
                 enrollmentId, type, key, value
-            }, {
-                headers: { Authorization: `Bearer ${token}` }
             });
         } catch (err) {
             alert('Error guarding change');
@@ -81,13 +69,10 @@ const ClassMatrix = ({ courseId }) => {
     const handleEnroll = async (e) => {
         e.preventDefault();
         try {
-            const token = localStorage.getItem('token');
-            await axios.post('http://localhost:5000/api/school/enroll', {
+            await api.post('/school/enroll', {
                 moduleId: courseId,
                 studentId: enrollForm.studentId,
                 assignedAuxiliarId: enrollForm.assignedAuxiliarId
-            }, {
-                headers: { Authorization: `Bearer ${token}` }
             });
             setShowEnrollModal(false);
             setEnrollForm({ studentId: '', assignedAuxiliarId: '' });
@@ -100,10 +85,7 @@ const ClassMatrix = ({ courseId }) => {
     const handleDeleteEnrollment = async (enrollmentId) => {
         if (!window.confirm("¿Seguro que deseas eliminar a este estudiante de la clase?")) return;
         try {
-            const token = localStorage.getItem('token');
-            await axios.delete(`http://localhost:5000/api/school/enrollments/${enrollmentId}`, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
+            await api.delete(`/school/enrollments/${enrollmentId}`);
             fetchMatrix();
         } catch (error) {
             alert('Error deleting student');

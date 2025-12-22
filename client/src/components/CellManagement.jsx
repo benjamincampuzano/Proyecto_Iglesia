@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Plus, Users, MapPin, Clock, Calendar, Trash2 } from 'lucide-react';
+import api from '../utils/api';
 
 const CellManagement = () => {
     const [cells, setCells] = useState([]);
@@ -66,12 +67,8 @@ const CellManagement = () => {
 
     const fetchCells = async () => {
         try {
-            const token = localStorage.getItem('token');
-            const response = await fetch('http://localhost:5000/api/enviar/cells', {
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
-            const data = await response.json();
-            setCells(data);
+            const response = await api.get('/enviar/cells');
+            setCells(response.data);
         } catch (error) {
             console.error('Error fetching cells:', error);
         }
@@ -79,12 +76,8 @@ const CellManagement = () => {
 
     const fetchEligibleLeaders = async () => {
         try {
-            const token = localStorage.getItem('token');
-            const response = await fetch('http://localhost:5000/api/enviar/eligible-leaders', {
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
-            const data = await response.json();
-            setEligibleLeaders(data);
+            const response = await api.get('/enviar/eligible-leaders');
+            setEligibleLeaders(response.data);
         } catch (error) {
             console.error('Error fetching leaders:', error);
         }
@@ -92,12 +85,10 @@ const CellManagement = () => {
 
     const fetchEligibleHosts = async (leaderId) => {
         try {
-            const token = localStorage.getItem('token');
-            const response = await fetch(`http://localhost:5000/api/enviar/eligible-hosts?leaderId=${leaderId}`, {
-                headers: { 'Authorization': `Bearer ${token}` }
+            const response = await api.get('/enviar/eligible-hosts', {
+                params: { leaderId }
             });
-            const data = await response.json();
-            setEligibleHosts(data);
+            setEligibleHosts(response.data);
         } catch (error) {
             console.error('Error fetching hosts:', error);
         }
@@ -105,12 +96,8 @@ const CellManagement = () => {
 
     const fetchEligibleMembers = async () => {
         try {
-            const token = localStorage.getItem('token');
-            const response = await fetch('http://localhost:5000/api/enviar/eligible-members', {
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
-            const data = await response.json();
-            setEligibleMembers(data);
+            const response = await api.get('/enviar/eligible-members');
+            setEligibleMembers(response.data);
         } catch (error) {
             console.error('Error fetching members:', error);
         }
@@ -118,12 +105,8 @@ const CellManagement = () => {
 
     const fetchEligibleDoceLeaders = async () => {
         try {
-            const token = localStorage.getItem('token');
-            const response = await fetch('http://localhost:5000/api/enviar/eligible-doce-leaders', {
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
-            const data = await response.json();
-            setEligibleDoceLeaders(data);
+            const response = await api.get('/enviar/eligible-doce-leaders');
+            setEligibleDoceLeaders(response.data);
         } catch (error) {
             console.error('Error fetching doce leaders:', error);
         }
@@ -134,19 +117,7 @@ const CellManagement = () => {
 
         try {
             setLoading(true);
-            const token = localStorage.getItem('token');
-            const response = await fetch(`http://localhost:5000/api/enviar/cells/${cellId}`, {
-                method: 'DELETE',
-                headers: {
-                    'Authorization': `Bearer ${token}`
-                }
-            });
-
-            if (!response.ok) {
-                const err = await response.json();
-                throw new Error(err.error || 'Error al eliminar la célula');
-            }
-
+            await api.delete(`/enviar/cells/${cellId}`);
             alert('Célula eliminada exitosamente');
             fetchCells();
         } catch (error) {
@@ -160,20 +131,7 @@ const CellManagement = () => {
         e.preventDefault();
         setLoading(true);
         try {
-            const token = localStorage.getItem('token');
-            const response = await fetch('http://localhost:5000/api/enviar/cells', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
-                body: JSON.stringify(formData)
-            });
-
-            if (!response.ok) {
-                const err = await response.json();
-                throw new Error(err.error || 'Error creating cell');
-            }
+            await api.post('/enviar/cells', formData);
 
             alert('Célula creada exitosamente');
             setShowCreateForm(false);
@@ -192,20 +150,10 @@ const CellManagement = () => {
         if (!selectedCell || !selectedMember) return;
         try {
             setLoading(true);
-            const token = localStorage.getItem('token');
-            const response = await fetch('http://localhost:5000/api/enviar/cells/assign', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
-                body: JSON.stringify({
-                    cellId: selectedCell.id,
-                    userId: selectedMember
-                })
+            await api.post('/enviar/cells/assign', {
+                cellId: selectedCell.id,
+                userId: selectedMember
             });
-
-            if (!response.ok) throw new Error('Error assigning member');
 
             alert('Miembro asignado exitosamente');
             setSelectedMember('');
@@ -218,18 +166,8 @@ const CellManagement = () => {
     const handleUpdateCoordinates = async (cellId) => {
         try {
             setLoading(true);
-            const token = localStorage.getItem('token');
-            const response = await fetch(`http://localhost:5000/api/enviar/cells/${cellId}/coordinates`, {
-                method: 'POST',
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
-
-            if (!response.ok) {
-                const err = await response.json();
-                throw new Error(err.error || 'Error al actualizar coordenadas');
-            }
-
-            const updatedCell = await response.json();
+            const response = await api.post(`/enviar/cells/${cellId}/coordinates`);
+            const updatedCell = response.data;
             alert('Coordenadas actualizadas exitosamente');
 
             // Update state locally

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { X, Save, Loader, Plus, Trash2, Edit2, Search } from 'lucide-react';
-import axios from 'axios';
+import api from '../utils/api';
 
 const UserManagementModal = ({ isOpen, onClose }) => {
     const [users, setUsers] = useState([]);
@@ -51,10 +51,7 @@ const UserManagementModal = ({ isOpen, onClose }) => {
     const fetchUsers = async () => {
         setLoading(true);
         try {
-            const token = localStorage.getItem('token');
-            const res = await axios.get('http://localhost:5000/api/users', {
-                headers: { Authorization: `Bearer ${token}` },
-            });
+            const res = await api.get('/users');
             setUsers(res.data.users);
         } catch (err) {
             setError(err.response?.data?.message || 'Error al cargar usuarios');
@@ -93,9 +90,7 @@ const UserManagementModal = ({ isOpen, onClose }) => {
             // Clean empty strings
             Object.keys(payload).forEach(key => payload[key] === '' && delete payload[key]);
 
-            await axios.post('http://localhost:5000/api/users', payload, {
-                headers: { Authorization: `Bearer ${token}` },
-            });
+            await api.post('/users', payload);
 
             setSuccess('Usuario creado exitosamente');
             setShowCreateForm(false);
@@ -115,17 +110,11 @@ const UserManagementModal = ({ isOpen, onClose }) => {
         setSuccess('');
 
         try {
-            const token = localStorage.getItem('token');
-            await axios.put(`http://localhost:5000/api/users/${userId}`, updates, {
-                headers: { Authorization: `Bearer ${token}` },
-            });
+            await api.put(`/users/${userId}`, updates);
 
             // Update leader if assigned
             if (updates.assignedLeaderId) {
-                await axios.post(`http://localhost:5000/api/users/assign-leader/${userId}`,
-                    { leaderId: updates.assignedLeaderId },
-                    { headers: { Authorization: `Bearer ${token}` } }
-                );
+                await api.post(`/users/assign-leader/${userId}`, { leaderId: updates.assignedLeaderId });
             }
 
             setSuccess('Usuario actualizado exitosamente');
@@ -146,10 +135,7 @@ const UserManagementModal = ({ isOpen, onClose }) => {
         setSuccess('');
 
         try {
-            const token = localStorage.getItem('token');
-            await axios.delete(`http://localhost:5000/api/users/${userId}`, {
-                headers: { Authorization: `Bearer ${token}` },
-            });
+            await api.delete(`/users/${userId}`);
 
             setSuccess('Usuario eliminado exitosamente');
             fetchUsers();

@@ -1,5 +1,4 @@
-import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import api from '../../utils/api';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { useAuth } from "../../context/AuthContext";
 import * as XLSX from 'xlsx';
@@ -17,10 +16,7 @@ const SchoolLeaderStats = () => {
     const fetchStats = async () => {
         try {
             setLoading(true);
-            const token = localStorage.getItem('token');
-            const res = await axios.get('http://localhost:5000/api/school/stats/leader', {
-                headers: { Authorization: `Bearer ${token}` }
-            });
+            const res = await api.get('/school/stats/leader');
             setData(res.data);
             setLoading(false);
         } catch (error) {

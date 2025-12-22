@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { X, Save, Loader } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
-import axios from 'axios';
+import api from '../utils/api';
 
 const UserProfileModal = ({ isOpen, onClose }) => {
     const { user, updateProfile } = useAuth();
@@ -32,15 +32,11 @@ const UserProfileModal = ({ isOpen, onClose }) => {
         setSuccess('');
 
         try {
-            const token = localStorage.getItem('token');
-            const res = await axios.put(
-                'http://localhost:5000/api/users/profile',
+            const res = await api.put(
+                '/users/profile',
                 {
                     fullName: formData.fullName,
                     email: formData.email,
-                },
-                {
-                    headers: { Authorization: `Bearer ${token}` },
                 }
             );
 
@@ -76,15 +72,11 @@ const UserProfileModal = ({ isOpen, onClose }) => {
         }
 
         try {
-            const token = localStorage.getItem('token');
-            await axios.put(
-                'http://localhost:5000/api/users/password',
+            await api.put(
+                '/users/password',
                 {
                     currentPassword: formData.currentPassword,
                     newPassword: formData.newPassword,
-                },
-                {
-                    headers: { Authorization: `Bearer ${token}` },
                 }
             );
 

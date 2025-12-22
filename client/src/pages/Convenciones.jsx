@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import axios from 'axios';
+import api from '../utils/api';
 import { Plus, Calendar, Users, DollarSign, ChevronRight, Trash2 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext'; // Correction: import path
 import ConventionDetails from '../components/ConventionDetails';
@@ -28,10 +28,7 @@ const Convenciones = () => {
     const fetchConventions = async () => {
         setLoading(true);
         try {
-            const token = localStorage.getItem('token');
-            const res = await axios.get('http://localhost:5000/api/convenciones', {
-                headers: { Authorization: `Bearer ${token}` }
-            });
+            const res = await api.get('/convenciones');
             setConventions(res.data);
         } catch (error) {
             console.error('Error fetching conventions:', error);
@@ -42,10 +39,7 @@ const Convenciones = () => {
 
     const fetchConventionDetails = async (id) => {
         try {
-            const token = localStorage.getItem('token');
-            const res = await axios.get(`http://localhost:5000/api/convenciones/${id}`, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
+            const res = await api.get(`/convenciones/${id}`);
             setSelectedConvention(res.data);
         } catch (error) {
             console.error('Error fetching convention details:', error);
@@ -56,12 +50,9 @@ const Convenciones = () => {
     const handleCreate = async (e) => {
         e.preventDefault();
         try {
-            const token = localStorage.getItem('token');
-            await axios.post('http://localhost:5000/api/convenciones', {
+            await api.post('/convenciones', {
                 ...formData,
                 cost: parseFloat(formData.cost)
-            }, {
-                headers: { Authorization: `Bearer ${token}` }
             });
             setShowCreateModal(false);
             fetchConventions();
@@ -86,10 +77,7 @@ const Convenciones = () => {
             return;
         }
         try {
-            const token = localStorage.getItem('token');
-            await axios.delete(`http://localhost:5000/api/convenciones/${id}`, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
+            await api.delete(`/convenciones/${id}`);
             fetchConventions();
         } catch (error) {
             console.error('Error deleting convention:', error);

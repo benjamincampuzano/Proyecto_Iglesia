@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { ArrowLeft, UserPlus, DollarSign, CheckCircle, XCircle, Trash2, Calendar, BookOpen, FileText, Edit2 } from 'lucide-react';
-import axios from 'axios';
+import api from '../utils/api';
 import { useAuth } from '../context/AuthContext';
 import GuestSearchSelect from './GuestSearchSelect';
 import MultiUserSelect from './MultiUserSelect';
@@ -52,10 +52,7 @@ const EncuentroDetails = ({ encuentro, onBack, onRefresh }) => {
     const fetchReport = async () => {
         setLoadingReport(true);
         try {
-            const token = localStorage.getItem('token');
-            const response = await axios.get(`http://localhost:5000/api/encuentros/${encuentro.id}/report/balance`, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
+            const response = await api.get(`/encuentros/${encuentro.id}/report/balance`);
             setReportData(response.data);
         } catch (error) {
             console.error('Error fetching report:', error);
@@ -69,12 +66,9 @@ const EncuentroDetails = ({ encuentro, onBack, onRefresh }) => {
         e.preventDefault();
         setLoading(true);
         try {
-            const token = localStorage.getItem('token');
-            await axios.post(`http://localhost:5000/api/encuentros/${encuentro.id}/register`, {
+            await api.post(`/encuentros/${encuentro.id}/register`, {
                 guestId: selectedGuestId,
                 discountPercentage: parseFloat(discount)
-            }, {
-                headers: { Authorization: `Bearer ${token}` }
             });
             setShowRegisterModal(false);
             setSelectedGuestId(null);
@@ -93,12 +87,9 @@ const EncuentroDetails = ({ encuentro, onBack, onRefresh }) => {
         e.preventDefault();
         setLoading(true);
         try {
-            const token = localStorage.getItem('token');
-            await axios.post(`http://localhost:5000/api/encuentros/registrations/${selectedRegistration.id}/payments`, {
+            await api.post(`/encuentros/registrations/${selectedRegistration.id}/payments`, {
                 amount: parseFloat(paymentAmount),
                 notes: paymentNotes
-            }, {
-                headers: { Authorization: `Bearer ${token}` }
             });
             setShowPaymentModal(false);
             setSelectedRegistration(null);
@@ -120,10 +111,7 @@ const EncuentroDetails = ({ encuentro, onBack, onRefresh }) => {
         }
 
         try {
-            const token = localStorage.getItem('token');
-            await axios.delete(`http://localhost:5000/api/encuentros/registrations/${registrationId}`, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
+            await api.delete(`/encuentros/registrations/${registrationId}`);
             onRefresh();
             if (activeTab === 'report') fetchReport();
         } catch (error) {
@@ -144,11 +132,9 @@ const EncuentroDetails = ({ encuentro, onBack, onRefresh }) => {
                 return;
             }
 
-            await axios.post(`http://localhost:5000/api/guests/${guestId}/convert-to-member`, {
+            await api.post(`/guests/${guestId}/convert-to-member`, {
                 email: convertData.email,
                 password: convertData.password
-            }, {
-                headers: { Authorization: `Bearer ${token}` }
             });
             setShowConvertModal(false);
             setConvertData({ email: '', password: '' });
@@ -179,10 +165,7 @@ const EncuentroDetails = ({ encuentro, onBack, onRefresh }) => {
         e.preventDefault();
         setLoading(true);
         try {
-            const token = localStorage.getItem('token');
-            await axios.put(`http://localhost:5000/api/encuentros/${encuentro.id}`, editData, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
+            await api.put(`/encuentros/${encuentro.id}`, editData);
             setShowEditModal(false);
             alert('Encuentro actualizado exitosamente!');
             onRefresh();

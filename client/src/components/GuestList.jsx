@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Search, Filter, Edit2, Trash2, UserPlus, Loader, X, Save, UserCheck } from 'lucide-react';
 import UserSearchSelect from './UserSearchSelect';
-import axios from 'axios';
+import api from '../utils/api';
 
 const GuestList = ({ refreshTrigger }) => {
     const [guests, setGuests] = useState([]);
@@ -39,7 +39,6 @@ const GuestList = ({ refreshTrigger }) => {
         setLoading(true);
         setError('');
         try {
-            const token = localStorage.getItem('token');
             const params = new URLSearchParams();
 
             if (statusFilter) params.append('status', statusFilter);
@@ -47,8 +46,8 @@ const GuestList = ({ refreshTrigger }) => {
             if (liderDoceFilter) params.append('liderDoceId', liderDoceFilter);
             if (searchTerm) params.append('search', searchTerm);
 
-            const res = await axios.get(`http://localhost:5000/api/guests?${params.toString()}`, {
-                headers: { Authorization: `Bearer ${token}` },
+            const res = await api.get('/guests', {
+                params: Object.fromEntries(params)
             });
 
             setGuests(res.data.guests);
@@ -65,10 +64,7 @@ const GuestList = ({ refreshTrigger }) => {
 
     const handleUpdateGuest = async (guestId, updates) => {
         try {
-            const token = localStorage.getItem('token');
-            await axios.put(`http://localhost:5000/api/guests/${guestId}`, updates, {
-                headers: { Authorization: `Bearer ${token}` },
-            });
+            await api.put(`/guests/${guestId}`, updates);
 
             setEditingGuest(null);
             fetchGuests();
@@ -81,10 +77,7 @@ const GuestList = ({ refreshTrigger }) => {
         if (!confirm('¿Estás seguro de que deseas eliminar este invitado?')) return;
 
         try {
-            const token = localStorage.getItem('token');
-            await axios.delete(`http://localhost:5000/api/guests/${guestId}`, {
-                headers: { Authorization: `Bearer ${token}` },
-            });
+            await api.delete(`/guests/${guestId}`);
 
             fetchGuests();
         } catch (err) {
@@ -99,11 +92,9 @@ const GuestList = ({ refreshTrigger }) => {
         }
 
         try {
-            const token = localStorage.getItem('token');
-            await axios.post(
-                `http://localhost:5000/api/guests/${convertingGuest.id}/convert-to-member`,
-                { email: conversionEmail, password: conversionPassword },
-                { headers: { Authorization: `Bearer ${token}` } }
+            await api.post(
+                `/guests/${convertingGuest.id}/convert-to-member`,
+                { email: conversionEmail, password: conversionPassword }
             );
 
             setConvertingGuest(null);

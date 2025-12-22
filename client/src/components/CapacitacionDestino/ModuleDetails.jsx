@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import api from '../../utils/api';
 
 const ModuleDetails = ({ module }) => {
     const [enrollments, setEnrollments] = useState([]);
@@ -7,12 +8,8 @@ const ModuleDetails = ({ module }) => {
 
     const fetchEnrollments = async () => {
         try {
-            const token = localStorage.getItem('token');
-            const response = await fetch(`http://localhost:5000/api/seminars/${module.id}/enrollments`, {
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
-            const data = await response.json();
-            setEnrollments(data);
+            const response = await api.get(`/seminars/${module.id}/enrollments`);
+            setEnrollments(response.data);
             setLoading(false);
         } catch (error) {
             console.error('Error fetching enrollments:', error);
@@ -26,15 +23,7 @@ const ModuleDetails = ({ module }) => {
 
     const handleSaveAttendance = async (data) => {
         try {
-            const token = localStorage.getItem('token');
-            const response = await fetch('http://localhost:5000/api/seminars/class-attendance', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
-                body: JSON.stringify(data)
-            });
+            const response = await api.post('/seminars/class-attendance', data);
 
             if (response.ok) {
                 // Update local state
@@ -67,19 +56,11 @@ const ModuleDetails = ({ module }) => {
 
     const handleProgressUpdate = async (enrollmentId, field, value) => {
         try {
-            const token = localStorage.getItem('token');
             const body = { [field]: value };
             // Ensure numeric for grades
             if (field === 'finalProjectGrade') body[field] = parseFloat(value);
 
-            const response = await fetch(`http://localhost:5000/api/seminars/enrollments/${enrollmentId}/progress`, {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
-                body: JSON.stringify(body)
-            });
+            const response = await api.put(`/seminars/enrollments/${enrollmentId}/progress`, body);
 
             if (response.ok) {
                 setEnrollments(prev => prev.map(e =>
@@ -185,10 +166,10 @@ const ModuleDetails = ({ module }) => {
                                                     currentGrade: attData.grade
                                                 })}
                                                 className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold border ${attData.status === 'ASISTE'
-                                                        ? 'bg-green-100 text-green-800 border-green-300'
-                                                        : attData.grade // If marked but maybe absent? Or just showing grade
-                                                            ? 'bg-yellow-100 text-yellow-800 border-yellow-300'
-                                                            : 'bg-gray-100 text-gray-400 border-gray-300 hover:bg-gray-200'
+                                                    ? 'bg-green-100 text-green-800 border-green-300'
+                                                    : attData.grade // If marked but maybe absent? Or just showing grade
+                                                        ? 'bg-yellow-100 text-yellow-800 border-yellow-300'
+                                                        : 'bg-gray-100 text-gray-400 border-gray-300 hover:bg-gray-200'
                                                     }`}
                                             >
                                                 {attData.grade || (attData.status === 'ASISTE' ? '✓' : '-')}

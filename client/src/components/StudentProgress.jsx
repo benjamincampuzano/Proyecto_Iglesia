@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { TrendingUp, Search, CheckCircle, Circle, AlertCircle } from 'lucide-react';
+import api from '../utils/api';
 import UserSearchSelect from './UserSearchSelect';
 
 const StudentProgress = () => {
@@ -20,21 +21,11 @@ const StudentProgress = () => {
         try {
             setLoading(true);
             setError(null);
-            const token = localStorage.getItem('token');
-            const response = await fetch(`http://localhost:5000/api/consolidar/seminar/progress/${selectedUser.id}`, {
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
-
-            if (!response.ok) {
-                const errData = await response.json();
-                throw new Error(errData.error || 'Error fetching progress');
-            }
-
-            const data = await response.json();
-            setProgressData(data);
+            const response = await api.get(`/consolidar/seminar/progress/${selectedUser.id}`);
+            setProgressData(response.data);
         } catch (error) {
             console.error('Error fetching progress:', error);
-            setError(error.message);
+            setError(error.response?.data?.error || error.message);
         } finally {
             setLoading(false);
         }
@@ -84,10 +75,10 @@ const StudentProgress = () => {
                                 <div
                                     key={level.code}
                                     className={`relative p-5 rounded-xl border-2 transition-all ${level.status === 'COMPLETADO'
-                                            ? 'bg-green-50 border-green-200 dark:bg-green-900/10 dark:border-green-800'
-                                            : level.status === 'EN_PROGRESO'
-                                                ? 'bg-blue-50 border-blue-200 dark:bg-blue-900/10 dark:border-blue-800 shadow-md'
-                                                : 'bg-gray-50 border-gray-200 dark:bg-gray-800 dark:border-gray-700 opacity-75'
+                                        ? 'bg-green-50 border-green-200 dark:bg-green-900/10 dark:border-green-800'
+                                        : level.status === 'EN_PROGRESO'
+                                            ? 'bg-blue-50 border-blue-200 dark:bg-blue-900/10 dark:border-blue-800 shadow-md'
+                                            : 'bg-gray-50 border-gray-200 dark:bg-gray-800 dark:border-gray-700 opacity-75'
                                         }`}
                                 >
                                     <div className="flex justify-between items-start mb-3">

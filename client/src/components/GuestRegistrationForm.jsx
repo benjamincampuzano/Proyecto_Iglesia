@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Save, Loader, X } from 'lucide-react';
 import UserSearchSelect from './UserSearchSelect';
-import axios from 'axios';
+import api from '../utils/api';
 
 const GuestRegistrationForm = ({ onGuestCreated }) => {
     const [formData, setFormData] = useState({
@@ -68,14 +68,7 @@ const GuestRegistrationForm = ({ onGuestCreated }) => {
         }
 
         try {
-            const token = localStorage.getItem('token');
-            const res = await axios.post(
-                'http://localhost:5000/api/guests',
-                formData,
-                {
-                    headers: { Authorization: `Bearer ${token}` },
-                }
-            );
+            const res = await api.post('/guests', formData);
 
             setSuccess('Invitado registrado exitosamente');
             setFormData({

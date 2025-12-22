@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import api from '../utils/api';
 import { Calendar, TrendingUp } from 'lucide-react';
 
 const AttendanceChart = () => {
@@ -24,11 +25,8 @@ const AttendanceChart = () => {
 
     const fetchCells = async () => {
         try {
-            const token = localStorage.getItem('token');
-            const response = await fetch('http://localhost:5000/api/enviar/cells', {
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
-            const data = await response.json();
+            const response = await api.get('/enviar/cells');
+            const data = response.data;
             if (Array.isArray(data)) {
                 setCells(data);
             } else {
@@ -42,17 +40,14 @@ const AttendanceChart = () => {
     const fetchStats = async () => {
         try {
             setLoading(true);
-            const token = localStorage.getItem('token');
-            const params = new URLSearchParams({
-                startDate,
-                endDate,
-                ...(selectedCell && { cellId: selectedCell })
+            const response = await api.get('/enviar/cell-attendance/stats', {
+                params: {
+                    startDate,
+                    endDate,
+                    ...(selectedCell && { cellId: selectedCell })
+                }
             });
-
-            const response = await fetch(`http://localhost:5000/api/enviar/cell-attendance/stats?${params}`, {
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
-            const data = await response.json();
+            const data = response.data;
             if (Array.isArray(data)) {
                 setStats(data);
             } else {

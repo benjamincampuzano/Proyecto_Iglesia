@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { Search, ChevronDown, X } from 'lucide-react';
-import axios from 'axios';
+import api from '../utils/api';
 
 const GuestSearchSelect = ({ value, onChange, label, placeholder = "Buscar invitado..." }) => {
     const [isOpen, setIsOpen] = useState(false);
@@ -29,10 +29,7 @@ const GuestSearchSelect = ({ value, onChange, label, placeholder = "Buscar invit
     const fetchGuests = async () => {
         setLoading(true);
         try {
-            const token = localStorage.getItem('token');
-            const res = await axios.get('http://localhost:5000/api/guests', {
-                headers: { Authorization: `Bearer ${token}` },
-            });
+            const res = await api.get('/guests');
             // Client-side filtering for simplicity, or backend search if available
             let filtered = res.data.guests || [];
             if (searchTerm) {

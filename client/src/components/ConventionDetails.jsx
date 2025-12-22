@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { ArrowLeft, UserPlus, DollarSign, XCircle, Trash2, FileText, Users, Edit2, Download } from 'lucide-react';
-import axios from 'axios';
+import api from '../utils/api';
 import * as XLSX from 'xlsx';
 import { useAuth } from '../context/AuthContext';
 import UserSearchSelect from './UserSearchSelect';
@@ -53,10 +53,7 @@ const ConventionDetails = ({ convention, onBack, onRefresh }) => {
     const fetchReport = async () => {
         setLoadingReport(true);
         try {
-            const token = localStorage.getItem('token');
-            const response = await axios.get(`http://localhost:5000/api/convenciones/${convention.id}/report/balance`, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
+            const response = await api.get(`/convenciones/${convention.id}/report/balance`);
             setReportData(response.data);
         } catch (error) {
             console.error('Error fetching report:', error);
@@ -70,14 +67,11 @@ const ConventionDetails = ({ convention, onBack, onRefresh }) => {
         e.preventDefault();
         setLoading(true);
         try {
-            const token = localStorage.getItem('token');
-            await axios.post(`http://localhost:5000/api/convenciones/${convention.id}/register`, {
+            await api.post(`/convenciones/${convention.id}/register`, {
                 userId: selectedUserId,
                 discountPercentage: parseFloat(discount),
                 needsTransport,
                 needsAccommodation
-            }, {
-                headers: { Authorization: `Bearer ${token}` }
             });
             setShowRegisterModal(false);
             setSelectedUserId(null);
@@ -112,10 +106,7 @@ const ConventionDetails = ({ convention, onBack, onRefresh }) => {
         e.preventDefault();
         setLoading(true);
         try {
-            const token = localStorage.getItem('token');
-            await axios.put(`http://localhost:5000/api/convenciones/${convention.id}`, editData, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
+            await api.put(`/convenciones/${convention.id}`, editData);
             setShowEditModal(false);
             alert('Convención actualizada exitosamente!');
             onRefresh();
@@ -169,12 +160,9 @@ const ConventionDetails = ({ convention, onBack, onRefresh }) => {
         e.preventDefault();
         setLoading(true);
         try {
-            const token = localStorage.getItem('token');
-            await axios.post(`http://localhost:5000/api/convenciones/registrations/${selectedRegistration.id}/payments`, {
+            await api.post(`/convenciones/registrations/${selectedRegistration.id}/payments`, {
                 amount: parseFloat(paymentAmount),
                 notes: paymentNotes
-            }, {
-                headers: { Authorization: `Bearer ${token}` }
             });
             setShowPaymentModal(false);
             setSelectedRegistration(null);
@@ -197,10 +185,7 @@ const ConventionDetails = ({ convention, onBack, onRefresh }) => {
         }
 
         try {
-            const token = localStorage.getItem('token');
-            await axios.delete(`http://localhost:5000/api/convenciones/registrations/${registrationId}`, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
+            await api.delete(`/convenciones/registrations/${registrationId}`);
             onRefresh();
             if (activeTab === 'report') fetchReport();
         } catch (error) {

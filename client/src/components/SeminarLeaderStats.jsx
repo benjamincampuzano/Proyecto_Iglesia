@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import api from '../utils/api';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { Download } from 'lucide-react';
 
@@ -12,12 +13,8 @@ const SeminarLeaderStats = () => {
 
     const fetchStats = async () => {
         try {
-            const token = localStorage.getItem('token');
-            const response = await fetch('http://localhost:5000/api/consolidar/stats/seminar-by-leader', {
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
-            const data = await response.json();
-            setStats(data);
+            const response = await api.get('/consolidar/stats/seminar-by-leader');
+            setStats(response.data);
         } catch (error) {
             console.error('Error fetching seminar stats:', error);
         } finally {
@@ -70,8 +67,8 @@ const SeminarLeaderStats = () => {
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                                         <span className={`px-2 py-1 rounded-full text-xs font-medium ${parseFloat(row.avgGrade) >= 80 ? 'bg-green-100 text-green-800' :
-                                                parseFloat(row.avgGrade) >= 60 ? 'bg-yellow-100 text-yellow-800' :
-                                                    'bg-red-100 text-red-800'
+                                            parseFloat(row.avgGrade) >= 60 ? 'bg-yellow-100 text-yellow-800' :
+                                                'bg-red-100 text-red-800'
                                             }`}>
                                             {row.avgGrade}%
                                         </span>

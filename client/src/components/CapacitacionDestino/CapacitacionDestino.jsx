@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import api from '../../utils/api';
 import ModuleList from './ModuleList';
 import EnrollmentPanel from './EnrollmentPanel';
 import AttendancePanel from './AttendancePanel';
@@ -10,12 +11,8 @@ const CapacitacionDestino = () => {
 
     const fetchModules = async () => {
         try {
-            const token = localStorage.getItem('token');
-            const response = await fetch('http://localhost:5000/api/seminars?type=CAPACITACION_DESTINO', {
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
-            const data = await response.json();
-            setModules(data);
+            const response = await api.get('/seminars?type=CAPACITACION_DESTINO');
+            setModules(response.data);
             setLoading(false);
         } catch (error) {
             console.error('Error fetching modules:', error);

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import api from '../../utils/api';
 
 const EnrollmentPanel = ({ modules }) => {
     const [users, setUsers] = useState([]);
@@ -11,13 +12,9 @@ const EnrollmentPanel = ({ modules }) => {
 
     const fetchMyNetwork = async () => {
         try {
-            const token = localStorage.getItem('token');
             // Fetch users from my network
-            const response = await fetch(`http://localhost:5000/api/users/my-network/all`, {
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
-            const data = await response.json();
-            setUsers(Array.isArray(data) ? data : []);
+            const response = await api.get('/users/my-network/all');
+            setUsers(Array.isArray(response.data) ? response.data : []);
             setLoading(false);
         } catch (error) {
             console.error('Error fetching users:', error);
@@ -46,33 +43,20 @@ const EnrollmentPanel = ({ modules }) => {
     const handleEnroll = async (e) => {
         e.preventDefault();
         try {
-            const token = localStorage.getItem('token');
-            const response = await fetch(`http://localhost:5000/api/seminars/${selectedModule}/enroll`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
-                body: JSON.stringify({
-                    userId: selectedUser,
-                    phone,
-                    address
-                })
+            const response = await api.post(`/seminars/${selectedModule}/enroll`, {
+                userId: selectedUser,
+                phone,
+                address
             });
 
-            if (response.ok) {
-                setMessage('Usuario inscrito exitosamente');
-                setSelectedUser('');
-                // Keep module selected for faster batch enrollment
-                setPhone('');
-                setAddress('');
-                setTimeout(() => setMessage(''), 3000);
-            } else {
-                const error = await response.json();
-                setMessage(`Error: ${error.error}`);
-            }
+            setMessage('Usuario inscrito exitosamente');
+            setSelectedUser('');
+            // Keep module selected for faster batch enrollment
+            setPhone('');
+            setAddress('');
+            setTimeout(() => setMessage(''), 3000);
         } catch (error) {
-            setMessage('Error de conexión');
+            setMessage(`Error: ${error.response?.data?.error || 'Error de conexión'}`);
         }
     };
 

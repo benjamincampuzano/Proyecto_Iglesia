@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { X, Search, UserPlus, Loader2 } from 'lucide-react';
+import api from '../utils/api';
 
 /**
  * Modal component for adding users to a leader's network
@@ -40,19 +41,8 @@ const AddUserModal = ({ isOpen, onClose, leaderId, leaderName, onUserAdded }) =>
         try {
             setLoading(true);
             setError(null);
-            const token = localStorage.getItem('token');
-            const response = await fetch(`http://localhost:5000/api/network/available-users/${leaderId}`, {
-                headers: {
-                    'Authorization': `Bearer ${token}`
-                }
-            });
-
-            if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.error || 'Error al cargar usuarios disponibles');
-            }
-
-            const data = await response.json();
+            const response = await api.get(`/network/available-users/${leaderId}`);
+            const data = response.data;
             setAvailableUsers(data);
             setFilteredUsers(data);
         } catch (err) {
@@ -71,25 +61,12 @@ const AddUserModal = ({ isOpen, onClose, leaderId, leaderName, onUserAdded }) =>
         try {
             setSubmitting(true);
             setError(null);
-            const token = localStorage.getItem('token');
-            const response = await fetch('http://localhost:5000/api/network/assign', {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    userId: selectedUserId,
-                    leaderId: leaderId
-                })
+            const response = await api.post('/network/assign', {
+                userId: selectedUserId,
+                leaderId: leaderId
             });
 
-            if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.error || 'Error al asignar usuario');
-            }
-
-            const data = await response.json();
+            const data = response.data;
 
             // Show success notification
             alert(`✓ ${data.message}`);

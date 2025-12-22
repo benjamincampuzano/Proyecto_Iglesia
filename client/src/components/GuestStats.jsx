@@ -3,7 +3,7 @@ import { Calendar, Download, Users, TrendingUp, UserCheck, Loader } from 'lucide
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { useAuth } from '../context/AuthContext';
 import * as XLSX from 'xlsx';
-import axios from 'axios';
+import api from '../utils/api';
 
 const GuestStats = () => {
     const { user } = useAuth();
@@ -33,14 +33,11 @@ const GuestStats = () => {
         setLoading(true);
         setError('');
         try {
-            const token = localStorage.getItem('token');
             const params = new URLSearchParams();
             if (startDate) params.append('startDate', startDate);
             if (endDate) params.append('endDate', endDate);
 
-            const res = await axios.get(`http://localhost:5000/api/guests/stats?${params.toString()}`, {
-                headers: { Authorization: `Bearer ${token}` },
-            });
+            const res = await api.get(`/guests/stats?${params.toString()}`);
 
             setStats(res.data);
         } catch (err) {

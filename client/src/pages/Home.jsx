@@ -1,6 +1,7 @@
 import { useState, useEffect, Suspense, lazy } from 'react';
 import { useAuth } from '../context/AuthContext';
 import LosDoceGrid from '../components/LosDoceGrid';
+import api from '../utils/api';
 import NetworkTree from '../components/NetworkTree';
 
 // Lazy load heavy chart component
@@ -34,21 +35,10 @@ const Home = () => {
     const fetchPastores = async () => {
         try {
             setLoading(true);
-            const token = localStorage.getItem('token');
-            const response = await fetch('http://localhost:5000/api/network/pastores', {
-                headers: {
-                    'Authorization': `Bearer ${token}`
-                }
-            });
-
-            if (!response.ok) {
-                throw new Error('Error al cargar Pastores');
-            }
-
-            const data = await response.json();
-            setPastores(data);
+            const response = await api.get('/network/pastores');
+            setPastores(response.data);
         } catch (err) {
-            setError(err.message);
+            setError(err.response?.data?.message || err.message);
         } finally {
             setLoading(false);
         }
@@ -58,21 +48,10 @@ const Home = () => {
         try {
             setNetworkLoading(true);
             setSelectedLeader(leader);
-            const token = localStorage.getItem('token');
-            const response = await fetch(`http://localhost:5000/api/network/network/${leader.id}`, {
-                headers: {
-                    'Authorization': `Bearer ${token}`
-                }
-            });
-
-            if (!response.ok) {
-                throw new Error('Error al cargar la red de discipulado');
-            }
-
-            const data = await response.json();
-            setNetwork(data);
+            const response = await api.get(`/network/network/${leader.id}`);
+            setNetwork(response.data);
         } catch (err) {
-            setError(err.message);
+            setError(err.response?.data?.message || err.message);
         } finally {
             setNetworkLoading(false);
         }

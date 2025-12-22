@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { UserPlus, Search, Trash2, Edit, Save } from 'lucide-react';
+import api from './api';
 import UserSearchSelect from './UserSearchSelect';
 
 const EnrollmentPanel = () => {
@@ -28,11 +29,8 @@ const EnrollmentPanel = () => {
 
     const fetchModules = async () => {
         try {
-            const token = localStorage.getItem('token');
-            const response = await fetch('http://localhost:5000/api/seminar', {
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
-            const data = await response.json();
+            const response = await api.get('/seminar');
+            const data = response.data;
             setModules(data);
             if (data.length > 0) {
                 // Determine displayed name vs numeric ID matching
@@ -45,16 +43,10 @@ const EnrollmentPanel = () => {
 
     const fetchModuleDetails = async () => {
         try {
-            const token = localStorage.getItem('token');
-            // Assuming GET /api/seminar/:id returns detail with professor/aux
-            const response = await fetch(`http://localhost:5000/api/seminar/${selectedModule}`, {
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
-            if (response.ok) {
-                const data = await response.json();
-                setProfessor(data.professor || null);
-                setAuxiliaries(data.auxiliaries || []);
-            }
+            const response = await api.get(`/seminar/${selectedModule}`);
+            const data = response.data;
+            setProfessor(data.professor || null);
+            setAuxiliaries(data.auxiliaries || []);
         } catch (error) {
             console.error('Error fetching module details:', error);
         }
@@ -63,12 +55,8 @@ const EnrollmentPanel = () => {
     const fetchEnrollments = async () => {
         try {
             setLoading(true);
-            const token = localStorage.getItem('token');
-            const response = await fetch(`http://localhost:5000/api/consolidar/seminar/enrollments/module/${selectedModule}`, {
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
-            const data = await response.json();
-            setEnrollments(data);
+            const response = await api.get(`/consolidar/seminar/enrollments/module/${selectedModule}`);
+            setEnrollments(response.data);
         } catch (error) {
             console.error('Error fetching enrollments:', error);
         } finally {
@@ -83,30 +71,17 @@ const EnrollmentPanel = () => {
         }
 
         try {
-            const token = localStorage.getItem('token');
-            const response = await fetch('http://localhost:5000/api/consolidar/seminar/enrollments', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
-                body: JSON.stringify({
-                    userId: selectedUser.id,
-                    moduleId: selectedModule
-                })
+            const response = await api.post('/consolidar/seminar/enrollments', {
+                userId: selectedUser.id,
+                moduleId: selectedModule
             });
 
-            if (response.ok) {
-                alert('Estudiante inscrito exitosamente');
-                setSelectedUser(null);
-                fetchEnrollments();
-            } else {
-                const error = await response.json();
-                alert(error.error || 'Error al inscribir estudiante');
-            }
+            alert('Estudiante inscrito exitosamente');
+            setSelectedUser(null);
+            fetchEnrollments();
         } catch (error) {
             console.error('Error enrolling student:', error);
-            alert('Error al inscribir estudiante');
+            alert(error.response?.data?.error || 'Error al inscribir estudiante');
         }
     };
 
@@ -114,47 +89,23 @@ const EnrollmentPanel = () => {
         if (!confirm('¿Estás seguro de eliminar a este estudiante del módulo?')) return;
 
         try {
-            const token = localStorage.getItem('token');
-            const response = await fetch(`http://localhost:5000/api/consolidar/seminar/enrollments/${enrollmentId}`, {
-                method: 'DELETE',
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
-
-            if (response.ok) {
-                alert('Estudiante eliminado.');
-                fetchEnrollments();
-            } else {
-                const err = await response.json();
-                alert(err.error || 'No se pudo eliminar.');
-            }
+            await api.delete(`/consolidar/seminar/enrollments/${enrollmentId}`);
+            alert('Estudiante eliminado.');
+            fetchEnrollments();
         } catch (e) {
             console.error(e);
-            alert('Error de conexión.');
+            alert(e.response?.data?.error || 'Error al eliminar.');
         }
     };
 
     const handleSaveStaff = async () => {
         try {
-            const token = localStorage.getItem('token');
-            const response = await fetch(`http://localhost:5000/api/seminar/${selectedModule}`, {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
-                body: JSON.stringify({
-                    professorId: professor?.id,
-                    // Just passing IDs array if backend supports it, otherwise logic needed in controller
-                    auxiliaryIds: auxiliaries.map(a => a.id)
-                })
+            await api.put(`/seminar/${selectedModule}`, {
+                professorId: professor?.id,
+                auxiliaryIds: auxiliaries.map(a => a.id)
             });
-
-            if (response.ok) {
-                alert('Personal actualizado.');
-                setShowStaffEdit(false);
-            } else {
-                alert('Error al actualizar personal.');
-            }
+            alert('Personal actualizado.');
+            setShowStaffEdit(false);
         } catch (e) {
             console.error(e);
             alert('Error al guardar personal.');

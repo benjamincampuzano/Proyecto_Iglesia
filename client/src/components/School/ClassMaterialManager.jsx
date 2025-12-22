@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import { useState, useEffect } from 'react';
+import api from '../../utils/api';
 import { X, FileText, Video, HelpCircle, Save, Plus, Trash } from 'lucide-react';
 
 const ClassMaterialManager = ({ moduleId, classNumber, onClose }) => {
@@ -18,10 +18,7 @@ const ClassMaterialManager = ({ moduleId, classNumber, onClose }) => {
 
     const fetchMaterials = async () => {
         try {
-            const token = localStorage.getItem('token');
-            const res = await axios.get(`http://localhost:5000/api/school/modules/${moduleId}/materials`, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
+            const res = await api.get(`/school/modules/${moduleId}/materials`);
             const classMat = res.data.find(m => m.classNumber === classNumber);
             if (classMat) {
                 setMaterial({
@@ -41,10 +38,7 @@ const ClassMaterialManager = ({ moduleId, classNumber, onClose }) => {
     const handleSave = async () => {
         try {
             setSaving(true);
-            const token = localStorage.getItem('token');
-            await axios.post(`http://localhost:5000/api/school/modules/${moduleId}/materials/${classNumber}`, material, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
+            await api.post(`/school/modules/${moduleId}/materials/${classNumber}`, material);
             setSaving(false);
             onClose();
         } catch (error) {

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import axios from 'axios';
+import api from '../utils/api';
 import { Plus, Calendar, Users, DollarSign, ChevronRight, Trash2 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import EncuentroDetails from '../components/EncuentroDetails';
@@ -28,10 +28,7 @@ const Encuentros = () => {
     const fetchEncuentros = async () => {
         setLoading(true);
         try {
-            const token = localStorage.getItem('token');
-            const res = await axios.get('http://localhost:5000/api/encuentros', {
-                headers: { Authorization: `Bearer ${token}` }
-            });
+            const res = await api.get('/encuentros');
             setEncuentros(res.data);
         } catch (error) {
             console.error('Error fetching encuentros:', error);
@@ -42,10 +39,7 @@ const Encuentros = () => {
 
     const fetchEncuentroDetails = async (id) => {
         try {
-            const token = localStorage.getItem('token');
-            const res = await axios.get(`http://localhost:5000/api/encuentros/${id}`, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
+            const res = await api.get(`/encuentros/${id}`);
             setSelectedEncuentro(res.data);
         } catch (error) {
             console.error('Error fetching details:', error);
@@ -56,12 +50,9 @@ const Encuentros = () => {
     const handleCreate = async (e) => {
         e.preventDefault();
         try {
-            const token = localStorage.getItem('token');
-            await axios.post('http://localhost:5000/api/encuentros', {
+            await api.post('/encuentros', {
                 ...formData,
                 cost: parseFloat(formData.cost)
-            }, {
-                headers: { Authorization: `Bearer ${token}` }
             });
             setShowCreateModal(false);
             fetchEncuentros();
@@ -83,10 +74,7 @@ const Encuentros = () => {
         e.stopPropagation();
         if (!window.confirm('¿Eliminar este encuentro y todos sus datos?')) return;
         try {
-            const token = localStorage.getItem('token');
-            await axios.delete(`http://localhost:5000/api/encuentros/${id}`, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
+            await api.delete(`/encuentros/${id}`);
             fetchEncuentros();
         } catch (error) {
             console.error(error);

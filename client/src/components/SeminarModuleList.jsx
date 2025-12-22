@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Plus, Edit2, Trash2, BookOpen } from 'lucide-react';
+import api from '../utils/api';
 import { useAuth } from '../context/AuthContext';
 
 const SeminarModuleList = () => {
@@ -23,13 +24,8 @@ const SeminarModuleList = () => {
 
     const fetchModules = async () => {
         try {
-            const token = localStorage.getItem('token');
-            const response = await fetch('http://localhost:5000/api/seminar', {
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
-            const data = await response.json();
-            // Sort modules meaningfully if needed, though backend does it by number
-            setModules(data);
+            const response = await api.get('/seminar');
+            setModules(response.data);
         } catch (error) {
             console.error('Error fetching modules:', error);
         }
@@ -55,34 +51,20 @@ const SeminarModuleList = () => {
         };
 
         try {
-            const token = localStorage.getItem('token');
-            const url = editingModule
-                ? `http://localhost:5000/api/seminar/${editingModule.id}`
-                : 'http://localhost:5000/api/seminar';
+            const response = editingModule
+                ? await api.put(`/seminar/${editingModule.id}`, payload)
+                : await api.post('/seminar', payload);
 
-            const response = await fetch(url, {
-                method: editingModule ? 'PUT' : 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
-                body: JSON.stringify(payload)
-            });
-
-            const data = await response.json();
-
-            if (response.ok) {
+            if (response.status === 200 || response.status === 201) {
                 alert(editingModule ? 'Módulo actualizado exitosamente' : 'Módulo creado exitosamente');
                 await fetchModules();
                 setShowForm(false);
                 setEditingModule(null);
                 setFormData({ name: '', description: '', moduleType: '1', moduleLevel: 'A' });
-            } else {
-                throw new Error(data.error || 'No se pudo guardar el módulo');
             }
         } catch (error) {
             console.error('Error saving module:', error);
-            alert(`Error: ${error.message}`);
+            alert(`Error: ${error.response?.data?.error || error.message}`);
         }
     };
 
@@ -101,22 +83,12 @@ const SeminarModuleList = () => {
         if (!confirm('¿Estás seguro de eliminar este módulo?')) return;
 
         try {
-            const token = localStorage.getItem('token');
-            const response = await fetch(`http://localhost:5000/api/seminar/${id}`, {
-                method: 'DELETE',
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
-
-            if (response.ok) {
-                alert('Módulo eliminado exitosamente');
-                fetchModules();
-            } else {
-                const data = await response.json();
-                alert(`Error: ${data.error || 'No se pudo eliminar el módulo'}`);
-            }
+            await api.delete(`/seminar/${id}`);
+            alert('Módulo eliminado exitosamente');
+            fetchModules();
         } catch (error) {
             console.error('Error deleting module:', error);
-            alert('Error de conexión al eliminar el módulo');
+            alert(`Error: ${error.response?.data?.error || 'No se pudo eliminar el módulo'}`);
         }
     };
 

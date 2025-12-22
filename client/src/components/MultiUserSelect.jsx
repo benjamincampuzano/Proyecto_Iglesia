@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { Search, X, UserPlus } from 'lucide-react';
-import axios from 'axios';
+import api from '../utils/api';
 
 const MultiUserSelect = ({ value = [], onChange, label, placeholder = "Seleccionar usuarios...", roleFilter }) => {
     const [isOpen, setIsOpen] = useState(false);
@@ -44,17 +44,14 @@ const MultiUserSelect = ({ value = [], onChange, label, placeholder = "Seleccion
     const fetchUsers = async () => {
         setLoading(true);
         try {
-            const token = localStorage.getItem('token');
             const params = new URLSearchParams();
 
             if (roleFilter) {
                 params.append('role', roleFilter);
             }
 
-            const url = `http://localhost:5000/api/users${params.toString() ? '?' + params.toString() : ''}`;
-            const res = await axios.get(url, {
-                headers: { Authorization: `Bearer ${token}` },
-            });
+            const url = `/users${params.toString() ? '?' + params.toString() : ''}`;
+            const res = await api.get(url);
 
             let filteredUsers = res.data.users;
             if (searchTerm) {
@@ -77,10 +74,7 @@ const MultiUserSelect = ({ value = [], onChange, label, placeholder = "Seleccion
 
     const fetchSelectedUsers = async (userIds) => {
         try {
-            const token = localStorage.getItem('token');
-            const res = await axios.get('http://localhost:5000/api/users', {
-                headers: { Authorization: `Bearer ${token}` },
-            });
+            const res = await api.get('/users');
 
             const selected = res.data.users.filter(user => userIds.includes(user.id));
             setSelectedUsers(selected);

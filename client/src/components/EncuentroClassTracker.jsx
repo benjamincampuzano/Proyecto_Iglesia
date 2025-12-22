@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Check, X, UserPlus } from 'lucide-react';
-import axios from 'axios';
+import api from '../utils/api';
 
 const EncuentroClassTracker = ({ registrations, onRefresh, onConvert }) => {
     const [updating, setUpdating] = useState({});
@@ -10,12 +10,9 @@ const EncuentroClassTracker = ({ registrations, onRefresh, onConvert }) => {
         setUpdating(prev => ({ ...prev, [key]: true }));
 
         try {
-            const token = localStorage.getItem('token');
-            await axios.put(
-                `http://localhost:5000/api/encuentros/registrations/${registrationId}/classes/${classNumber}`,
-                { attended: !currentStatus },
-                { headers: { Authorization: `Bearer ${token}` } }
-            );
+            await api.put(`/encuentros/registrations/${registrationId}/classes/${classNumber}`, {
+                attended: !currentStatus
+            });
             onRefresh();
         } catch (error) {
             console.error('Error updating attendance:', error);
