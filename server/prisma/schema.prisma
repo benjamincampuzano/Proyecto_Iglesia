@@ -113,6 +113,11 @@ model Guest {
   prayerRequest String?
   status        GuestStatus @default(NUEVO)
   
+  called         Boolean     @default(false)
+  callObservation String?
+  visited        Boolean     @default(false)
+  visitObservation String?
+
   invitedById   Int
   invitedBy     User        @relation("InvitedBy", fields: [invitedById], references: [id])
   

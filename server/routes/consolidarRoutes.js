@@ -8,6 +8,7 @@ const seminarController = require('../controllers/seminarController');
 const enrollmentController = require('../controllers/enrollmentController');
 const classAttendanceController = require('../controllers/classAttendanceController');
 const consolidarStatsController = require('../controllers/consolidarStatsController');
+const guestTrackingController = require('../controllers/guestTrackingController');
 
 // All routes require authentication
 router.use(authenticate);
@@ -22,6 +23,7 @@ router.get('/church-attendance/:date', churchAttendanceController.getAttendanceB
 // Consolidated Stats Routes
 router.get('/stats/general', consolidarStatsController.getGeneralStats);
 router.get('/stats/seminar-by-leader', consolidarStatsController.getSeminarStatsByLeader);
+router.get('/stats/guest-tracking', guestTrackingController.getGuestTrackingStats);
 
 // Seminar Module Routes
 router.get('/seminar/modules', seminarController.getAllModules);

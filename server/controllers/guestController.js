@@ -4,7 +4,7 @@ const prisma = new PrismaClient();
 // Crear nuevo invitado
 const createGuest = async (req, res) => {
     try {
-        let { name, phone, address, prayerRequest, invitedById } = req.body;
+        let { name, phone, address, prayerRequest, invitedById, called, callObservation, visited, visitObservation } = req.body;
         const user = req.user;
 
         if (!name || !phone) {
@@ -40,6 +40,10 @@ const createGuest = async (req, res) => {
                 address,
                 prayerRequest,
                 invitedById: parseInt(invitedById),
+                called: called || false,
+                callObservation,
+                visited: visited || false,
+                visitObservation,
             },
             include: {
                 invitedBy: {
@@ -221,7 +225,7 @@ const getGuestById = async (req, res) => {
 const updateGuest = async (req, res) => {
     try {
         const { id } = req.params;
-        const { name, phone, address, prayerRequest, status, invitedById, assignedToId } = req.body;
+        const { name, phone, address, prayerRequest, status, invitedById, assignedToId, called, callObservation, visited, visitObservation } = req.body;
         const user = req.user;
 
         // Obtener el invitado primero para verificar permisos
@@ -246,6 +250,10 @@ const updateGuest = async (req, res) => {
                 ...(status && { status }),
                 ...(invitedById && { invitedById: parseInt(invitedById) }),
                 ...(assignedToId !== undefined && { assignedToId: assignedToId ? parseInt(assignedToId) : null }),
+                ...(called !== undefined && { called: Boolean(called) }),
+                ...(callObservation !== undefined && { callObservation }),
+                ...(visited !== undefined && { visited: Boolean(visited) }),
+                ...(visitObservation !== undefined && { visitObservation }),
             };
         } else if (user.role === 'LIDER_DOCE' || user.role === 'PASTOR') {
             // LIDER_DOCE y PASTOR pueden actualizar todos los campos para invitados en su red
@@ -267,21 +275,30 @@ const updateGuest = async (req, res) => {
                 ...(status && { status }),
                 ...(invitedById && { invitedById: parseInt(invitedById) }),
                 ...(assignedToId !== undefined && { assignedToId: assignedToId ? parseInt(assignedToId) : null }),
+                ...(called !== undefined && { called: Boolean(called) }),
+                ...(callObservation !== undefined && { callObservation }),
+                ...(visited !== undefined && { visited: Boolean(visited) }),
+                ...(visitObservation !== undefined && { visitObservation }),
             };
         } else {
-            // LIDER_CELULA y Miembro solo pueden actualizar campo de estado
-            // Y solo para invitados que ellos invitaron o les fueron asignados
+            // LIDER_CELULA y Miembro solo pueden actualizar campo de estado y seguimiento
             const canEdit = existingGuest.invitedById === user.id || existingGuest.assignedToId === user.id;
 
             if (!canEdit) {
                 return res.status(403).json({ message: 'You can only update guests you invited or assigned to you' });
             }
 
-            // Solo permitir actualizaciones de estado
-            if (status) {
-                updateData = { status };
-            } else {
-                return res.status(400).json({ message: 'You can only update the status field' });
+            // Permitir actualizaciones de estado y seguimiento
+            updateData = {
+                ...(status && { status }),
+                ...(called !== undefined && { called: Boolean(called) }),
+                ...(callObservation !== undefined && { callObservation }),
+                ...(visited !== undefined && { visited: Boolean(visited) }),
+                ...(visitObservation !== undefined && { visitObservation }),
+            };
+
+            if (Object.keys(updateData).length === 0) {
+                return res.status(400).json({ message: 'You can only update status or tracking fields' });
             }
         }
 
