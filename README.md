@@ -43,43 +43,60 @@ Proyecto_Iglesia/
 ## ⚙️ Instalación y Uso
 
 ### Prerrequisitos
-- Node.js (v14 o superior)
-- NPM o Yarn
-- Base de datos configurada (ver `.env` en `server/`)
+- Node.js (v16 o superior)
+- NPM (v7 o superior) o Yarn
+- PostgreSQL (o base de datos compatible)
+- Git (opcional, para clonar el repositorio)
 
-### Configuración del Servidor (Backend)
-1. Navega a la carpeta `server`:
-   ```bash
-   cd server
-   ```
-2. Instala las dependencias:
-   ```bash
-   npm install
-   ```
-3. Configura las variables de entorno (`.env`) y ejecuta las migraciones de Prisma:
-   ```bash
-   npx prisma migrate dev
-   ```
-4. Inicia el servidor:
-   ```bash
-   npm run dev
-   ```
-   El servidor correrá en `http://localhost:5000`.
+### 🚀 Instalación Rápida (Recomendada)
 
-### Configuración del Cliente (Frontend)
-1. Navega a la carpeta `client`:
+1. Clona el repositorio (si aún no lo has hecho):
    ```bash
-   cd client
+   git clone https://github.com/tu-usuario/Proyecto_Iglesia.git
+   cd Proyecto_Iglesia
    ```
-2. Instala las dependencias:
+
+2. Ejecuta el script de instalación:
    ```bash
-   npm install
+   node install-deps.js
    ```
-3. Inicia el servidor de desarrollo:
+   Este comando instalará automáticamente todas las dependencias necesarias tanto para el frontend como para el backend.
+
+3. Configura las variables de entorno:
+   - Copia el archivo `.env.example` a `.env` en la carpeta `server/`
+   - Ajusta las configuraciones según tu entorno
+
+4. Inicia la aplicación:
    ```bash
-   npm run dev
+   # En la raíz del proyecto
+   npm run start
    ```
-   La aplicación estará disponible en `http://localhost:5173`.
+   Esto iniciará tanto el servidor como el cliente en modo desarrollo.
+
+### 🔧 Instalación Manual
+
+Si prefieres instalar las dependencias manualmente:
+
+#### Configuración del Backend
+```bash
+cd server
+npm install
+cp .env.example .env
+# Edita el archivo .env con tus credenciales
+npx prisma migrate dev
+npm run dev
+```
+
+#### Configuración del Frontend
+```bash
+cd client
+npm install
+npm run dev
+```
+
+### 🔌 Puertos por defecto
+- **Frontend**: http://localhost:5173
+- **Backend API**: http://localhost:5000
 
 ## 📸 Capturas de Pantalla
 
