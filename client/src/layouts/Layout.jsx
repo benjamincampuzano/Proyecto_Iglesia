@@ -22,7 +22,7 @@ const SidebarItem = ({ to, icon: Icon, label, active }) => (
 const Layout = () => {
     const { user, logout } = useAuth();
     const location = useLocation();
-    const [isCollapsed, setIsCollapsed] = useState(false);
+    const [isCollapsed, setIsCollapsed] = useState(true);
     const [showProfileModal, setShowProfileModal] = useState(false);
     const [showUserManagementModal, setShowUserManagementModal] = useState(false);
 
@@ -67,7 +67,7 @@ const Layout = () => {
                         <Link
                             key={item.to}
                             to={item.to}
-                            className={`flex items-center ${isCollapsed ? 'justify-center' : 'space-x-3'} px-4 py-3 rounded-lg transition-colors ${location.pathname === item.to
+                            className={`flex items-center ${isCollapsed ? 'justify-center px-0' : 'space-x-3 px-4'} py-3 rounded-lg transition-colors ${location.pathname === item.to
                                 ? 'bg-blue-600 text-white'
                                 : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white'
                                 }`}
@@ -82,7 +82,7 @@ const Layout = () => {
                 <div className="p-4 border-t border-gray-200 dark:border-gray-800">
                     <button
                         onClick={logout}
-                        className={`flex items-center ${isCollapsed ? 'justify-center' : 'space-x-3'} px-4 py-3 w-full rounded-lg text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors`}
+                        className={`flex items-center ${isCollapsed ? 'justify-center px-0' : 'space-x-3 px-4'} py-3 w-full rounded-lg text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors`}
                         title={isCollapsed ? "Cerrar Sesión" : ""}
                     >
                         <LogOut size={20} />
