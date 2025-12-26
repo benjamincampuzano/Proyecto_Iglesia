@@ -37,7 +37,10 @@ const Layout = () => {
         { to: '/encuentros', icon: Users, label: 'Encuentros' },
         { to: '/convenciones', icon: Calendar, label: 'Convenciones' },
         ...(user.role === 'SUPER_ADMIN' || user.role === 'PASTOR'
-            ? [{ to: '/auditoria', icon: Activity, label: 'Auditoría' }]
+            ? [
+                { to: '/usuarios', icon: Users, label: 'Usuarios' },
+                { to: '/auditoria', icon: Activity, label: 'Auditoría' }
+            ]
             : [])
     ];
 

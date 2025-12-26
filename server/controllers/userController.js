@@ -1,7 +1,35 @@
 const { PrismaClient } = require('@prisma/client');
 const bcrypt = require('bcryptjs');
+const axios = require('axios');
 
 const prisma = new PrismaClient();
+
+// Geocoding helper using Nominatim
+const geocodeAddress = async (address, city) => {
+    if (!address) return { lat: null, lng: null };
+    try {
+        const fullAddress = `${address}${city ? ', ' + city : ''}`;
+        const response = await axios.get('https://nominatim.openstreetmap.org/search', {
+            params: {
+                q: fullAddress,
+                format: 'json',
+                limit: 1
+            },
+            headers: {
+                'User-Agent': 'ProyectoIglesia/1.0'
+            }
+        });
+        if (response.data && response.data.length > 0) {
+            return {
+                lat: parseFloat(response.data[0].lat),
+                lng: parseFloat(response.data[0].lon)
+            };
+        }
+    } catch (error) {
+        console.error('Geocoding error:', error);
+    }
+    return { lat: null, lng: null };
+};
 
 // Función auxiliar para obtener todos los usuarios en la red de un líder (discípulos y sub-discípulos)
 const getUserNetwork = async (leaderId) => {
@@ -154,6 +182,8 @@ const getAllUsers = async (req, res) => {
                 phone: true,
                 address: true,
                 city: true,
+                latitude: true,
+                longitude: true,
                 leaderId: true,
                 createdAt: true,
                 updatedAt: true,
@@ -236,7 +266,18 @@ const getUserById = async (req, res) => {
 const updateUser = async (req, res) => {
     try {
         const { id } = req.params;
-        const { fullName, email, role } = req.body;
+        const { fullName, email, role, sex, phone, address, city } = req.body;
+
+        // Geocode address if provided
+        let latitude = undefined;
+        let longitude = undefined;
+        if (address || city) {
+            const coords = await geocodeAddress(address, city);
+            if (coords.lat) {
+                latitude = coords.lat;
+                longitude = coords.lng;
+            }
+        }
 
         // Obtener el usuario que se está actualizando
         const userToUpdate = await prisma.user.findUnique({
@@ -272,6 +313,12 @@ const updateUser = async (req, res) => {
                 ...(fullName && { fullName }),
                 ...(email && { email }),
                 ...(role && { role }),
+                ...(sex && { sex }),
+                ...(phone && { phone }),
+                ...(address && { address }),
+                ...(city && { city }),
+                ...(latitude !== undefined && { latitude }),
+                ...(longitude !== undefined && { longitude }),
             },
         });
 
@@ -281,6 +328,8 @@ const updateUser = async (req, res) => {
                 email: updatedUser.email,
                 fullName: updatedUser.fullName,
                 role: updatedUser.role,
+                latitude: updatedUser.latitude,
+                longitude: updatedUser.longitude
             },
         });
     } catch (error) {
@@ -305,6 +354,9 @@ const createUser = async (req, res) => {
 
         const hashedPassword = await bcrypt.hash(password, 10);
 
+        // Geocode address if provided
+        const coords = await geocodeAddress(address, city);
+
         const userData = {
             email,
             password: hashedPassword,
@@ -313,7 +365,9 @@ const createUser = async (req, res) => {
             sex,
             phone,
             address,
-            city
+            city,
+            latitude: coords.lat,
+            longitude: coords.lng
         };
 
         if (liderDoceId) {

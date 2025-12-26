@@ -94,7 +94,6 @@ const UserManagementModal = ({ isOpen, onClose }) => {
 
             setSuccess('Usuario creado exitosamente');
             setShowCreateForm(false);
-            setShowCreateForm(false);
             setFormData({ fullName: '', email: '', password: '', role: 'Miembro', sex: 'HOMBRE', phone: '', address: '', city: '', assignedLeaderId: '' });
             fetchUsers();
         } catch (err) {

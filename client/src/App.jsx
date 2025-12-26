@@ -21,6 +21,7 @@ const NetworkAssignment = lazy(() => import('./components/NetworkAssignment'));
 const Convenciones = lazy(() => import('./pages/Convenciones'));
 const Encuentros = lazy(() => import('./pages/Encuentros'));
 const AuditDashboard = lazy(() => import('./pages/AuditDashboard'));
+const UserManagement = lazy(() => import('./pages/UserManagement'));
 
 // Placeholder components for now
 
@@ -106,6 +107,7 @@ function App() {
                   <Route path="encuentros" element={<Encuentros />} />
                   <Route path="convenciones" element={<Convenciones />} />
                   <Route path="network" element={<NetworkAssignment />} />
+                  <Route path="usuarios" element={<AdminRoute><UserManagement /></AdminRoute>} />
                   <Route path="auditoria" element={<AdminRoute><AuditDashboard /></AdminRoute>} />
                 </Route>
               </Routes>

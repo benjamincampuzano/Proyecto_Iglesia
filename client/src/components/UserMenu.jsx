@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
-import { User, Settings, Users, LogOut } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { User, Settings, Users, LogOut, UserPlus } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import ThemeToggle from './ThemeToggle';
 
@@ -8,7 +9,7 @@ const UserMenu = ({ onOpenProfile, onOpenUserManagement }) => {
     const { user, logout } = useAuth();
     const menuRef = useRef(null);
 
-    const isAdmin = user?.role === 'SUPER_ADMIN' || user?.role === 'LIDER_DOCE';
+    const isAdmin = user?.role === 'SUPER_ADMIN' || user?.role === 'PASTOR' || user?.role === 'LIDER_DOCE';
 
     // Close dropdown when clicking outside
     useEffect(() => {
@@ -63,13 +64,23 @@ const UserMenu = ({ onOpenProfile, onOpenUserManagement }) => {
                     </button>
 
                     {isAdmin && (
-                        <button
-                            onClick={() => handleMenuItemClick(onOpenUserManagement)}
-                            className="w-full flex items-center space-x-3 px-4 py-2 hover:bg-gray-700 transition-colors text-left"
-                        >
-                            <Users size={18} className="text-gray-400" />
-                            <span className="text-sm text-gray-200">Gestionar Usuarios</span>
-                        </button>
+                        <>
+                            <Link
+                                to="/usuarios"
+                                onClick={() => setIsOpen(false)}
+                                className="w-full flex items-center space-x-3 px-4 py-2 hover:bg-gray-700 transition-colors text-left"
+                            >
+                                <Users size={18} className="text-gray-400" />
+                                <span className="text-sm text-gray-200">Gestionar Usuarios</span>
+                            </Link>
+                            <button
+                                onClick={() => handleMenuItemClick(onOpenUserManagement)}
+                                className="w-full flex items-center space-x-3 px-4 py-2 hover:bg-gray-700 transition-colors text-left"
+                            >
+                                <UserPlus size={18} className="text-gray-400" />
+                                <span className="text-sm text-gray-200">Crear Usuario</span>
+                            </button>
+                        </>
                     )}
 
                     <div className="px-4 py-2">
