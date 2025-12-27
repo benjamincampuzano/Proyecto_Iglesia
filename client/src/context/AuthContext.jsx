@@ -6,8 +6,20 @@ const AuthContext = createContext();
 export const AuthProvider = ({ children }) => {
     const [user, setUser] = useState(null);
     const [loading, setLoading] = useState(true);
+    const [isInitialized, setIsInitialized] = useState(true);
 
     useEffect(() => {
+        const checkInit = async () => {
+            try {
+                const res = await api.get('/auth/init-status');
+                setIsInitialized(res.data.isInitialized);
+            } catch (error) {
+                console.error('Error checking system initialization:', error);
+            }
+        };
+
+        checkInit();
+
         const token = localStorage.getItem('token');
         if (token) {
             // En una app real, verificarías el token con el backend aquí
@@ -43,6 +55,19 @@ export const AuthProvider = ({ children }) => {
         }
     };
 
+    const setup = async (userData) => {
+        try {
+            const res = await api.post('/auth/setup', userData);
+            localStorage.setItem('token', res.data.token);
+            localStorage.setItem('user', JSON.stringify(res.data.user));
+            setUser(res.data.user);
+            setIsInitialized(true);
+            return { success: true };
+        } catch (error) {
+            return { success: false, message: error.response?.data?.message || 'Setup failed' };
+        }
+    };
+
     const logout = () => {
         localStorage.removeItem('token');
         localStorage.removeItem('user');
@@ -54,7 +79,7 @@ export const AuthProvider = ({ children }) => {
     };
 
     return (
-        <AuthContext.Provider value={{ user, login, register, logout, updateProfile, loading }}>
+        <AuthContext.Provider value={{ user, login, register, setup, logout, updateProfile, loading, isInitialized }}>
             {children}
         </AuthContext.Provider>
     );

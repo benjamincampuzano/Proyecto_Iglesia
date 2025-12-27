@@ -93,4 +93,54 @@ const getPublicLeaders = async (req, res) => {
     }
 };
 
-module.exports = { register, login, getPublicLeaders };
+const checkInitStatus = async (req, res) => {
+    try {
+        const userCount = await prisma.user.count();
+        res.json({ isInitialized: userCount > 0 });
+    } catch (error) {
+        console.error('Error checking init status:', error);
+        res.status(500).json({ message: 'Error checking system initialization status' });
+    }
+};
+
+const registerSetup = async (req, res) => {
+    try {
+        const userCount = await prisma.user.count();
+        if (userCount > 0) {
+            return res.status(403).json({ message: 'System is already initialized' });
+        }
+
+        const { email, password, fullName, sex, phone, address, city } = req.body;
+
+        const hashedPassword = await bcrypt.hash(password, 10);
+
+        const user = await prisma.user.create({
+            data: {
+                email,
+                password: hashedPassword,
+                fullName,
+                role: 'SUPER_ADMIN',
+                sex,
+                phone,
+                address,
+                city
+            },
+        });
+
+        const token = jwt.sign({ userId: user.id, role: user.role }, process.env.JWT_SECRET, {
+            expiresIn: '1d',
+        });
+
+        await logActivity(user.id, 'CREATE', 'USER', user.id, 'Inicialización del sistema: Primer Usuario (SUPER_ADMIN)');
+
+        res.status(201).json({
+            token,
+            user: { id: user.id, email: user.email, fullName: user.fullName, role: user.role }
+        });
+    } catch (error) {
+        console.error('Error in setup registration:', error);
+        res.status(500).json({ message: 'Server error during setup' });
+    }
+};
+
+module.exports = { register, login, getPublicLeaders, checkInitStatus, registerSetup };

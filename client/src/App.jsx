@@ -22,12 +22,14 @@ const Convenciones = lazy(() => import('./pages/Convenciones'));
 const Encuentros = lazy(() => import('./pages/Encuentros'));
 const AuditDashboard = lazy(() => import('./pages/AuditDashboard'));
 const UserManagement = lazy(() => import('./pages/UserManagement'));
+const SetupWizard = lazy(() => import('./pages/SetupWizard'));
 
 // Placeholder components for now
 
 const PrivateRoute = ({ children }) => {
-  const { user, loading } = useAuth();
+  const { user, loading, isInitialized } = useAuth();
   if (loading) return <div>Loading...</div>;
+  if (!isInitialized) return <Navigate to="/setup" />;
   return user ? children : <Navigate to="/login" />;
 };
 
@@ -95,6 +97,7 @@ function App() {
             <LoadingOverlay />
             <Suspense fallback={<TransitionLoader />}>
               <Routes>
+                <Route path="/setup" element={<SetupWizard />} />
                 <Route path="/login" element={<Login />} />
                 <Route path="/register" element={<Register />} />
 
