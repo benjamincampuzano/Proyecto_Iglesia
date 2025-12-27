@@ -9,7 +9,7 @@
     "install:all": "npm install && cd client && npm install && cd server && npm install"
   },
   "keywords": [],
-  "author": "",
+  "author": "Benjamin Campuzano Castañeda",
   "license": "ISC",
   "devDependencies": {
     "@types/xlsx": "^0.0.35",
@@ -33,6 +33,8 @@
     "react-dom": "^19.2.3",
     "react-router-dom": "^7.11.0",
     "recharts": "^3.6.0",
-    "xlsx": "^0.18.5"
+    "xlsx": "^0.18.5",
+    "@prisma/client": "6.6.0",
+    "prisma": "6.6.0"
   }
 }
