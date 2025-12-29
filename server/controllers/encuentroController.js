@@ -161,6 +161,12 @@ const registerGuest = async (req, res) => {
             include: { guest: true }
         });
 
+        // Update guest status to GANADO
+        await prisma.guest.update({
+            where: { id: parseInt(guestId) },
+            data: { status: 'GANADO' }
+        });
+
         await logActivity(req.user.id, 'CREATE', 'ENCUENTRO_REGISTRATION', registration.id, { guestId, encuentroId });
 
         res.status(201).json(registration);

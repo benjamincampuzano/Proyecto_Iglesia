@@ -6,6 +6,8 @@ const {
     updateGuest,
     deleteGuest,
     convertGuestToMember,
+    addCall,
+    addVisit,
 } = require('../controllers/guestController');
 const guestStatsController = require('../controllers/guestStatsController');
 const { authenticate } = require('../middleware/auth');
@@ -20,5 +22,7 @@ router.get('/:id', authenticate, getGuestById);
 router.put('/:id', authenticate, updateGuest);
 router.delete('/:id', authenticate, deleteGuest);
 router.post('/:id/convert-to-member', authenticate, convertGuestToMember);
+router.post('/:id/calls', authenticate, addCall);
+router.post('/:id/visits', authenticate, addVisit);
 
 module.exports = router;

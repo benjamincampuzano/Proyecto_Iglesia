@@ -111,7 +111,7 @@ const GuestList = ({ refreshTrigger }) => {
         const colors = {
             NUEVO: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400',
             CONTACTADO: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400',
-            EN_CONSOLIDACION: 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400',
+            CONSOLIDADO: 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400',
             GANADO: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400',
         };
         return colors[status] || 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400';
@@ -121,7 +121,7 @@ const GuestList = ({ refreshTrigger }) => {
         const labels = {
             NUEVO: 'Nuevo',
             CONTACTADO: 'Contactado',
-            EN_CONSOLIDACION: 'En Consolidación',
+            CONSOLIDADO: 'Consolidado',
             GANADO: 'Ganado',
         };
         return labels[status] || status;
@@ -173,7 +173,7 @@ const GuestList = ({ refreshTrigger }) => {
                         <option value="">Estado (Todos)</option>
                         <option value="NUEVO">Nuevo</option>
                         <option value="CONTACTADO">Contactado</option>
-                        <option value="EN_CONSOLIDACION">En Consolidación</option>
+                        <option value="CONSOLIDADO">Consolidado</option>
                         <option value="GANADO">Ganado</option>
                     </select>
                 </div>
@@ -291,7 +291,7 @@ const GuestList = ({ refreshTrigger }) => {
                                             >
                                                 <option value="NUEVO">Nuevo</option>
                                                 <option value="CONTACTADO">Contactado</option>
-                                                <option value="EN_CONSOLIDACION">En Consolidación</option>
+                                                <option value="CONSOLIDADO">Consolidado</option>
                                                 <option value="GANADO">Ganado</option>
                                             </select>
                                         ) : (

@@ -1,10 +1,11 @@
 import { Outlet, Link, useLocation } from 'react-router-dom';
 import { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { Home, Users, UserPlus, Heart, Send, Calendar, BookOpen, LogOut, Network, Activity } from 'lucide-react';
+import { Home, Users, UserPlus, Heart, Send, Calendar, BookOpen, LogOut, Network, Activity, ChevronLeft, ChevronRight } from 'lucide-react';
 import UserMenu from '../components/UserMenu';
 import UserProfileModal from '../components/UserProfileModal';
 import UserManagementModal from '../components/UserManagementModal';
+import logo from '../assets/logo.jpg';
 
 const SidebarItem = ({ to, icon: Icon, label, active }) => (
     <Link
@@ -48,22 +49,44 @@ const Layout = () => {
         <div className="flex h-screen bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100">
             {/* Sidebar */}
             <aside
-                className={`${isCollapsed ? 'w-20' : 'w-64'} bg-white dark:bg-gray-950 border-r border-gray-200 dark:border-gray-800 flex flex-col transition-all duration-300 ease-in-out`}
+                className={`${isCollapsed ? 'w-20' : 'w-64'} bg-white dark:bg-gray-950 border-r border-gray-200 dark:border-gray-800 flex flex-col transition-all duration-300 ease-in-out relative`}
             >
-                <div className="p-6 border-b border-gray-200 dark:border-gray-800 flex items-center justify-between">
-                    {!isCollapsed && (
-                        <div>
-                            <h1 className="text-2xl font-bold text-blue-600 dark:text-blue-500 truncate">MCI</h1>
-                            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1 truncate">{user.fullName}</p>
+                <div className={`${isCollapsed ? 'p-4' : 'p-6'} border-b border-gray-200 dark:border-gray-800 flex items-center justify-between overflow-hidden`}>
+                    <div className="flex items-center space-x-3 min-w-0">
+                        <div className={`relative ${isCollapsed ? 'w-10 h-10' : 'w-12 h-12'} transition-all duration-300`}>
+                            {/* Logo container with pulse/glow like loading screen */}
+                            <div className="absolute inset-0 rounded-full bg-blue-500/20 animate-pulse"></div>
+                            <div className="relative w-full h-full rounded-full overflow-hidden bg-white shadow-lg border border-gray-200 dark:border-gray-800">
+                                <img
+                                    src={logo}
+                                    alt="MCI Logo"
+                                    className="w-full h-full object-cover transform hover:scale-110 transition-transform duration-500"
+                                />
+                            </div>
                         </div>
-                    )}
-                    <button
-                        onClick={() => setIsCollapsed(!isCollapsed)}
-                        className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500"
-                    >
-                        {isCollapsed ? <div className="font-bold text-xl">→</div> : <div className="font-bold text-xl">←</div>}
-                    </button>
+
+                        {!isCollapsed && (
+                            <div className="min-w-0">
+                                <p className="text-sm font-bold text-gray-900 dark:text-white truncate">
+                                    {user.fullName}
+                                </p>
+                                <p className="text-[10px] uppercase tracking-wider text-gray-500 dark:text-gray-400 font-semibold truncate">
+                                    Panel de Control
+                                </p>
+                            </div>
+                        )}
+                    </div>
+                    {/* The old button was here and is now removed */}
                 </div>
+
+                {/* New Floating Toggle Button */}
+                <button
+                    onClick={() => setIsCollapsed(!isCollapsed)}
+                    className="absolute -right-3 top-20 bg-white dark:bg-gray-950 border border-gray-200 dark:border-gray-800 rounded-full p-1.5 shadow-md hover:shadow-lg transition-all z-50 text-gray-500 hover:text-blue-600 flex items-center justify-center"
+                    title={isCollapsed ? "Expandir" : "Colapsar"}
+                >
+                    {isCollapsed ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
+                </button>
 
                 <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
                     {navItems.map((item) => (

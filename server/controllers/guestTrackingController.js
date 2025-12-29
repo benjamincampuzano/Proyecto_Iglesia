@@ -42,7 +42,9 @@ const getGuestTrackingStats = async (req, res) => {
                         pastor: true,
                         leader: true
                     }
-                }
+                },
+                calls: true,
+                visits: true
             }
         });
 
@@ -78,13 +80,13 @@ const getGuestTrackingStats = async (req, res) => {
             const stats = statsByLeader[leaderName];
             stats.total++;
 
-            if (guest.called) {
+            if (guest.calls && guest.calls.length > 0) {
                 stats.withCall++;
             } else {
                 stats.withoutCall++;
             }
 
-            if (guest.visited) {
+            if (guest.visits && guest.visits.length > 0) {
                 stats.withVisit++;
             } else {
                 stats.withoutVisit++;

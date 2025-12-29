@@ -61,7 +61,7 @@ const GuestStats = () => {
             ['Total de Invitados', stats.totalGuests],
             ['Nuevos', stats.byStatus.NUEVO || 0],
             ['Contactados', stats.byStatus.CONTACTADO || 0],
-            ['En Consolidación', stats.byStatus.EN_CONSOLIDACION || 0],
+            ['Consolidado', stats.byStatus.CONSOLIDADO || 0],
             ['Ganados', stats.byStatus.GANADO || 0],
             [''],
             ['Tasa de Conversión', `${stats.conversionRate}%`],
@@ -88,14 +88,14 @@ const GuestStats = () => {
     const statusColors = {
         NUEVO: '#3B82F6',
         CONTACTADO: '#EAB308',
-        EN_CONSOLIDACION: '#A855F7',
+        CONSOLIDADO: '#A855F7',
         GANADO: '#10B981',
     };
 
     const statusLabels = {
         NUEVO: 'Nuevo',
         CONTACTADO: 'Contactado',
-        EN_CONSOLIDACION: 'En Consolidación',
+        CONSOLIDADO: 'Consolidado',
         GANADO: 'Ganado',
     };
 

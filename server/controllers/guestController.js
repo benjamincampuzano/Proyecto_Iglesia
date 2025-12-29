@@ -182,6 +182,18 @@ const getAllGuests = async (req, res) => {
                 assignedTo: {
                     select: { id: true, fullName: true, email: true },
                 },
+                calls: {
+                    include: {
+                        caller: { select: { fullName: true } }
+                    },
+                    orderBy: { date: 'desc' }
+                },
+                visits: {
+                    include: {
+                        visitor: { select: { fullName: true } }
+                    },
+                    orderBy: { date: 'desc' }
+                }
             },
             orderBy: { createdAt: 'desc' },
         });
@@ -207,6 +219,18 @@ const getGuestById = async (req, res) => {
                 assignedTo: {
                     select: { id: true, fullName: true, email: true },
                 },
+                calls: {
+                    include: {
+                        caller: { select: { fullName: true } }
+                    },
+                    orderBy: { date: 'desc' }
+                },
+                visits: {
+                    include: {
+                        visitor: { select: { fullName: true } }
+                    },
+                    orderBy: { date: 'desc' }
+                }
             },
         });
 
@@ -465,6 +489,72 @@ const convertGuestToMember = async (req, res) => {
     }
 };
 
+// Agregar llamada a invitado
+const addCall = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { date, observation } = req.body;
+        const user = req.user;
+
+        if (!observation) {
+            return res.status(400).json({ message: 'Observation is required' });
+        }
+
+        const call = await prisma.guestCall.create({
+            data: {
+                guestId: parseInt(id),
+                date: date ? new Date(date) : new Date(),
+                observation,
+                callerId: user.id
+            }
+        });
+
+        // Update guest status to CONTACTADO
+        await prisma.guest.update({
+            where: { id: parseInt(id) },
+            data: { status: 'CONTACTADO' }
+        });
+
+        res.status(201).json({ call });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Server error' });
+    }
+};
+
+// Agregar visita a invitado
+const addVisit = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { date, observation } = req.body;
+        const user = req.user;
+
+        if (!observation) {
+            return res.status(400).json({ message: 'Observation is required' });
+        }
+
+        const visit = await prisma.guestVisit.create({
+            data: {
+                guestId: parseInt(id),
+                date: date ? new Date(date) : new Date(),
+                observation,
+                visitorId: user.id
+            }
+        });
+
+        // Update guest status to CONSOLIDADO
+        await prisma.guest.update({
+            where: { id: parseInt(id) },
+            data: { status: 'CONSOLIDADO' }
+        });
+
+        res.status(201).json({ visit });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Server error' });
+    }
+};
+
 module.exports = {
     createGuest,
     getAllGuests,
@@ -473,4 +563,6 @@ module.exports = {
     deleteGuest,
     assignGuest,
     convertGuestToMember,
+    addCall,
+    addVisit,
 };
