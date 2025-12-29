@@ -15,7 +15,7 @@ enum Role {
   PASTOR
   LIDER_DOCE
   LIDER_CELULA
-  Miembro
+  DISCIPULO
   PROFESOR
   AUXILIAR
 }
@@ -56,7 +56,7 @@ model User {
   email          String   @unique
   password       String
   fullName       String
-  role           Role     @default(Miembro)
+  role           Role     @default(DISCIPULO)
   sex            Sex?
   phone          String?
   address        String?
@@ -79,15 +79,15 @@ model User {
   // NEW: Hierarchical network structure
   pastorId       Int?
   pastor         User?    @relation("Pastor", fields: [pastorId], references: [id], onDelete: SetNull)
-  MiembrosPastor User[]   @relation("Pastor")
+  DiscipulosPastor User[]   @relation("Pastor")
   
   liderDoceId    Int?
   liderDoce      User?    @relation("LiderDoce", fields: [liderDoceId], references: [id], onDelete: SetNull)
-  MiembrosDoce   User[]   @relation("LiderDoce")
+  DiscipulosDoce   User[]   @relation("LiderDoce")
   
   liderCelulaId  Int?
   liderCelula    User?    @relation("LiderCelula", fields: [liderCelulaId], references: [id], onDelete: SetNull)
-  MiembrosCelula User[]   @relation("LiderCelula")
+  DiscipulosCelula User[]   @relation("LiderCelula")
 
   cellId         Int?
   cell           Cell?    @relation("CellMembers", fields: [cellId], references: [id])
@@ -326,6 +326,7 @@ model Encuentro {
   cost        Float
   startDate   DateTime
   endDate     DateTime
+  liderDoceIds Int[]   @default([])
   registrations EncuentroRegistration[]
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt

@@ -82,7 +82,7 @@ const CellMap = ({ cells = [] }) => {
                                     </div>
                                 </div>
                                 <div className="mt-3 text-xs font-semibold px-2 py-1 bg-blue-50 text-blue-600 rounded-full w-fit">
-                                    {cell._count?.members || 0} Miembros Actuales
+                                    {cell._count?.members || 0} Discípulos Actuales
                                 </div>
                             </div>
                         </Popup>

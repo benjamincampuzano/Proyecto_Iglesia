@@ -3,6 +3,7 @@ import api from '../utils/api';
 import { Plus, Calendar, Users, DollarSign, ChevronRight, Trash2 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import EncuentroDetails from '../components/EncuentroDetails';
+import MultiUserSelect from '../components/MultiUserSelect';
 
 const Encuentros = () => {
     const { user } = useAuth();
@@ -18,7 +19,8 @@ const Encuentros = () => {
         description: '',
         cost: '',
         startDate: '',
-        endDate: ''
+        endDate: '',
+        liderDoceIds: []
     });
 
     useEffect(() => {
@@ -62,7 +64,8 @@ const Encuentros = () => {
                 description: '',
                 cost: '',
                 startDate: '',
-                endDate: ''
+                endDate: '',
+                liderDoceIds: []
             });
         } catch (error) {
             console.error('Error creating:', error);
@@ -234,6 +237,15 @@ const Encuentros = () => {
                                         required
                                     />
                                 </div>
+                            </div>
+                            <div>
+                                <MultiUserSelect
+                                    value={formData.liderDoceIds}
+                                    onChange={(ids) => setFormData({ ...formData, liderDoceIds: ids })}
+                                    label="Líderes de 12 Coordinadores"
+                                    placeholder="Seleccionar coordinadores..."
+                                    roleFilter="LIDER_DOCE"
+                                />
                             </div>
                             <div className="pt-4 flex space-x-3">
                                 <button

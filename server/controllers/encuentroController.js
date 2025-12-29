@@ -71,7 +71,7 @@ const createEncuentro = async (req, res) => {
         if (req.user.role !== 'SUPER_ADMIN') {
             return res.status(403).json({ error: 'Not authorized' });
         }
-        const { type, name, description, cost, startDate, endDate } = req.body;
+        const { type, name, description, cost, startDate, endDate, liderDoceIds } = req.body;
         const encuentro = await prisma.encuentro.create({
             data: {
                 type,
@@ -79,7 +79,8 @@ const createEncuentro = async (req, res) => {
                 description,
                 cost: parseFloat(cost),
                 startDate: new Date(startDate),
-                endDate: new Date(endDate)
+                endDate: new Date(endDate),
+                liderDoceIds: liderDoceIds || []
             }
         });
 

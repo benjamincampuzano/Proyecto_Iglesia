@@ -42,9 +42,9 @@ const getNetwork = async (req, res) => {
             where: { id: parseInt(userId) },
             include: {
                 // Level 1: Direct disciples through different relationships
-                MiembrosCelula: {
+                DiscipulosCelula: {
                     include: {
-                        MiembrosCelula: {
+                        DiscipulosCelula: {
                             include: {
                                 assignedGuests: true,
                                 invitedGuests: true
@@ -54,11 +54,11 @@ const getNetwork = async (req, res) => {
                         invitedGuests: true
                     }
                 },
-                MiembrosDoce: {
+                DiscipulosDoce: {
                     include: {
-                        MiembrosCelula: {
+                        DiscipulosCelula: {
                             include: {
-                                MiembrosCelula: {
+                                DiscipulosCelula: {
                                     include: {
                                         assignedGuests: true,
                                         invitedGuests: true
@@ -72,13 +72,13 @@ const getNetwork = async (req, res) => {
                         invitedGuests: true
                     }
                 },
-                MiembrosPastor: {
+                DiscipulosPastor: {
                     include: {
-                        MiembrosDoce: {
+                        DiscipulosDoce: {
                             include: {
-                                MiembrosCelula: {
+                                DiscipulosCelula: {
                                     include: {
-                                        MiembrosCelula: {
+                                        DiscipulosCelula: {
                                             include: {
                                                 assignedGuests: true,
                                                 invitedGuests: true
@@ -92,7 +92,7 @@ const getNetwork = async (req, res) => {
                                 invitedGuests: true
                             }
                         },
-                        MiembrosCelula: {
+                        DiscipulosCelula: {
                             include: {
                                 assignedGuests: true,
                                 invitedGuests: true
@@ -116,9 +116,9 @@ const getNetwork = async (req, res) => {
             let collected = [];
 
             const arrays = [
-                userNode.MiembrosCelula || [],
-                userNode.MiembrosDoce || [],
-                userNode.MiembrosPastor || []
+                userNode.DiscipulosCelula || [],
+                userNode.DiscipulosDoce || [],
+                userNode.DiscipulosPastor || []
             ];
 
             for (const array of arrays) {

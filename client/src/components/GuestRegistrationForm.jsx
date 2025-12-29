@@ -20,9 +20,9 @@ const GuestRegistrationForm = ({ onGuestCreated }) => {
         const user = JSON.parse(localStorage.getItem('user'));
         setCurrentUser(user);
 
-        // Auto-set invitedById for LIDER_CELULA and Miembro (case-insensitive)
+        // Auto-set invitedById for LIDER_CELULA and DISCIPULO (case-insensitive)
         const role = user?.role?.toUpperCase();
-        if (user && (role === 'LIDER_CELULA' || role === 'MIEMBRO')) {
+        if (user && (role === 'LIDER_CELULA' || role === 'DISCIPULO')) {
             setFormData(prev => ({ ...prev, invitedById: user.id }));
         }
     }, []);
@@ -30,8 +30,8 @@ const GuestRegistrationForm = ({ onGuestCreated }) => {
     // PASTOR no puede crear invitados - mostrar mensaje informativo
     if (currentUser && currentUser.role.toUpperCase() === 'PASTOR') {
         return (
-            <div className="bg-gray-800 rounded-lg p-6 border border-gray-700">
-                <h2 className="text-2xl font-bold text-white mb-4">Registrar Nuevo Invitado</h2>
+            <div className="bg-white dark:bg-gray-800 rounded-lg p-6 border border-gray-200 dark:border-gray-700">
+                <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">Registrar Nuevo Invitado</h2>
                 <div className="bg-blue-900/20 border border-blue-500 text-blue-300 px-4 py-3 rounded">
                     <p className="font-semibold mb-2">Información</p>
                     <p>Los usuarios con rol PASTOR no pueden crear invitados directamente.</p>
@@ -39,7 +39,7 @@ const GuestRegistrationForm = ({ onGuestCreated }) => {
                     <ul className="list-disc list-inside ml-4 mt-1">
                         <li>LIDER_DOCE</li>
                         <li>LIDER_CELULA</li>
-                        <li>MIEMBRO</li>
+                        <li>DISCIPULO</li>
                     </ul>
                     <p className="mt-2 text-sm">Puede ver todos los invitados de su red en la lista de invitados.</p>
                 </div>
@@ -59,7 +59,7 @@ const GuestRegistrationForm = ({ onGuestCreated }) => {
         setError('');
         setSuccess('');
 
-        // Validation is handled by backend for LIDER_CELULA/Miembro
+        // Validation is handled by backend for LIDER_CELULA/DISCIPULO
         const role = currentUser?.role?.toUpperCase();
         if (['SUPER_ADMIN', 'LIDER_DOCE'].includes(role) && !formData.invitedById) {
             // Default to current user if none selected (handled in backend but good for UI too)
@@ -102,8 +102,8 @@ const GuestRegistrationForm = ({ onGuestCreated }) => {
     };
 
     return (
-        <div className="bg-gray-800 rounded-lg p-6 border border-gray-700">
-            <h2 className="text-2xl font-bold text-white mb-6">Registrar Nuevo Invitado</h2>
+        <div className="bg-white dark:bg-gray-800 rounded-lg p-6 border border-gray-200 dark:border-gray-700">
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">Registrar Nuevo Invitado</h2>
 
             {error && (
                 <div className="bg-red-900/20 border border-red-500 text-red-400 px-4 py-3 rounded mb-4">
@@ -119,7 +119,7 @@ const GuestRegistrationForm = ({ onGuestCreated }) => {
             <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                        <label className="block text-sm font-medium text-gray-300 mb-2">
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                             Nombre Completo <span className="text-red-400">*</span>
                         </label>
                         <input
@@ -127,13 +127,13 @@ const GuestRegistrationForm = ({ onGuestCreated }) => {
                             name="name"
                             value={formData.name}
                             onChange={handleChange}
-                            className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-blue-500"
+                            className="w-full px-4 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:border-blue-500"
                             required
                         />
                     </div>
 
                     <div>
-                        <label className="block text-sm font-medium text-gray-300 mb-2">
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                             Teléfono <span className="text-red-400">*</span>
                         </label>
                         <input
@@ -141,14 +141,14 @@ const GuestRegistrationForm = ({ onGuestCreated }) => {
                             name="phone"
                             value={formData.phone}
                             onChange={handleChange}
-                            className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-blue-500"
+                            className="w-full px-4 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:border-blue-500"
                             required
                         />
                     </div>
                 </div>
 
                 <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-2">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                         Dirección
                     </label>
                     <input
@@ -156,7 +156,7 @@ const GuestRegistrationForm = ({ onGuestCreated }) => {
                         name="address"
                         value={formData.address}
                         onChange={handleChange}
-                        className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-blue-500"
+                        className="w-full px-4 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:border-blue-500"
                     />
                 </div>
 
@@ -166,13 +166,13 @@ const GuestRegistrationForm = ({ onGuestCreated }) => {
                             label={<>Invitado Por <span className="text-red-400">*</span></>}
                             value={formData.invitedById}
                             onChange={(userId) => setFormData({ ...formData, invitedById: userId })}
-                            placeholder="Seleccionar Miembro que invitó..."
+                            placeholder="Seleccionar Discípulo que invitó..."
                         />
                     </div>
                 )}
 
                 <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-2">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                         Petición de Oración
                     </label>
                     <textarea
@@ -180,7 +180,7 @@ const GuestRegistrationForm = ({ onGuestCreated }) => {
                         value={formData.prayerRequest}
                         onChange={handleChange}
                         rows="4"
-                        className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-blue-500 resize-none"
+                        className="w-full px-4 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:border-blue-500 resize-none"
                         placeholder="Escriba la petición de oración del invitado..."
                     />
                 </div>
@@ -203,7 +203,7 @@ const GuestRegistrationForm = ({ onGuestCreated }) => {
                     <button
                         type="button"
                         onClick={handleReset}
-                        className="flex items-center space-x-2 bg-gray-700 hover:bg-gray-600 text-white px-6 py-3 rounded-lg transition-colors"
+                        className="flex items-center space-x-2 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-white px-6 py-3 rounded-lg transition-colors border border-gray-200 dark:border-gray-600"
                     >
                         <X size={20} />
                         <span>Limpiar</span>

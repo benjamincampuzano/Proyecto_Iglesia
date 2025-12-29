@@ -155,7 +155,7 @@ const getCells = async (req, res) => {
             // LIDER_DOCE y PASTOR pueden ver todas las células de su red
             const networkUserIds = await getUserNetwork(userId);
             where.leaderId = { in: networkUserIds };
-        } else if (userRole === 'Miembro') {
+        } else if (userRole === 'DISCIPULO') {
             // Miembro can only see cells they belong to
             where.members = {
                 some: { id: userId }

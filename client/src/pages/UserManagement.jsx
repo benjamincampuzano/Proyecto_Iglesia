@@ -21,7 +21,7 @@ const UserManagement = () => {
         fullName: '',
         email: '',
         password: '',
-        role: 'Miembro',
+        role: 'DISCIPULO',
         sex: 'HOMBRE',
         phone: '',
         address: '',
@@ -56,7 +56,7 @@ const UserManagement = () => {
             if (payload.assignedLeaderId) {
                 if (payload.role === 'LIDER_DOCE') payload.pastorId = payload.assignedLeaderId;
                 else if (payload.role === 'LIDER_CELULA') payload.liderDoceId = payload.assignedLeaderId;
-                else if (payload.role === 'Miembro') {
+                else if (payload.role === 'DISCIPULO') {
                     const leader = users.find(u => u.id === parseInt(payload.assignedLeaderId));
                     if (leader?.role === 'LIDER_DOCE') payload.liderDoceId = payload.assignedLeaderId;
                     else payload.liderCelulaId = payload.assignedLeaderId;
@@ -66,7 +66,7 @@ const UserManagement = () => {
             await api.post('/users', payload);
             setSuccess('Usuario creado exitosamente');
             setShowCreateForm(false);
-            setFormData({ fullName: '', email: '', password: '', role: 'Miembro', sex: 'HOMBRE', phone: '', address: '', city: '', assignedLeaderId: '' });
+            setFormData({ fullName: '', email: '', password: '', role: 'DISCIPULO', sex: 'HOMBRE', phone: '', address: '', city: '', assignedLeaderId: '' });
             fetchUsers();
         } catch (err) {
             setError(err.response?.data?.message || 'Error al crear usuario');
@@ -123,9 +123,9 @@ const UserManagement = () => {
 
     const getAssignableRoles = () => {
         if (!currentUser) return [];
-        if (currentUser.role === 'SUPER_ADMIN') return ['Miembro', 'LIDER_CELULA', 'LIDER_DOCE', 'PASTOR', 'SUPER_ADMIN', 'PROFESOR', 'AUXILIAR'];
-        if (currentUser.role === 'PASTOR') return ['Miembro', 'LIDER_CELULA', 'LIDER_DOCE', 'PASTOR'];
-        return ['Miembro', 'LIDER_CELULA'];
+        if (currentUser.role === 'SUPER_ADMIN') return ['DISCIPULO', 'LIDER_CELULA', 'LIDER_DOCE', 'PASTOR', 'SUPER_ADMIN', 'PROFESOR', 'AUXILIAR'];
+        if (currentUser.role === 'PASTOR') return ['DISCIPULO', 'LIDER_CELULA', 'LIDER_DOCE', 'PASTOR'];
+        return ['DISCIPULO', 'LIDER_CELULA'];
     };
 
     return (
@@ -156,7 +156,7 @@ const UserManagement = () => {
                     <input
                         type="text"
                         placeholder="Buscar por nombre o email..."
-                        className="w-full pl-10 pr-4 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg outline-none focus:ring-2 focus:ring-blue-500"
+                        className="w-full pl-10 pr-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 dark:text-white"
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
                     />
@@ -164,12 +164,12 @@ const UserManagement = () => {
                 <div className="w-full md:w-48 relative">
                     <Filter className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
                     <select
-                        className="w-full pl-10 pr-4 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 appearance-none"
+                        className="w-full pl-10 pr-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 appearance-none text-gray-900 dark:text-white"
                         value={roleFilter}
                         onChange={(e) => setRoleFilter(e.target.value)}
                     >
                         <option value="">Todos los roles</option>
-                        {['SUPER_ADMIN', 'PASTOR', 'LIDER_DOCE', 'LIDER_CELULA', 'Miembro', 'PROFESOR', 'AUXILIAR'].map(r => (
+                        {['SUPER_ADMIN', 'PASTOR', 'LIDER_DOCE', 'LIDER_CELULA', 'DISCIPULO', 'PROFESOR', 'AUXILIAR'].map(r => (
                             <option key={r} value={r}>{r.replace('_', ' ')}</option>
                         ))}
                     </select>
@@ -261,47 +261,47 @@ const UserManagement = () => {
 
             {showCreateForm && (
                 <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-                    <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden animate-in fade-in zoom-in duration-200">
+                    <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden animate-in fade-in zoom-in duration-200 border border-gray-200 dark:border-gray-700">
                         <div className="p-6 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center">
-                            <h2 className="text-xl font-bold dark:text-white">Crear Nuevo Usuario</h2>
-                            <button onClick={() => setShowCreateForm(false)} className="text-gray-400 hover:text-gray-600"><X size={24} /></button>
+                            <h2 className="text-xl font-bold text-gray-900 dark:text-white">Crear Nuevo Usuario</h2>
+                            <button onClick={() => setShowCreateForm(false)} className="text-gray-400 hover:text-gray-600 dark:hover:text-white transition-colors"><X size={24} /></button>
                         </div>
                         <form onSubmit={handleCreateUser} className="p-6 space-y-4">
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div>
-                                    <label className="block text-sm font-medium mb-1 dark:text-gray-300">Nombre Completo</label>
-                                    <input required type="text" className="w-full p-2 rounded-lg bg-gray-50 dark:bg-gray-900 border dark:border-gray-700" value={formData.fullName} onChange={e => setFormData({ ...formData, fullName: e.target.value })} />
+                                    <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">Nombre Completo</label>
+                                    <input required type="text" className="w-full p-2 rounded-lg bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white focus:outline-none focus:border-blue-500" value={formData.fullName} onChange={e => setFormData({ ...formData, fullName: e.target.value })} />
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium mb-1 dark:text-gray-300">Email</label>
-                                    <input required type="email" className="w-full p-2 rounded-lg bg-gray-50 dark:bg-gray-900 border dark:border-gray-700" value={formData.email} onChange={e => setFormData({ ...formData, email: e.target.value })} />
+                                    <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">Email</label>
+                                    <input required type="email" className="w-full p-2 rounded-lg bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white focus:outline-none focus:border-blue-500" value={formData.email} onChange={e => setFormData({ ...formData, email: e.target.value })} />
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium mb-1 dark:text-gray-300">Password</label>
-                                    <input required type="password" placeholder="Mínimo 6 caracteres" className="w-full p-2 rounded-lg bg-gray-50 dark:bg-gray-900 border dark:border-gray-700" value={formData.password} onChange={e => setFormData({ ...formData, password: e.target.value })} />
+                                    <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">Password</label>
+                                    <input required type="password" placeholder="Mínimo 6 caracteres" className="w-full p-2 rounded-lg bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white focus:outline-none focus:border-blue-500" value={formData.password} onChange={e => setFormData({ ...formData, password: e.target.value })} />
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium mb-1 dark:text-gray-300">Rol</label>
-                                    <select className="w-full p-2 rounded-lg bg-gray-50 dark:bg-gray-900 border dark:border-gray-700" value={formData.role} onChange={e => setFormData({ ...formData, role: e.target.value })}>
+                                    <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">Rol</label>
+                                    <select className="w-full p-2 rounded-lg bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white focus:outline-none focus:border-blue-500" value={formData.role} onChange={e => setFormData({ ...formData, role: e.target.value })}>
                                         {getAssignableRoles().map(r => <option key={r} value={r}>{r}</option>)}
                                     </select>
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium mb-1 dark:text-gray-300">Teléfono</label>
-                                    <input type="text" className="w-full p-2 rounded-lg bg-gray-50 dark:bg-gray-900 border dark:border-gray-700" value={formData.phone} onChange={e => setFormData({ ...formData, phone: e.target.value })} />
+                                    <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">Teléfono</label>
+                                    <input type="text" className="w-full p-2 rounded-lg bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white focus:outline-none focus:border-blue-500" value={formData.phone} onChange={e => setFormData({ ...formData, phone: e.target.value })} />
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium mb-1 dark:text-gray-300">Dirección</label>
-                                    <input type="text" className="w-full p-2 rounded-lg bg-gray-50 dark:bg-gray-900 border dark:border-gray-700" value={formData.address} onChange={e => setFormData({ ...formData, address: e.target.value })} />
+                                    <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">Dirección</label>
+                                    <input type="text" className="w-full p-2 rounded-lg bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white focus:outline-none focus:border-blue-500" value={formData.address} onChange={e => setFormData({ ...formData, address: e.target.value })} />
                                 </div>
                                 <div className="md:col-span-2">
-                                    <label className="block text-sm font-medium mb-1 dark:text-gray-300">Ciudad</label>
-                                    <input type="text" className="w-full p-2 rounded-lg bg-gray-50 dark:bg-gray-900 border dark:border-gray-700" value={formData.city} onChange={e => setFormData({ ...formData, city: e.target.value })} />
+                                    <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">Ciudad</label>
+                                    <input type="text" className="w-full p-2 rounded-lg bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white focus:outline-none focus:border-blue-500" value={formData.city} onChange={e => setFormData({ ...formData, city: e.target.value })} />
                                 </div>
                             </div>
-                            <div className="flex justify-end gap-3 pt-4 border-t dark:border-gray-700">
-                                <button type="button" onClick={() => setShowCreateForm(false)} className="px-4 py-2 text-gray-600 hover:text-gray-800">Cancelar</button>
-                                <button type="submit" disabled={submitting} className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 disabled:opacity-50">
+                            <div className="flex justify-end gap-3 pt-4 border-t border-gray-100 dark:border-gray-700">
+                                <button type="button" onClick={() => setShowCreateForm(false)} className="px-4 py-2 text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200 transition-colors">Cancelar</button>
+                                <button type="submit" disabled={submitting} className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors">
                                     {submitting ? 'Creando...' : 'Crear Usuario'}
                                 </button>
                             </div>
@@ -312,42 +312,42 @@ const UserManagement = () => {
 
             {editingUser && (
                 <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-                    <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden">
-                        <div className="p-6 border-b dark:border-gray-700 flex justify-between items-center">
-                            <h2 className="text-xl font-bold dark:text-white">Editar: {editingUser.fullName}</h2>
-                            <button onClick={() => setEditingUser(null)} className="text-gray-400 hover:text-gray-600"><X size={24} /></button>
+                    <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden border border-gray-200 dark:border-gray-700">
+                        <div className="p-6 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center">
+                            <h2 className="text-xl font-bold text-gray-900 dark:text-white">Editar: {editingUser.fullName}</h2>
+                            <button onClick={() => setEditingUser(null)} className="text-gray-400 hover:text-gray-600 dark:hover:text-white transition-colors"><X size={24} /></button>
                         </div>
                         <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
-                                <label className="block text-sm font-medium mb-1 dark:text-gray-300">Nombre</label>
-                                <input type="text" className="w-full p-2 rounded-lg bg-gray-50 dark:bg-gray-900 border dark:border-gray-700" value={editingUser.fullName} onChange={e => setEditingUser({ ...editingUser, fullName: e.target.value })} />
+                                <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">Nombre</label>
+                                <input type="text" className="w-full p-2 rounded-lg bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white focus:outline-none focus:border-blue-500" value={editingUser.fullName} onChange={e => setEditingUser({ ...editingUser, fullName: e.target.value })} />
                             </div>
                             <div>
-                                <label className="block text-sm font-medium mb-1 dark:text-gray-300">Email</label>
-                                <input type="email" className="w-full p-2 rounded-lg bg-gray-50 dark:bg-gray-900 border dark:border-gray-700" value={editingUser.email} onChange={e => setEditingUser({ ...editingUser, email: e.target.value })} />
+                                <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">Email</label>
+                                <input type="email" className="w-full p-2 rounded-lg bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white focus:outline-none focus:border-blue-500" value={editingUser.email} onChange={e => setEditingUser({ ...editingUser, email: e.target.value })} />
                             </div>
                             <div>
-                                <label className="block text-sm font-medium mb-1 dark:text-gray-300">Rol</label>
-                                <select className="w-full p-2 rounded-lg bg-gray-50 dark:bg-gray-900 border dark:border-gray-700" value={editingUser.role} onChange={e => setEditingUser({ ...editingUser, role: e.target.value })}>
+                                <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">Rol</label>
+                                <select className="w-full p-2 rounded-lg bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white focus:outline-none focus:border-blue-500" value={editingUser.role} onChange={e => setEditingUser({ ...editingUser, role: e.target.value })}>
                                     {getAssignableRoles().map(r => <option key={r} value={r}>{r}</option>)}
                                 </select>
                             </div>
                             <div>
-                                <label className="block text-sm font-medium mb-1 dark:text-gray-300">Teléfono</label>
-                                <input type="text" className="w-full p-2 rounded-lg bg-gray-50 dark:bg-gray-900 border dark:border-gray-700" value={editingUser.phone || ''} onChange={e => setEditingUser({ ...editingUser, phone: e.target.value })} />
+                                <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">Teléfono</label>
+                                <input type="text" className="w-full p-2 rounded-lg bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white focus:outline-none focus:border-blue-500" value={editingUser.phone || ''} onChange={e => setEditingUser({ ...editingUser, phone: e.target.value })} />
                             </div>
                             <div>
-                                <label className="block text-sm font-medium mb-1 dark:text-gray-300">Dirección</label>
-                                <input type="text" className="w-full p-2 rounded-lg bg-gray-50 dark:bg-gray-900 border dark:border-gray-700" value={editingUser.address || ''} onChange={e => setEditingUser({ ...editingUser, address: e.target.value })} />
+                                <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">Dirección</label>
+                                <input type="text" className="w-full p-2 rounded-lg bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white focus:outline-none focus:border-blue-500" value={editingUser.address || ''} onChange={e => setEditingUser({ ...editingUser, address: e.target.value })} />
                             </div>
                             <div>
-                                <label className="block text-sm font-medium mb-1 dark:text-gray-300">Ciudad</label>
-                                <input type="text" className="w-full p-2 rounded-lg bg-gray-50 dark:bg-gray-900 border dark:border-gray-700" value={editingUser.city || ''} onChange={e => setEditingUser({ ...editingUser, city: e.target.value })} />
+                                <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">Ciudad</label>
+                                <input type="text" className="w-full p-2 rounded-lg bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white focus:outline-none focus:border-blue-500" value={editingUser.city || ''} onChange={e => setEditingUser({ ...editingUser, city: e.target.value })} />
                             </div>
                         </div>
-                        <div className="p-6 flex justify-end gap-3 border-t dark:border-gray-700">
-                            <button type="button" onClick={() => setEditingUser(null)} className="px-4 py-2">Cancelar</button>
-                            <button disabled={submitting} onClick={() => handleUpdateUser(editingUser.id)} className="bg-blue-600 text-white px-6 py-2 rounded-lg">
+                        <div className="p-6 flex justify-end gap-3 border-t border-gray-100 dark:border-gray-700">
+                            <button type="button" onClick={() => setEditingUser(null)} className="px-4 py-2 text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200 transition-colors">Cancelar</button>
+                            <button disabled={submitting} onClick={() => handleUpdateUser(editingUser.id)} className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors">
                                 {submitting ? 'Guardando...' : 'Guardar Cambios'}
                             </button>
                         </div>

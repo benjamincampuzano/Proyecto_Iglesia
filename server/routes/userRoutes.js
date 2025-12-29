@@ -1,5 +1,6 @@
 const express = require('express');
 const {
+    getProfile,
     updateProfile,
     changePassword,
     getAllUsers,
@@ -15,6 +16,7 @@ const { authenticate, isAdmin } = require('../middleware/auth');
 const router = express.Router();
 
 // User profile routes (authenticated users)
+router.get('/profile', authenticate, getProfile);
 router.put('/profile', authenticate, updateProfile);
 router.put('/password', authenticate, changePassword);
 

@@ -1,3 +1,4 @@
+import React, { useState, useEffect } from 'react';
 import api from '../../utils/api';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { useAuth } from "../../context/AuthContext";
@@ -160,9 +161,9 @@ const SchoolLeaderStats = () => {
                                         {item.students}
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300 text-center">
-                                        <span className={`px-2 py-1 rounded-full text-xs font-bold ${parseFloat(item.avgGrade) >= 4.0 ? 'bg-green-100 text-green-800' :
-                                            parseFloat(item.avgGrade) >= 3.0 ? 'bg-yellow-100 text-yellow-800' :
-                                                'bg-red-100 text-red-800'
+                                        <span className={`px-2 py-1 rounded-full text-xs font-bold ${parseFloat(item.avgGrade) >= 4.0 ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' :
+                                            parseFloat(item.avgGrade) >= 3.0 ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300' :
+                                                'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300'
                                             }`}>
                                             {item.avgGrade}
                                         </span>

@@ -138,7 +138,7 @@ const EncuentroDetails = ({ encuentro, onBack, onRefresh }) => {
             });
             setShowConvertModal(false);
             setConvertData({ email: '', password: '' });
-            alert('Invitado convertido a Miembro exitosamente!');
+            alert('Invitado convertido a Discípulo exitosamente!');
             onRefresh();
         } catch (error) {
             console.error('Error converting guest:', error);
@@ -237,13 +237,13 @@ const EncuentroDetails = ({ encuentro, onBack, onRefresh }) => {
                 </div>
                 <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg border border-gray-100 dark:border-gray-700">
                     <h3 className="text-gray-500 dark:text-gray-400 text-sm font-medium">Recaudado</h3>
-                    <p className="text-3xl font-bold text-green-600 mt-2">
+                    <p className="text-3xl font-bold text-green-600 dark:text-green-400 mt-2">
                         {formatCurrency(encuentro.registrations?.reduce((acc, reg) => acc + (reg.totalPaid || 0), 0) || 0)}
                     </p>
                 </div>
                 <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg border border-gray-100 dark:border-gray-700">
                     <h3 className="text-gray-500 dark:text-gray-400 text-sm font-medium">Por Cobrar</h3>
-                    <p className="text-3xl font-bold text-orange-500 mt-2">
+                    <p className="text-3xl font-bold text-orange-500 dark:text-orange-400 mt-2">
                         {formatCurrency(encuentro.registrations?.reduce((acc, reg) => acc + (reg.balance || 0), 0) || 0)}
                     </p>
                 </div>
@@ -327,7 +327,7 @@ const EncuentroDetails = ({ encuentro, onBack, onRefresh }) => {
                                                 </button>
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap">
-                                                <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${reg.status === 'ATTENDED' ? 'bg-green-100 text-green-800' : 'bg-blue-100 text-blue-800'
+                                                <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${reg.status === 'ATTENDED' ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' : 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300'
                                                     }`}>
                                                     {reg.status}
                                                 </span>
@@ -335,10 +335,10 @@ const EncuentroDetails = ({ encuentro, onBack, onRefresh }) => {
                                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
                                                 {formatCurrency(reg.finalCost)}
                                             </td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-green-600 font-medium">
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-green-600 dark:text-green-400 font-medium">
                                                 {formatCurrency(reg.totalPaid)}
                                             </td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-red-500 font-medium">
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-red-500 dark:text-red-400 font-medium">
                                                 {formatCurrency(reg.balance)}
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium flex items-center justify-end space-x-3">
@@ -356,7 +356,7 @@ const EncuentroDetails = ({ encuentro, onBack, onRefresh }) => {
                                                         <button
                                                             onClick={() => openConvertModal(reg)}
                                                             className="text-purple-600 hover:text-purple-900 dark:text-purple-400 dark:hover:text-purple-300 inline-flex items-center"
-                                                            title="Convertir a Miembro"
+                                                            title="Convertir a Discípulo"
                                                         >
                                                             <UserPlus size={16} />
                                                         </button>
@@ -474,7 +474,7 @@ const EncuentroDetails = ({ encuentro, onBack, onRefresh }) => {
                             </div>
                             <div className="flex justify-between text-sm">
                                 <span className="text-gray-600 dark:text-gray-400">Saldo Pendiente:</span>
-                                <span className="font-bold text-red-500">{formatCurrency(selectedRegistration.balance)}</span>
+                                <span className="font-bold text-red-500 dark:text-red-400">{formatCurrency(selectedRegistration.balance)}</span>
                             </div>
                         </div>
                         <form onSubmit={handlePayment} className="p-6 space-y-4">
@@ -548,7 +548,7 @@ const EncuentroDetails = ({ encuentro, onBack, onRefresh }) => {
                         <div className="p-6 bg-gray-50 dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700">
                             <div className="flex justify-between items-center text-sm">
                                 <span className="text-gray-600 dark:text-gray-400">Total Abonado:</span>
-                                <span className="font-bold text-green-600">{formatCurrency(selectedHistoryRegistration.totalPaid)}</span>
+                                <span className="font-bold text-green-600 dark:text-green-400">{formatCurrency(selectedHistoryRegistration.totalPaid)}</span>
                             </div>
                         </div>
                     </div>
@@ -560,14 +560,14 @@ const EncuentroDetails = ({ encuentro, onBack, onRefresh }) => {
                 <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
                     <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl w-full max-w-md overflow-hidden">
                         <div className="p-6 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
-                            <h3 className="text-lg font-bold text-gray-900 dark:text-white">Convertir a Miembro</h3>
+                            <h3 className="text-lg font-bold text-gray-900 dark:text-white">Convertir a Discípulo</h3>
                             <button onClick={() => setShowConvertModal(false)} className="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300">
                                 <XCircle size={24} />
                             </button>
                         </div>
                         <div className="px-6 pt-4">
                             <p className="text-sm text-gray-500 dark:text-gray-400">
-                                Estás convirtiendo a <strong className="text-gray-900 dark:text-white">{selectedRegistration.guest.name}</strong> en un usuario Miembro de la plataforma.
+                                Estás convirtiendo a <strong className="text-gray-900 dark:text-white">{selectedRegistration.guest.name}</strong> en un usuario Discípulo de la plataforma.
                             </p>
                         </div>
                         <form onSubmit={handleConvertMember} className="p-6 space-y-4">

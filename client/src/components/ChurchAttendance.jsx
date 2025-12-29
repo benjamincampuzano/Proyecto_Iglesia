@@ -99,7 +99,7 @@ const ChurchAttendance = () => {
                         type="date"
                         value={date}
                         onChange={(e) => setDate(e.target.value)}
-                        className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-gray-200"
                     />
                 </div>
                 <button
@@ -111,9 +111,9 @@ const ChurchAttendance = () => {
                 </button>
             </div>
 
-            <div className="bg-white rounded-lg shadow overflow-hidden">
-                <table className="min-w-full divide-y divide-gray-200">
-                    <thead className="bg-gray-50">
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
+                <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                    <thead className="bg-gray-50 dark:bg-gray-900/50">
                         <tr>
                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                 Nombre
@@ -124,24 +124,24 @@ const ChurchAttendance = () => {
                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                 Rol
                             </th>
-                            <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                                 Asistencia
                             </th>
                         </tr>
                     </thead>
-                    <tbody className="bg-white divide-y divide-gray-200">
+                    <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
                         {members.map((member) => {
                             const status = attendances[member.id]; // undefined, 'PRESENTE', 'AUSENTE'
 
                             return (
-                                <tr key={member.id} className="hover:bg-gray-50">
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                                <tr key={member.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
+                                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
                                         {member.fullName}
                                     </td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
                                         {member.email}
                                     </td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
                                         {member.role}
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap text-center">
@@ -151,8 +151,8 @@ const ChurchAttendance = () => {
                                                 className={`
                                                     inline-flex items-center gap-1 px-3 py-1.5 rounded-md text-sm font-medium transition-colors
                                                     ${status === 'PRESENTE'
-                                                        ? 'bg-green-100 text-green-800 ring-2 ring-green-500'
-                                                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                                                        ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300 ring-2 ring-green-500'
+                                                        : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
                                                     }
                                                 `}
                                             >
@@ -164,8 +164,8 @@ const ChurchAttendance = () => {
                                                 className={`
                                                     inline-flex items-center gap-1 px-3 py-1.5 rounded-md text-sm font-medium transition-colors
                                                     ${status === 'AUSENTE'
-                                                        ? 'bg-red-100 text-red-800 ring-2 ring-red-500'
-                                                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                                                        ? 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300 ring-2 ring-red-500'
+                                                        : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
                                                     }
                                                 `}
                                             >

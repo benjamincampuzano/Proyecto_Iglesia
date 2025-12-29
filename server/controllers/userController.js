@@ -67,11 +67,44 @@ const getUserNetwork = async (leaderId) => {
     return Array.from(network);
 };
 
-// Actualizar perfil propio (nombre, email)
+// Obtener perfil propio
+const getProfile = async (req, res) => {
+    return res.status(200).json({ message: 'Profile route hit' });
+    try {
+        const userId = parseInt(req.user.id);
+        console.log('Fetching profile for userId:', userId, 'type:', typeof userId);
+        const user = await prisma.user.findUnique({
+            where: { id: userId },
+            select: {
+                id: true,
+                email: true,
+                fullName: true,
+                role: true,
+                sex: true,
+                phone: true,
+                address: true,
+                city: true,
+                latitude: true,
+                longitude: true
+            }
+        });
+
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+
+        res.status(200).json({ user });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Server error' });
+    }
+};
+
+// Actualizar perfil propio (nombre, email, datos de contacto)
 const updateProfile = async (req, res) => {
     try {
         const userId = req.user.id;
-        const { fullName, email } = req.body;
+        const { fullName, email, sex, phone, address, city } = req.body;
 
         // Verificar si el correo ya está siendo usado por otro usuario
         if (email) {
@@ -81,11 +114,28 @@ const updateProfile = async (req, res) => {
             }
         }
 
+        // Geocode address if provided
+        let latitude = undefined;
+        let longitude = undefined;
+        if (address || city) {
+            const coords = await geocodeAddress(address, city);
+            if (coords.lat) {
+                latitude = coords.lat;
+                longitude = coords.lng;
+            }
+        }
+
         const updatedUser = await prisma.user.update({
             where: { id: userId },
             data: {
                 ...(fullName && { fullName }),
                 ...(email && { email }),
+                ...(sex && { sex }),
+                ...(phone && { phone }),
+                ...(address && { address }),
+                ...(city && { city }),
+                ...(latitude !== undefined && { latitude }),
+                ...(longitude !== undefined && { longitude }),
             },
         });
 
@@ -95,6 +145,10 @@ const updateProfile = async (req, res) => {
                 email: updatedUser.email,
                 fullName: updatedUser.fullName,
                 role: updatedUser.role,
+                sex: updatedUser.sex,
+                phone: updatedUser.phone,
+                address: updatedUser.address,
+                city: updatedUser.city,
             },
         });
     } catch (error) {
@@ -361,7 +415,7 @@ const createUser = async (req, res) => {
             email,
             password: hashedPassword,
             fullName,
-            role: role || 'Miembro',
+            role: role || 'DISCIPULO',
             sex,
             phone,
             address,
@@ -540,7 +594,7 @@ const assignLeader = async (req, res) => {
                 });
             }
 
-            // Miembro solo puede ser asignado a LIDER_CELULA o LIDER_DOCE
+            // DISCIPULO solo puede ser asignado a LIDER_CELULA o LIDER_DOCE
             // LIDER_CELULA solo puede ser asignado a LIDER_DOCE
             if (user.role === 'LIDER_CELULA' && leader.role !== 'LIDER_DOCE') {
                 return res.status(400).json({
@@ -624,6 +678,7 @@ const getMyNetwork = async (req, res) => {
 };
 
 module.exports = {
+    getProfile,
     updateProfile,
     changePassword,
     getAllUsers,

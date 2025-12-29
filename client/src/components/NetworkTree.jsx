@@ -35,8 +35,8 @@ const NetworkTree = ({ network, currentUser, onNetworkChange }) => {
 
     return (
         <>
-            <div className="bg-white rounded-lg shadow-md p-6">
-                <h2 className="text-2xl font-bold mb-6 text-gray-800">
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
+                <h2 className="text-2xl font-bold mb-6 text-gray-800 dark:text-white">
                     Red de Discipulado: {network.fullName}
                 </h2>
                 <NetworkNode
@@ -82,7 +82,7 @@ const NetworkNode = ({ node, level, currentUser, onAddUser, onRemoveUser }) => {
      * SUPER_ADMIN: Can manage all nodes
      * LIDER_DOCE: Can add to their own node and to LIDER_CELULA in their network
      * LIDER_CELULA: Can add to their own node
-     * Miembro: Cannot manage
+     * DISCIPULO: Cannot manage
      */
     const canAddToNode = () => {
         if (!currentUser) return false;
@@ -116,7 +116,7 @@ const NetworkNode = ({ node, level, currentUser, onAddUser, onRemoveUser }) => {
      * SUPER_ADMIN: Can remove any node (except root)
      * LIDER_DOCE: Can remove any disciple in their network (any level)
      * LIDER_CELULA: Can remove any disciple in their network (any level)
-     * Miembro: Cannot remove users
+     * DISCIPULO: Cannot remove users
      */
     const canRemoveNode = () => {
         if (!currentUser || level === 0) return false; // Cannot remove root node
@@ -147,9 +147,9 @@ const NetworkNode = ({ node, level, currentUser, onAddUser, onRemoveUser }) => {
             <div
                 className={`
           p-2.5 rounded-lg border-l-2 transition-all
-          ${level === 0 ? 'bg-purple-50/80 border-purple-500' :
-                        level === 1 ? 'bg-blue-50/80 border-blue-500' :
-                            'bg-gray-50/80 border-gray-400'}
+          ${level === 0 ? 'bg-purple-50/80 dark:bg-purple-900/20 border-purple-500' :
+                        level === 1 ? 'bg-blue-50/80 dark:bg-blue-900/20 border-blue-500' :
+                            'bg-gray-50/80 dark:bg-gray-900/40 border-gray-400 dark:border-gray-600'}
           hover:shadow-sm
         `}
             >
@@ -168,20 +168,20 @@ const NetworkNode = ({ node, level, currentUser, onAddUser, onRemoveUser }) => {
                         )}
                         <Users className="w-4 h-4 text-gray-500 flex-shrink-0" />
                         <div className="min-w-0 flex-1">
-                            <h3 className="font-semibold text-gray-800 text-sm truncate pr-2">{node.fullName}</h3>
+                            <h3 className="font-semibold text-gray-800 dark:text-white text-sm truncate pr-2">{node.fullName}</h3>
                             <div className="flex items-center gap-2">
                                 <span className={`
                                     inline-block px-1.5 py-0.5 text-[10px] font-bold uppercase rounded-full tracking-wide
-                                    ${node.role === 'SUPER_ADMIN' ? 'bg-red-100 text-red-800' :
-                                        node.role === 'PASTOR' ? 'bg-green-100 text-green-800' :
-                                            node.role === 'LIDER_DOCE' ? 'bg-purple-100 text-purple-800' :
-                                                node.role === 'LIDER_CELULA' ? 'bg-blue-100 text-blue-800' :
-                                                    'bg-gray-100 text-gray-800'}
+                                    ${node.role === 'SUPER_ADMIN' ? 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300' :
+                                        node.role === 'PASTOR' ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' :
+                                            node.role === 'LIDER_DOCE' ? 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300' :
+                                                node.role === 'LIDER_CELULA' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300' :
+                                                    'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'}
                                 `}>
                                     {node.role === 'SUPER_ADMIN' ? 'Super Admin' :
                                         node.role === 'PASTOR' ? 'Pastor' :
                                             node.role === 'LIDER_DOCE' ? 'Doce' :
-                                                node.role === 'LIDER_CELULA' ? 'Célula' : 'Miembro'}
+                                                node.role === 'LIDER_CELULA' ? 'Célula' : 'Discípulo'}
                                 </span>
                             </div>
                         </div>
@@ -252,20 +252,20 @@ const NetworkNode = ({ node, level, currentUser, onAddUser, onRemoveUser }) => {
                     {/* Render guests - Compact view */}
                     {(node.assignedGuests?.length > 0 || node.invitedGuests?.length > 0) && (
                         <div className="ml-4 mt-1.5">
-                            <div className="p-2 bg-green-50/50 border-l-2 border-green-400 rounded-lg">
-                                <h4 className="font-semibold text-green-800 text-xs mb-1 flex items-center gap-1">
+                            <div className="p-2 bg-green-50/50 dark:bg-green-900/10 border-l-2 border-green-400 dark:border-green-600 rounded-lg">
+                                <h4 className="font-semibold text-green-800 dark:text-green-300 text-xs mb-1 flex items-center gap-1">
                                     <UserPlus className="w-3 h-3" />
                                     Invitados ({totalGuests})
                                 </h4>
                                 <div className="space-y-0.5">
                                     {node.assignedGuests?.map((guest) => (
-                                        <div key={`assigned-${guest.id}`} className="text-xs text-gray-700 ml-2">
-                                            • {guest.name} <span className="text-[10px] text-gray-500 italic">(Asignado)</span>
+                                        <div key={`assigned-${guest.id}`} className="text-xs text-gray-700 dark:text-gray-300 ml-2">
+                                            • {guest.name} <span className="text-[10px] text-gray-500 dark:text-gray-400 italic">(Asignado)</span>
                                         </div>
                                     ))}
                                     {node.invitedGuests?.map((guest) => (
-                                        <div key={`invited-${guest.id}`} className="text-xs text-gray-700 ml-2">
-                                            • {guest.name} <span className="text-[10px] text-gray-500 italic">(Invitado)</span>
+                                        <div key={`invited-${guest.id}`} className="text-xs text-gray-700 dark:text-gray-300 ml-2">
+                                            • {guest.name} <span className="text-[10px] text-gray-500 dark:text-gray-400 italic">(Invitado)</span>
                                         </div>
                                     ))}
                                 </div>

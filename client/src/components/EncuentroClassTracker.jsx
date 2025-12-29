@@ -119,7 +119,7 @@ const EncuentroClassTracker = ({ registrations, onRefresh, onConvert }) => {
                                     <button
                                         onClick={() => onConvert && onConvert(reg)}
                                         className="text-purple-600 hover:text-purple-900 dark:text-purple-400 dark:hover:text-purple-300 inline-flex items-center"
-                                        title="Convertir a Miembro"
+                                        title="Convertir a Discípulo"
                                     >
                                         <UserPlus size={18} />
                                     </button>

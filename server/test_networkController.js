@@ -141,16 +141,16 @@ async function testPermissions() {
     console.log('\n=== Testing Permission Checks ===');
 
     try {
-        // Test 1: Miembro should not be able to assign users
-        console.log('\nTest 1: Miembro attempting to assign user');
+        // Test 1: DISCIPULO should not be able to assign users
+        console.log('\nTest 1: DISCIPULO attempting to assign user');
         const req1 = {
             body: { userId: testUserId, leaderId: testLeaderId },
-            user: { id: 999, role: 'Miembro' }
+            user: { id: 999, role: 'DISCIPULO' }
         };
 
         const res1 = {
             json: (data) => {
-                console.log('✗ Miembro was able to assign (should fail)');
+                console.log('✗ DISCIPULO was able to assign (should fail)');
                 return data;
             },
             status: (code) => ({

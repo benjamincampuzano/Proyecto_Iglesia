@@ -21,8 +21,8 @@ const Ganar = () => {
         <div className="space-y-6">
             <div className="flex justify-between items-center">
                 <div>
-                    <h1 className="text-3xl font-bold text-white mb-2">Ganar</h1>
-                    <p className="text-gray-400">Registro y seguimiento de invitados</p>
+                    <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">Ganar</h1>
+                    <p className="text-gray-500 dark:text-gray-400">Registro y seguimiento de invitados</p>
                 </div>
                 {activeTab === 'list' && (
                     <button
@@ -38,7 +38,7 @@ const Ganar = () => {
             </div>
 
             {/* Tab Navigation */}
-            <div className="flex space-x-2 border-b border-gray-700">
+            <div className="flex space-x-2 border-b border-gray-200 dark:border-gray-700">
                 <button
                     onClick={() => {
                         setActiveTab('list');
@@ -46,13 +46,13 @@ const Ganar = () => {
                     }}
                     className={`flex items-center space-x-2 px-4 py-3 font-medium transition-colors ${activeTab === 'list'
                         ? 'text-blue-500 border-b-2 border-blue-500'
-                        : 'text-gray-400 hover:text-gray-300'
+                        : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
                         }`}
                 >
                     <Users size={20} />
                     <span>Lista de Invitados</span>
                 </button>
-                {(user.role !== 'Miembro') && (
+                {(user.role !== 'DISCIPULO') && (
                     <button
                         onClick={() => {
                             setActiveTab('stats');
@@ -60,7 +60,7 @@ const Ganar = () => {
                         }}
                         className={`flex items-center space-x-2 px-4 py-3 font-medium transition-colors ${activeTab === 'stats'
                             ? 'text-blue-500 border-b-2 border-blue-500'
-                            : 'text-gray-400 hover:text-gray-300'
+                            : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
                             }`}
                     >
                         <BarChart3 size={20} />

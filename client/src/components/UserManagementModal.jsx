@@ -15,7 +15,7 @@ const UserManagementModal = ({ isOpen, onClose }) => {
         fullName: '',
         email: '',
         password: '',
-        role: 'Miembro',
+        role: 'DISCIPULO',
         sex: 'HOMBRE',
         phone: '',
         address: '',
@@ -30,10 +30,10 @@ const UserManagementModal = ({ isOpen, onClose }) => {
 
     const getAssignableRoles = () => {
         if (!currentUser) return [];
-        if (currentUser.role === 'SUPER_ADMIN') return ['Miembro', 'LIDER_CELULA', 'LIDER_DOCE', 'PASTOR', 'SUPER_ADMIN'];
-        if (currentUser.role === 'PASTOR') return ['Miembro', 'LIDER_CELULA', 'LIDER_DOCE', 'PASTOR'];
-        if (currentUser.role === 'LIDER_DOCE') return ['Miembro', 'LIDER_CELULA'];
-        if (currentUser.role === 'LIDER_CELULA') return ['Miembro'];
+        if (currentUser.role === 'SUPER_ADMIN') return ['DISCIPULO', 'LIDER_CELULA', 'LIDER_DOCE', 'PASTOR', 'SUPER_ADMIN'];
+        if (currentUser.role === 'PASTOR') return ['DISCIPULO', 'LIDER_CELULA', 'LIDER_DOCE', 'PASTOR'];
+        if (currentUser.role === 'LIDER_DOCE') return ['DISCIPULO', 'LIDER_CELULA'];
+        if (currentUser.role === 'LIDER_CELULA') return ['DISCIPULO'];
         return [];
     };
 
@@ -76,7 +76,7 @@ const UserManagementModal = ({ isOpen, onClose }) => {
                     payload.pastorId = payload.assignedLeaderId;
                 } else if (payload.role === 'LIDER_CELULA') {
                     payload.liderDoceId = payload.assignedLeaderId;
-                } else if (payload.role === 'Miembro') {
+                } else if (payload.role === 'DISCIPULO') {
                     // Check if selected leader is Lider Doce or Lider Celula
                     const leader = users.find(u => u.id === parseInt(payload.assignedLeaderId));
                     if (leader?.role === 'LIDER_DOCE') {
@@ -94,7 +94,7 @@ const UserManagementModal = ({ isOpen, onClose }) => {
 
             setSuccess('Usuario creado exitosamente');
             setShowCreateForm(false);
-            setFormData({ fullName: '', email: '', password: '', role: 'Miembro', sex: 'HOMBRE', phone: '', address: '', city: '', assignedLeaderId: '' });
+            setFormData({ fullName: '', email: '', password: '', role: 'DISCIPULO', sex: 'HOMBRE', phone: '', address: '', city: '', assignedLeaderId: '' });
             fetchUsers();
         } catch (err) {
             setError(err.response?.data?.message || 'Error al crear usuario');
@@ -191,13 +191,13 @@ const UserManagementModal = ({ isOpen, onClose }) => {
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-            <div className="bg-gray-800 rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
-                <div className="flex items-center justify-between p-6 border-b border-gray-700">
-                    <h2 className="text-xl font-bold text-white">Gestionar Usuarios</h2>
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col border border-gray-200 dark:border-gray-700">
+                <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
+                    <h2 className="text-xl font-bold text-gray-900 dark:text-white">Gestionar Usuarios</h2>
                     <button
                         onClick={onClose}
-                        className="text-gray-400 hover:text-white transition-colors"
+                        className="text-gray-400 hover:text-gray-600 dark:hover:text-white transition-colors"
                     >
                         <X size={24} />
                     </button>
@@ -219,7 +219,7 @@ const UserManagementModal = ({ isOpen, onClose }) => {
 
 
                     {/* Create User Button - Hidden for Members */}
-                    {currentUser?.role !== 'Miembro' && (
+                    {currentUser?.role !== 'DISCIPULO' && (
                         <div className="flex flex-col sm:flex-row gap-4 mb-6">
                             <div className="flex-1 relative">
                                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
@@ -228,7 +228,7 @@ const UserManagementModal = ({ isOpen, onClose }) => {
                                     placeholder="Buscar usuarios..."
                                     value={searchTerm}
                                     onChange={(e) => setSearchTerm(e.target.value)}
-                                    className="w-full pl-10 pr-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-blue-500"
+                                    className="w-full pl-10 pr-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:border-blue-500"
                                 />
                             </div>
                             <button
@@ -243,11 +243,11 @@ const UserManagementModal = ({ isOpen, onClose }) => {
 
                     {/* Create User Form */}
                     {showCreateForm && (
-                        <form onSubmit={handleCreateUser} className="bg-gray-700 p-4 rounded-lg mb-6 space-y-4">
-                            <h3 className="text-lg font-semibold text-white">Nuevo Usuario</h3>
+                        <form onSubmit={handleCreateUser} className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg mb-6 space-y-4 border border-gray-200 dark:border-gray-600">
+                            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Nuevo Usuario</h3>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-300 mb-2">
+                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                                         Nombre Completo
                                     </label>
                                     <input
@@ -338,19 +338,19 @@ const UserManagementModal = ({ isOpen, onClose }) => {
                                     <div>
                                         <label className="block text-sm font-medium text-gray-300 mb-2">
                                             {formData.role === 'LIDER_DOCE' ? 'Asignar a Pastor' :
-                                                formData.role === 'Miembro' ? 'Asignar a Líder Célula' : 'Asignar a Líder 12'}
+                                                formData.role === 'DISCIPULO' ? 'Asignar a Líder Célula' : 'Asignar a Líder 12'}
                                         </label>
                                         <select
                                             value={formData.assignedLeaderId}
                                             onChange={(e) => setFormData({ ...formData, assignedLeaderId: e.target.value })}
-                                            className="w-full px-4 py-2 bg-gray-600 border border-gray-500 rounded-lg text-white focus:outline-none focus:border-blue-500"
+                                            className="w-full px-4 py-2 bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:border-blue-500"
                                         >
                                             <option value="">-- Sin Asignar --</option>
                                             {(() => {
                                                 let options = [];
                                                 if (formData.role === 'LIDER_DOCE') options = pastores;
                                                 else if (formData.role === 'LIDER_CELULA') options = lideresDoce;
-                                                else if (formData.role === 'Miembro') {
+                                                else if (formData.role === 'DISCIPULO') {
                                                     // Default to Lider Celula, fallback to Lider Doce
                                                     options = lideresCelula.length > 0 ? lideresCelula : lideresDoce;
                                                 }
@@ -383,9 +383,9 @@ const UserManagementModal = ({ isOpen, onClose }) => {
                                     type="button"
                                     onClick={() => {
                                         setShowCreateForm(false);
-                                        setFormData({ fullName: '', email: '', password: '', role: 'Miembro', sex: 'HOMBRE', phone: '', address: '', city: '', liderDoceId: '' });
+                                        setFormData({ fullName: '', email: '', password: '', role: 'DISCIPULO', sex: 'HOMBRE', phone: '', address: '', city: '', liderDoceId: '' });
                                     }}
-                                    className="px-4 py-2 bg-gray-600 hover:bg-gray-500 text-white rounded-lg transition-colors"
+                                    className="px-4 py-2 bg-gray-200 dark:bg-gray-600 hover:bg-gray-300 dark:hover:bg-gray-500 text-gray-700 dark:text-white rounded-lg transition-colors"
                                 >
                                     Cancelar
                                 </button>
@@ -394,22 +394,22 @@ const UserManagementModal = ({ isOpen, onClose }) => {
                     )}
 
                     {/* Users Table */}
-                    <div className="bg-gray-700 rounded-lg overflow-x-auto">
+                    <div className="bg-white dark:bg-gray-700 rounded-lg overflow-x-auto border border-gray-200 dark:border-gray-600">
                         <table className="w-full">
-                            <thead className="bg-gray-600">
+                            <thead className="bg-gray-50 dark:bg-gray-600">
                                 <tr>
-                                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-200">Nombre</th>
-                                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-200">Email</th>
-                                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-200">Teléfono</th>
-                                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-200">Dirección</th>
-                                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-200">Ciudad</th>
-                                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-200">Sexo</th>
-                                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-200">Rol</th>
-                                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-200">Líder Asignado</th>
-                                    <th className="px-4 py-3 text-right text-sm font-semibold text-gray-200">Acciones</th>
+                                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600 dark:text-gray-200">Nombre</th>
+                                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600 dark:text-gray-200">Email</th>
+                                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600 dark:text-gray-200">Teléfono</th>
+                                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600 dark:text-gray-200">Dirección</th>
+                                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600 dark:text-gray-200">Ciudad</th>
+                                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600 dark:text-gray-200">Sexo</th>
+                                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600 dark:text-gray-200">Rol</th>
+                                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600 dark:text-gray-200">Líder Asignado</th>
+                                    <th className="px-4 py-3 text-right text-sm font-semibold text-gray-600 dark:text-gray-200">Acciones</th>
                                 </tr>
                             </thead>
-                            <tbody className="divide-y divide-gray-600">
+                            <tbody className="divide-y divide-gray-200 dark:divide-gray-600">
                                 {loading && !users.length ? (
                                     <tr>
                                         <td colSpan="4" className="px-4 py-8 text-center text-gray-400">
@@ -433,10 +433,10 @@ const UserManagementModal = ({ isOpen, onClose }) => {
                                                         onChange={(e) =>
                                                             setEditingUser({ ...editingUser, fullName: e.target.value })
                                                         }
-                                                        className="w-full px-2 py-1 bg-gray-600 border border-gray-500 rounded text-white text-sm"
+                                                        className="w-full px-2 py-1 bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded text-gray-900 dark:text-white text-sm"
                                                     />
                                                 ) : (
-                                                    <span className="text-white text-sm">{user.fullName}</span>
+                                                    <span className="text-gray-900 dark:text-white text-sm">{user.fullName}</span>
                                                 )}
                                             </td>
                                             <td className="px-4 py-3">
@@ -447,10 +447,10 @@ const UserManagementModal = ({ isOpen, onClose }) => {
                                                         onChange={(e) =>
                                                             setEditingUser({ ...editingUser, email: e.target.value })
                                                         }
-                                                        className="w-full px-2 py-1 bg-gray-600 border border-gray-500 rounded text-white text-sm"
+                                                        className="w-full px-2 py-1 bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded text-gray-900 dark:text-white text-sm"
                                                     />
                                                 ) : (
-                                                    <span className="text-gray-300 text-sm">{user.email}</span>
+                                                    <span className="text-gray-900 dark:text-gray-300 text-sm">{user.email}</span>
                                                 )}
                                             </td>
                                             <td className="px-4 py-3">
@@ -461,10 +461,10 @@ const UserManagementModal = ({ isOpen, onClose }) => {
                                                         onChange={(e) =>
                                                             setEditingUser({ ...editingUser, phone: e.target.value })
                                                         }
-                                                        className="w-full px-2 py-1 bg-gray-600 border border-gray-500 rounded text-white text-sm"
+                                                        className="w-full px-2 py-1 bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded text-gray-900 dark:text-white text-sm"
                                                     />
                                                 ) : (
-                                                    <span className="text-gray-300 text-sm">{user.phone}</span>
+                                                    <span className="text-gray-900 dark:text-gray-300 text-sm">{user.phone}</span>
                                                 )}
                                             </td>
                                             <td className="px-4 py-3">
@@ -475,10 +475,10 @@ const UserManagementModal = ({ isOpen, onClose }) => {
                                                         onChange={(e) =>
                                                             setEditingUser({ ...editingUser, address: e.target.value })
                                                         }
-                                                        className="w-full px-2 py-1 bg-gray-600 border border-gray-500 rounded text-white text-sm"
+                                                        className="w-full px-2 py-1 bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded text-gray-900 dark:text-white text-sm"
                                                     />
                                                 ) : (
-                                                    <span className="text-gray-300 text-sm truncate max-w-[150px] inline-block" title={user.address}>{user.address}</span>
+                                                    <span className="text-gray-900 dark:text-gray-300 text-sm truncate max-w-[150px] inline-block" title={user.address}>{user.address}</span>
                                                 )}
                                             </td>
                                             <td className="px-4 py-3">
@@ -489,10 +489,10 @@ const UserManagementModal = ({ isOpen, onClose }) => {
                                                         onChange={(e) =>
                                                             setEditingUser({ ...editingUser, city: e.target.value })
                                                         }
-                                                        className="w-full px-2 py-1 bg-gray-600 border border-gray-500 rounded text-white text-sm"
+                                                        className="w-full px-2 py-1 bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded text-gray-900 dark:text-white text-sm"
                                                     />
                                                 ) : (
-                                                    <span className="text-gray-300 text-sm">{user.city}</span>
+                                                    <span className="text-gray-900 dark:text-gray-300 text-sm">{user.city}</span>
                                                 )}
                                             </td>
                                             <td className="px-4 py-3">
@@ -502,13 +502,13 @@ const UserManagementModal = ({ isOpen, onClose }) => {
                                                         onChange={(e) =>
                                                             setEditingUser({ ...editingUser, sex: e.target.value })
                                                         }
-                                                        className="w-full px-2 py-1 bg-gray-600 border border-gray-500 rounded text-white text-sm"
+                                                        className="w-full px-2 py-1 bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded text-gray-900 dark:text-white text-sm"
                                                     >
                                                         <option value="HOMBRE">Hombre</option>
                                                         <option value="MUJER">Mujer</option>
                                                     </select>
                                                 ) : (
-                                                    <span className="text-gray-300 text-sm">{user.sex}</span>
+                                                    <span className="text-gray-900 dark:text-gray-300 text-sm">{user.sex}</span>
                                                 )}
                                             </td>
                                             <td className="px-4 py-3">
@@ -518,7 +518,7 @@ const UserManagementModal = ({ isOpen, onClose }) => {
                                                         onChange={(e) =>
                                                             setEditingUser({ ...editingUser, role: e.target.value })
                                                         }
-                                                        className="w-full px-2 py-1 bg-gray-600 border border-gray-500 rounded text-white text-sm"
+                                                        className="w-full px-2 py-1 bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded text-gray-900 dark:text-white text-sm"
                                                     >
                                                         {getAssignableRoles().map(role => (
                                                             <option key={role} value={role}>{role.replace('_', ' ')}</option>
@@ -537,7 +537,7 @@ const UserManagementModal = ({ isOpen, onClose }) => {
                                                         onChange={(e) =>
                                                             setEditingUser({ ...editingUser, assignedLeaderId: e.target.value })
                                                         }
-                                                        className="w-full px-2 py-1 bg-gray-600 border border-gray-500 rounded text-white text-sm"
+                                                        className="w-full px-2 py-1 bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded text-gray-900 dark:text-white text-sm"
                                                     >
                                                         <option value="">-- Sin Asignar --</option>
                                                         {(() => {
@@ -545,7 +545,7 @@ const UserManagementModal = ({ isOpen, onClose }) => {
                                                             // Determine valid leader options based on user's role (not current user)
                                                             if (editingUser.role === 'LIDER_DOCE') options = pastores;
                                                             else if (editingUser.role === 'LIDER_CELULA') options = lideresDoce;
-                                                            else if (editingUser.role === 'Miembro') {
+                                                            else if (editingUser.role === 'DISCIPULO') {
                                                                 options = lideresCelula.length > 0 ? lideresCelula : lideresDoce;
                                                             }
                                                             // If editing a Pastor, maybe show nothing or generic?
@@ -557,7 +557,7 @@ const UserManagementModal = ({ isOpen, onClose }) => {
                                                         })()}
                                                     </select>
                                                 ) : (
-                                                    <span className="text-gray-300 text-sm">
+                                                    <span className="text-gray-900 dark:text-gray-300 text-sm">
                                                         {user.leader?.fullName || '-'}
                                                     </span>
                                                 )}

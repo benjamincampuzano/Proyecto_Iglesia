@@ -101,7 +101,7 @@ const GuestList = ({ refreshTrigger }) => {
             setConversionEmail('');
             setConversionPassword('');
             fetchGuests();
-            alert('Invitado ganado a Miembro exitosamente');
+            alert('Invitado ganado a Discípulo exitosamente');
         } catch (err) {
             setError(err.response?.data?.message || 'Error al convertir invitado');
         }
@@ -109,12 +109,12 @@ const GuestList = ({ refreshTrigger }) => {
 
     const getStatusBadgeColor = (status) => {
         const colors = {
-            NUEVO: 'bg-blue-900/30 text-blue-400',
-            CONTACTADO: 'bg-yellow-900/30 text-yellow-400',
-            EN_CONSOLIDACION: 'bg-purple-900/30 text-purple-400',
-            GANADO: 'bg-green-900/30 text-green-400',
+            NUEVO: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400',
+            CONTACTADO: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400',
+            EN_CONSOLIDACION: 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400',
+            GANADO: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400',
         };
-        return colors[status] || 'bg-gray-900/30 text-gray-400';
+        return colors[status] || 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400';
     };
 
     const getStatusLabel = (status) => {
@@ -136,13 +136,13 @@ const GuestList = ({ refreshTrigger }) => {
         if (currentUser?.role === 'SUPER_ADMIN' || currentUser?.role === 'LIDER_DOCE' || currentUser?.role === 'PASTOR') {
             return true;
         }
-        // LIDER_CELULA/Miembro solo pueden eliminar invitados que invitaron
+        // LIDER_CELULA/DISCIPULO solo pueden eliminar invitados que invitaron
         return guest.invitedBy?.id === currentUser?.id;
     };
 
     return (
-        <div className="bg-gray-800 rounded-lg p-6 border border-gray-700">
-            <h2 className="text-2xl font-bold text-white mb-6">Lista de Invitados</h2>
+        <div className="bg-white dark:bg-gray-800 rounded-lg p-6 border border-gray-200 dark:border-gray-700">
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">Lista de Invitados</h2>
 
             {error && (
                 <div className="bg-red-900/20 border border-red-500 text-red-400 px-4 py-3 rounded mb-4">
@@ -160,7 +160,7 @@ const GuestList = ({ refreshTrigger }) => {
                         onChange={(e) => setSearchTerm(e.target.value)}
                         onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
                         placeholder="Buscar por nombre..."
-                        className="w-full pl-10 pr-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-blue-500"
+                        className="w-full pl-10 pr-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:border-blue-500"
                     />
                 </div>
 
@@ -168,7 +168,7 @@ const GuestList = ({ refreshTrigger }) => {
                     <select
                         value={statusFilter}
                         onChange={(e) => setStatusFilter(e.target.value)}
-                        className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-blue-500"
+                        className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:border-blue-500"
                     >
                         <option value="">Estado (Todos)</option>
                         <option value="NUEVO">Nuevo</option>
@@ -207,16 +207,16 @@ const GuestList = ({ refreshTrigger }) => {
             {/* Tabla de Invitados */}
             <div className="overflow-x-auto">
                 <table className="w-full">
-                    <thead className="bg-gray-700">
+                    <thead className="bg-gray-50 dark:bg-gray-900/50">
                         <tr>
-                            <th className="px-4 py-3 text-left text-sm font-semibold text-gray-200">Nombre</th>
-                            <th className="px-4 py-3 text-left text-sm font-semibold text-gray-200">Teléfono</th>
-                            <th className="px-4 py-3 text-left text-sm font-semibold text-gray-200">Estado</th>
-                            <th className="px-4 py-3 text-left text-sm font-semibold text-gray-200">Invitado Por</th>
-                            <th className="px-4 py-3 text-right text-sm font-semibold text-gray-200">Acciones</th>
+                            <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600 dark:text-gray-200">Nombre</th>
+                            <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600 dark:text-gray-200">Teléfono</th>
+                            <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600 dark:text-gray-200">Estado</th>
+                            <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600 dark:text-gray-200">Invitado Por</th>
+                            <th className="px-4 py-3 text-right text-sm font-semibold text-gray-600 dark:text-gray-200">Acciones</th>
                         </tr>
                     </thead>
-                    <tbody className="divide-y divide-gray-700">
+                    <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
                         {loading ? (
                             <tr>
                                 <td colSpan="5" className="px-4 py-8 text-center text-gray-400">
@@ -231,7 +231,7 @@ const GuestList = ({ refreshTrigger }) => {
                             </tr>
                         ) : (
                             guests.map((guest) => (
-                                <tr key={guest.id} className="hover:bg-gray-700/50">
+                                <tr key={guest.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
                                     <td className="px-4 py-3">
                                         {editingGuest?.id === guest.id ? (
                                             <div className="space-y-2">
@@ -242,7 +242,7 @@ const GuestList = ({ refreshTrigger }) => {
                                                         setEditingGuest({ ...editingGuest, name: e.target.value })
                                                     }
                                                     disabled={!canEditAllFields(guest)}
-                                                    className="w-full px-2 py-1 bg-gray-600 border border-gray-500 rounded text-white text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                                                    className="w-full px-2 py-1 bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded text-gray-900 dark:text-white text-sm disabled:opacity-50 disabled:cursor-not-allowed"
                                                     placeholder="Nombre"
                                                 />
                                                 <input
@@ -252,15 +252,15 @@ const GuestList = ({ refreshTrigger }) => {
                                                         setEditingGuest({ ...editingGuest, address: e.target.value })
                                                     }
                                                     disabled={!canEditAllFields(guest)}
-                                                    className="w-full px-2 py-1 bg-gray-600 border border-gray-500 rounded text-white text-xs disabled:opacity-50 disabled:cursor-not-allowed"
+                                                    className="w-full px-2 py-1 bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded text-gray-900 dark:text-white text-xs disabled:opacity-50 disabled:cursor-not-allowed"
                                                     placeholder="Dirección"
                                                 />
                                             </div>
                                         ) : (
                                             <div>
-                                                <p className="text-white text-sm font-medium">{guest.name}</p>
+                                                <p className="text-gray-900 dark:text-white text-sm font-medium">{guest.name}</p>
                                                 {guest.address && (
-                                                    <p className="text-gray-400 text-xs">{guest.address}</p>
+                                                    <p className="text-gray-500 dark:text-gray-400 text-xs">{guest.address}</p>
                                                 )}
                                             </div>
                                         )}
@@ -274,10 +274,10 @@ const GuestList = ({ refreshTrigger }) => {
                                                     setEditingGuest({ ...editingGuest, phone: e.target.value })
                                                 }
                                                 disabled={!canEditAllFields(guest)}
-                                                className="w-full px-2 py-1 bg-gray-600 border border-gray-500 rounded text-white text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                                                className="w-full px-2 py-1 bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded text-gray-900 dark:text-white text-sm disabled:opacity-50 disabled:cursor-not-allowed"
                                             />
                                         ) : (
-                                            <span className="text-gray-300 text-sm">{guest.phone}</span>
+                                            <span className="text-gray-600 dark:text-gray-300 text-sm">{guest.phone}</span>
                                         )}
                                     </td>
                                     <td className="px-4 py-3">
@@ -287,7 +287,7 @@ const GuestList = ({ refreshTrigger }) => {
                                                 onChange={(e) =>
                                                     setEditingGuest({ ...editingGuest, status: e.target.value })
                                                 }
-                                                className="w-full px-2 py-1 bg-gray-600 border border-gray-500 rounded text-white text-sm"
+                                                className="w-full px-2 py-1 bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded text-gray-900 dark:text-white text-sm"
                                             >
                                                 <option value="NUEVO">Nuevo</option>
                                                 <option value="CONTACTADO">Contactado</option>
@@ -309,10 +309,10 @@ const GuestList = ({ refreshTrigger }) => {
                                                     placeholder="Invitado por..."
                                                 />
                                             ) : (
-                                                <p className="text-white text-sm">{guest.invitedBy?.fullName || 'N/A'}</p>
+                                                <p className="text-gray-900 dark:text-white text-sm">{guest.invitedBy?.fullName || 'N/A'}</p>
                                             )
                                         ) : (
-                                            <p className="text-white text-sm">{guest.invitedBy?.fullName || 'N/A'}</p>
+                                            <p className="text-gray-900 dark:text-white text-sm">{guest.invitedBy?.fullName || 'N/A'}</p>
                                         )}
                                     </td>
                                     <td className="px-4 py-3">
@@ -366,7 +366,7 @@ const GuestList = ({ refreshTrigger }) => {
                                                     <button
                                                         onClick={() => setConvertingGuest(guest)}
                                                         className="p-1 text-green-400 hover:text-green-300"
-                                                        title="Convertir a Miembro"
+                                                        title="Convertir a Discípulo"
                                                     >
                                                         <UserCheck size={18} />
                                                     </button>
@@ -381,35 +381,35 @@ const GuestList = ({ refreshTrigger }) => {
                 </table>
             </div>
 
-            {/* Modal para convertir a Miembro */}
+            {/* Modal para convertir a Discípulo */}
             {convertingGuest && (
-                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-                    <div className="bg-gray-800 rounded-lg p-6 max-w-md w-full border border-gray-700">
-                        <h3 className="text-xl font-bold text-white mb-4">
-                            Convertir a Miembro: {convertingGuest.name}
+                <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+                    <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 max-w-md w-full border border-gray-200 dark:border-gray-700 shadow-xl">
+                        <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-4">
+                            Convertir a Discípulo: {convertingGuest.name}
                         </h3>
                         <div className="space-y-4">
                             <div>
-                                <label className="block text-sm font-medium text-gray-300 mb-1">
+                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                                     Email
                                 </label>
                                 <input
                                     type="email"
                                     value={conversionEmail}
                                     onChange={(e) => setConversionEmail(e.target.value)}
-                                    className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white focus:outline-none focus:border-blue-500"
+                                    className="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded text-gray-900 dark:text-white focus:outline-none focus:border-blue-500"
                                     placeholder="correo@ejemplo.com"
                                 />
                             </div>
                             <div>
-                                <label className="block text-sm font-medium text-gray-300 mb-1">
+                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                                     Contraseña
                                 </label>
                                 <input
                                     type="password"
                                     value={conversionPassword}
                                     onChange={(e) => setConversionPassword(e.target.value)}
-                                    className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white focus:outline-none focus:border-blue-500"
+                                    className="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded text-gray-900 dark:text-white focus:outline-none focus:border-blue-500"
                                     placeholder="Contraseña"
                                 />
                             </div>
@@ -420,7 +420,7 @@ const GuestList = ({ refreshTrigger }) => {
                                         setConversionEmail('');
                                         setConversionPassword('');
                                     }}
-                                    className="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded transition-colors"
+                                    className="px-4 py-2 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-white rounded transition-colors"
                                 >
                                     Cancelar
                                 </button>

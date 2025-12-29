@@ -20,7 +20,7 @@ const register = async (req, res) => {
             email,
             password: hashedPassword,
             fullName,
-            role: role || 'Miembro',
+            role: role || 'DISCIPULO',
             sex,
             phone,
             address,
@@ -39,7 +39,19 @@ const register = async (req, res) => {
             expiresIn: '1d',
         });
 
-        res.status(201).json({ token, user: { id: user.id, email: user.email, fullName: user.fullName, role: user.role } });
+        res.status(201).json({
+            token,
+            user: {
+                id: user.id,
+                email: user.email,
+                fullName: user.fullName,
+                role: user.role,
+                phone: user.phone,
+                address: user.address,
+                city: user.city,
+                sex: user.sex
+            }
+        });
     } catch (error) {
         console.error(error);
         res.status(500).json({ message: 'Server error' });
@@ -73,7 +85,19 @@ const login = async (req, res) => {
             data: { lastLogin: new Date() }
         });
 
-        res.status(200).json({ token, user: { id: user.id, email: user.email, fullName: user.fullName, role: user.role } });
+        res.status(200).json({
+            token,
+            user: {
+                id: user.id,
+                email: user.email,
+                fullName: user.fullName,
+                role: user.role,
+                phone: user.phone,
+                address: user.address,
+                city: user.city,
+                sex: user.sex
+            }
+        });
     } catch (error) {
         console.error(error);
         res.status(500).json({ message: 'Server error' });
@@ -135,7 +159,16 @@ const registerSetup = async (req, res) => {
 
         res.status(201).json({
             token,
-            user: { id: user.id, email: user.email, fullName: user.fullName, role: user.role }
+            user: {
+                id: user.id,
+                email: user.email,
+                fullName: user.fullName,
+                role: user.role,
+                phone: user.phone,
+                address: user.address,
+                city: user.city,
+                sex: user.sex
+            }
         });
     } catch (error) {
         console.error('Error in setup registration:', error);

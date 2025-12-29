@@ -85,13 +85,13 @@ const AuditDashboard = () => {
 
     const getEntityColor = (type) => {
         const colors = {
-            'CELL': 'bg-blue-100 text-blue-800',
-            'CONVENTION': 'bg-purple-100 text-purple-800',
-            'ENCUENTRO': 'bg-pink-100 text-pink-800',
-            'USER': 'bg-green-100 text-green-800',
-            'SESSION': 'bg-gray-100 text-gray-800'
+            'CELL': 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300',
+            'CONVENTION': 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300',
+            'ENCUENTRO': 'bg-pink-100 text-pink-800 dark:bg-pink-900/30 dark:text-pink-300',
+            'USER': 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300',
+            'SESSION': 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'
         };
-        return colors[type] || 'bg-gray-100 text-gray-800';
+        return colors[type] || 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300';
     };
 
     return (

@@ -18,12 +18,12 @@ const createGuest = async (req, res) => {
         // Solo puede ver invitados creados por su red (LIDER_DOCE, LIDER_CELULA, MIEMBRO)
         if (userRole === 'PASTOR') {
             return res.status(403).json({
-                message: 'Los usuarios con rol PASTOR no pueden crear invitados directamente. Los invitados deben ser creados por LIDER_DOCE, LIDER_CELULA o MIEMBRO.'
+                message: 'Los usuarios con rol PASTOR no pueden crear invitados directamente. Los invitados deben ser creados por LIDER_DOCE, LIDER_CELULA o DISCIPULO.'
             });
         }
 
-        if (userRole === 'LIDER_CELULA' || userRole === 'MIEMBRO') {
-            // LIDER_CELULA y MIEMBRO solo pueden crear invitados para sí mismos
+        if (userRole === 'LIDER_CELULA' || userRole === 'DISCIPULO') {
+            // LIDER_CELULA y DISCIPULO solo pueden crear invitados para sí mismos
             invitedById = user.id;
         } else {
             // SUPER_ADMIN y LIDER_DOCE pueden especificar invitedById
@@ -117,7 +117,7 @@ const getAllGuests = async (req, res) => {
                 ]
             };
         } else {
-            // LIDER_CELULA y Miembro solo pueden ver:
+            // LIDER_CELULA y DISCIPULO solo pueden ver:
             // 1. Invitados que ellos invitaron Y no están asignados a alguien más
             // 2. Invitados asignados a ellos
             securityFilter = {
@@ -281,7 +281,7 @@ const updateGuest = async (req, res) => {
                 ...(visitObservation !== undefined && { visitObservation }),
             };
         } else {
-            // LIDER_CELULA y Miembro solo pueden actualizar campo de estado y seguimiento
+            // LIDER_CELULA y DISCIPULO solo pueden actualizar campo de estado y seguimiento
             const canEdit = existingGuest.invitedById === user.id || existingGuest.assignedToId === user.id;
 
             if (!canEdit) {
@@ -352,7 +352,7 @@ const deleteGuest = async (req, res) => {
                 return res.status(403).json({ message: 'You can only delete guests in your network' });
             }
         } else {
-            // LIDER_CELULA y Miembro solo pueden eliminar invitados que ellos invitaron (no asignados)
+            // LIDER_CELULA y DISCIPULO solo pueden eliminar invitados que ellos invitaron (no asignados)
             if (existingGuest.invitedById !== user.id) {
                 return res.status(403).json({ message: 'You can only delete guests you invited' });
             }
@@ -401,7 +401,7 @@ const assignGuest = async (req, res) => {
     }
 };
 
-// Convertir invitado a Miembro (crear cuenta de usuario)
+// Convertir invitado a Discípulo (crear cuenta de usuario)
 const convertGuestToMember = async (req, res) => {
     try {
         const { id } = req.params;
@@ -439,7 +439,7 @@ const convertGuestToMember = async (req, res) => {
                 email,
                 password: hashedPassword,
                 fullName: guest.name,
-                role: 'Miembro',
+                role: 'DISCIPULO',
                 // Asignar a la persona que los invitó
                 leaderId: guest.invitedById
             }

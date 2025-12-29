@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { X, Save, Loader } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import api from '../utils/api';
@@ -6,8 +6,12 @@ import api from '../utils/api';
 const UserProfileModal = ({ isOpen, onClose }) => {
     const { user, updateProfile } = useAuth();
     const [formData, setFormData] = useState({
-        fullName: user?.fullName || '',
-        email: user?.email || '',
+        fullName: '',
+        email: '',
+        phone: '',
+        address: '',
+        city: '',
+        sex: 'HOMBRE',
         currentPassword: '',
         newPassword: '',
         confirmPassword: '',
@@ -16,6 +20,52 @@ const UserProfileModal = ({ isOpen, onClose }) => {
     const [error, setError] = useState('');
     const [success, setSuccess] = useState('');
     const [showPasswordFields, setShowPasswordFields] = useState(false);
+
+    useEffect(() => {
+        if (isOpen) {
+            fetchProfile();
+        }
+    }, [isOpen]);
+
+    const fetchProfile = async () => {
+        try {
+            setLoading(true);
+            const res = await api.get('/users/profile');
+            const userData = res.data.user;
+            setFormData({
+                fullName: userData.fullName || '',
+                email: userData.email || '',
+                phone: userData.phone || '',
+                address: userData.address || '',
+                city: userData.city || '',
+                sex: userData.sex || 'HOMBRE',
+                currentPassword: '',
+                newPassword: '',
+                confirmPassword: '',
+            });
+            // Update auth context if it's different
+            if (JSON.stringify(userData) !== JSON.stringify(user)) {
+                localStorage.setItem('user', JSON.stringify(userData));
+                updateProfile(userData);
+            }
+        } catch (err) {
+            console.error('Error fetching profile:', err);
+            // Fallback to context user if fetch fails
+            if (user) {
+                setFormData(prev => ({
+                    ...prev,
+                    fullName: user.fullName || '',
+                    email: user.email || '',
+                    phone: user.phone || '',
+                    address: user.address || '',
+                    city: user.city || '',
+                    sex: user.sex || 'HOMBRE',
+                }));
+            }
+        } finally {
+            setLoading(false);
+        }
+    };
 
     if (!isOpen) return null;
 
@@ -37,6 +87,10 @@ const UserProfileModal = ({ isOpen, onClose }) => {
                 {
                     fullName: formData.fullName,
                     email: formData.email,
+                    phone: formData.phone,
+                    address: formData.address,
+                    city: formData.city,
+                    sex: formData.sex,
                 }
             );
 
@@ -96,13 +150,13 @@ const UserProfileModal = ({ isOpen, onClose }) => {
     };
 
     return (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-            <div className="bg-gray-800 rounded-lg shadow-xl w-full max-w-md mx-4">
-                <div className="flex items-center justify-between p-6 border-b border-gray-700">
-                    <h2 className="text-xl font-bold text-white">Mi Perfil</h2>
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-2xl border border-gray-200 dark:border-gray-700 max-h-[90vh] overflow-y-auto">
+                <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
+                    <h2 className="text-xl font-bold text-gray-900 dark:text-white">Mi Perfil</h2>
                     <button
                         onClick={onClose}
-                        className="text-gray-400 hover:text-white transition-colors"
+                        className="text-gray-400 hover:text-gray-600 dark:hover:text-white transition-colors"
                     >
                         <X size={24} />
                     </button>
@@ -122,32 +176,88 @@ const UserProfileModal = ({ isOpen, onClose }) => {
 
                     {/* Profile Form */}
                     <form onSubmit={handleUpdateProfile} className="space-y-4">
-                        <div>
-                            <label className="block text-sm font-medium text-gray-300 mb-2">
-                                Nombre Completo
-                            </label>
-                            <input
-                                type="text"
-                                name="fullName"
-                                value={formData.fullName}
-                                onChange={handleChange}
-                                className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-blue-500"
-                                required
-                            />
-                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                    Nombre Completo
+                                </label>
+                                <input
+                                    type="text"
+                                    name="fullName"
+                                    value={formData.fullName}
+                                    onChange={handleChange}
+                                    className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:border-blue-500"
+                                    required
+                                />
+                            </div>
 
-                        <div>
-                            <label className="block text-sm font-medium text-gray-300 mb-2">
-                                Correo Electrónico
-                            </label>
-                            <input
-                                type="email"
-                                name="email"
-                                value={formData.email}
-                                onChange={handleChange}
-                                className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-blue-500"
-                                required
-                            />
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                    Correo Electrónico
+                                </label>
+                                <input
+                                    type="email"
+                                    name="email"
+                                    value={formData.email}
+                                    onChange={handleChange}
+                                    className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:border-blue-500"
+                                    required
+                                />
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                    Teléfono
+                                </label>
+                                <input
+                                    type="text"
+                                    name="phone"
+                                    value={formData.phone}
+                                    onChange={handleChange}
+                                    className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:border-blue-500"
+                                />
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                    Sexo
+                                </label>
+                                <select
+                                    name="sex"
+                                    value={formData.sex}
+                                    onChange={handleChange}
+                                    className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:border-blue-500"
+                                >
+                                    <option value="HOMBRE">Hombre</option>
+                                    <option value="MUJER">Mujer</option>
+                                </select>
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                    Dirección
+                                </label>
+                                <input
+                                    type="text"
+                                    name="address"
+                                    value={formData.address}
+                                    onChange={handleChange}
+                                    className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:border-blue-500"
+                                />
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                    Ciudad
+                                </label>
+                                <input
+                                    type="text"
+                                    name="city"
+                                    value={formData.city}
+                                    onChange={handleChange}
+                                    className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:border-blue-500"
+                                />
+                            </div>
                         </div>
 
                         <button
@@ -167,20 +277,20 @@ const UserProfileModal = ({ isOpen, onClose }) => {
                     </form>
 
                     {/* Password Change Section */}
-                    <div className="border-t border-gray-700 pt-4">
+                    <div className="border-t border-gray-200 dark:border-gray-700 pt-4">
                         {!showPasswordFields ? (
                             <button
                                 onClick={() => setShowPasswordFields(true)}
-                                className="text-blue-400 hover:text-blue-300 text-sm"
+                                className="text-blue-500 hover:text-blue-600 dark:text-blue-400 dark:hover:text-blue-300 text-sm"
                             >
                                 Cambiar Contraseña
                             </button>
                         ) : (
                             <form onSubmit={handleChangePassword} className="space-y-4">
-                                <h3 className="text-lg font-semibold text-white">Cambiar Contraseña</h3>
+                                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Cambiar Contraseña</h3>
 
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-300 mb-2">
+                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                                         Contraseña Actual
                                     </label>
                                     <input
@@ -188,13 +298,13 @@ const UserProfileModal = ({ isOpen, onClose }) => {
                                         name="currentPassword"
                                         value={formData.currentPassword}
                                         onChange={handleChange}
-                                        className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-blue-500"
+                                        className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:border-blue-500"
                                         required
                                     />
                                 </div>
 
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-300 mb-2">
+                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                                         Nueva Contraseña
                                     </label>
                                     <input
@@ -202,13 +312,13 @@ const UserProfileModal = ({ isOpen, onClose }) => {
                                         name="newPassword"
                                         value={formData.newPassword}
                                         onChange={handleChange}
-                                        className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-blue-500"
+                                        className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:border-blue-500"
                                         required
                                     />
                                 </div>
 
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-300 mb-2">
+                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                                         Confirmar Nueva Contraseña
                                     </label>
                                     <input
@@ -216,7 +326,7 @@ const UserProfileModal = ({ isOpen, onClose }) => {
                                         name="confirmPassword"
                                         value={formData.confirmPassword}
                                         onChange={handleChange}
-                                        className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-blue-500"
+                                        className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:border-blue-500"
                                         required
                                     />
                                 </div>
@@ -247,7 +357,7 @@ const UserProfileModal = ({ isOpen, onClose }) => {
                                                 confirmPassword: '',
                                             });
                                         }}
-                                        className="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition-colors"
+                                        className="px-4 py-2 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-700 dark:text-white rounded-lg transition-colors"
                                     >
                                         Cancelar
                                     </button>

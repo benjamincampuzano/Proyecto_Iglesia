@@ -42,9 +42,9 @@ const getNetwork = async (req, res) => {
             where: { id: parseInt(userId) },
             include: {
                 // Get disciples based on new hierarchical fields
-                MiembrosCelula: {
+                DiscipulosCelula: {
                     include: {
-                        MiembrosCelula: {
+                        DiscipulosCelula: {
                             include: {
                                 assignedGuests: true,
                                 invitedGuests: true
@@ -54,9 +54,9 @@ const getNetwork = async (req, res) => {
                         invitedGuests: true
                     }
                 },
-                MiembrosDoce: {
+                DiscipulosDoce: {
                     include: {
-                        MiembrosCelula: {
+                        DiscipulosCelula: {
                             include: {
                                 assignedGuests: true,
                                 invitedGuests: true
@@ -66,11 +66,11 @@ const getNetwork = async (req, res) => {
                         invitedGuests: true
                     }
                 },
-                MiembrosPastor: {
+                DiscipulosPastor: {
                     include: {
-                        MiembrosDoce: {
+                        DiscipulosDoce: {
                             include: {
-                                MiembrosCelula: {
+                                DiscipulosCelula: {
                                     include: {
                                         assignedGuests: true,
                                         invitedGuests: true
@@ -95,9 +95,9 @@ const getNetwork = async (req, res) => {
 
         // Build unified disciples array from all hierarchical relationships
         const allDisciples = [
-            ...(user.MiembrosCelula || []),
-            ...(user.MiembrosDoce || []),
-            ...(user.MiembrosPastor || [])
+            ...(user.DiscipulosCelula || []),
+            ...(user.DiscipulosDoce || []),
+            ...(user.DiscipulosPastor || [])
         ];
 
         // Remove duplicates (in case a user appears in multiple relationships)
@@ -107,7 +107,7 @@ const getNetwork = async (req, res) => {
 
         // Apply cell leader restrictions
         if (isCellLeaderView) {
-            // LIDER_CELULA can only see their direct disciples (MiembrosCelula)
+            // LIDER_CELULA can only see their direct disciples (DiscipulosCelula)
             const filteredDisciples = uniqueDisciples.filter(disciple =>
                 disciple.liderCelulaId === user.id
             );

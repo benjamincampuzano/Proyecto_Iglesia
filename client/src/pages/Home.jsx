@@ -19,10 +19,10 @@ const Home = () => {
     useEffect(() => {
         if (user?.role === 'SUPER_ADMIN') {
             fetchPastores();
-        } else if (['PASTOR', 'LIDER_DOCE', 'LIDER_CELULA', 'Miembro'].includes(user?.role)) {
+        } else if (['PASTOR', 'LIDER_DOCE', 'LIDER_CELULA', 'DISCIPULO'].includes(user?.role)) {
             // Automatically load their network context
             // If member, try to show their Doce leader's network, or just their own
-            const leaderId = (user.role === 'Miembro')
+            const leaderId = (user.role === 'DISCIPULO')
                 ? (user.liderDoceId || user.pastorId || user.id)
                 : user.id;
             handleSelectLeader({ id: leaderId, fullName: user.fullName, role: user.role });
@@ -60,7 +60,7 @@ const Home = () => {
     if (loading) {
         return (
             <div className="flex items-center justify-center h-64">
-                <div className="text-gray-500">Cargando...</div>
+                <div className="text-gray-500 dark:text-gray-400">Cargando...</div>
             </div>
         );
     }
@@ -73,16 +73,16 @@ const Home = () => {
         );
     }
 
-    const canViewNetwork = ['SUPER_ADMIN', 'PASTOR', 'LIDER_DOCE', 'LIDER_CELULA', 'Miembro'].includes(user?.role);
+    const canViewNetwork = ['SUPER_ADMIN', 'PASTOR', 'LIDER_DOCE', 'LIDER_CELULA', 'DISCIPULO'].includes(user?.role);
     const canViewReport = ['SUPER_ADMIN', 'PASTOR', 'LIDER_DOCE'].includes(user?.role);
 
     return (
         <div className="space-y-8">
             <div>
-                <h1 className="text-3xl font-bold text-gray-800 mb-2">
+                <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
                     Dashboard Principal
                 </h1>
-                <p className="text-gray-600">
+                <p className="text-gray-600 dark:text-gray-400">
                     Bienvenido, {user?.fullName}
                 </p>
             </div>
@@ -94,7 +94,7 @@ const Home = () => {
                         <>
                             {user?.role === 'SUPER_ADMIN' && (
                                 <div className="min-h-[200px]">
-                                    <h2 className="text-2xl font-semibold text-gray-800 mb-4">
+                                    <h2 className="text-2xl font-semibold text-gray-900 dark:text-white mb-4">
                                         Pastores
                                     </h2>
                                     <LosDoceGrid losDoce={pastores} onSelectLeader={handleSelectLeader} />
@@ -102,14 +102,14 @@ const Home = () => {
                             )}
 
                             {networkLoading ? (
-                                <div className="flex items-center justify-center h-[500px] bg-gray-50 rounded-lg">
-                                    <div className="text-gray-500">Cargando red de discipulado...</div>
+                                <div className="flex items-center justify-center h-[500px] bg-gray-50 dark:bg-gray-800 rounded-lg">
+                                    <div className="text-gray-500 dark:text-gray-400">Cargando red de discipulado...</div>
                                 </div>
                             ) : (
                                 <div className="min-h-[500px]">
                                     {network && (
                                         <div>
-                                            <h2 className="text-2xl font-semibold text-gray-800 mb-4">
+                                            <h2 className="text-2xl font-semibold text-gray-900 dark:text-white mb-4">
                                                 {user?.role === 'SUPER_ADMIN'
                                                     ? `Red de ${selectedLeader?.fullName}`
                                                     : 'Mi Red'
@@ -126,9 +126,9 @@ const Home = () => {
                             )}
                         </>
                     ) : (
-                        <div className="bg-white p-6 rounded-lg shadow">
-                            <h3 className="text-lg font-medium text-gray-800 mb-2">Panel de Miembro</h3>
-                            <p className="text-gray-600">Bienvenido al sistema de gestión.</p>
+                        <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow border border-gray-100 dark:border-gray-700">
+                            <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">Panel de Discípulo</h3>
+                            <p className="text-gray-600 dark:text-gray-400">Bienvenido al sistema de gestión.</p>
                         </div>
                     )}
                 </div>
@@ -136,7 +136,7 @@ const Home = () => {
                 {/* Bottom Section: Consolidated Report & Stats */}
                 {canViewReport && (
                     <div className="min-h-[600px]">
-                        <Suspense fallback={<div className="h-[600px] flex items-center justify-center bg-gray-50 rounded-lg">Cargando Estadísticas...</div>}>
+                        <Suspense fallback={<div className="h-[600px] flex items-center justify-center bg-gray-50 dark:bg-gray-800 rounded-lg text-gray-500 dark:text-gray-400">Cargando Estadísticas...</div>}>
                             <ConsolidatedStatsReport simpleMode={false} />
                         </Suspense>
                     </div>

@@ -263,13 +263,13 @@ const ConventionDetails = ({ convention, onBack, onRefresh }) => {
                 </div>
                 <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg border border-gray-100 dark:border-gray-700">
                     <h3 className="text-gray-500 dark:text-gray-400 text-sm font-medium">Recaudado</h3>
-                    <p className="text-3xl font-bold text-green-600 mt-2">
+                    <p className="text-3xl font-bold text-green-600 dark:text-green-400 mt-2">
                         {formatCurrency(convention.registrations?.reduce((acc, reg) => acc + (reg.totalPaid || 0), 0) || 0)}
                     </p>
                 </div>
                 <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg border border-gray-100 dark:border-gray-700">
                     <h3 className="text-gray-500 dark:text-gray-400 text-sm font-medium">Pendiente por Cobrar</h3>
-                    <p className="text-3xl font-bold text-orange-500 mt-2">
+                    <p className="text-3xl font-bold text-orange-500 dark:text-orange-400 mt-2">
                         {formatCurrency(convention.registrations?.reduce((acc, reg) => acc + (reg.balance || 0), 0) || 0)}
                     </p>
                 </div>
@@ -336,10 +336,10 @@ const ConventionDetails = ({ convention, onBack, onRefresh }) => {
                                             <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
                                                 {formatCurrency(reg.finalCost)}
                                             </td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-green-600 font-medium">
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-green-600 dark:text-green-400 font-medium">
                                                 {formatCurrency(reg.totalPaid)}
                                             </td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-red-500 font-medium">
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-red-500 dark:text-red-400 font-medium">
                                                 {formatCurrency(reg.balance)}
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium flex items-center justify-end space-x-3">
@@ -453,7 +453,7 @@ const ConventionDetails = ({ convention, onBack, onRefresh }) => {
                             </div>
                             <div className="flex justify-between text-sm">
                                 <span className="text-gray-600 dark:text-gray-400">Saldo Pendiente:</span>
-                                <span className="font-bold text-red-500">{formatCurrency(selectedRegistration.balance)}</span>
+                                <span className="font-bold text-red-500 dark:text-red-400">{formatCurrency(selectedRegistration.balance)}</span>
                             </div>
                         </div>
                         <form onSubmit={handlePayment} className="p-6 space-y-4">
@@ -541,7 +541,7 @@ const ConventionDetails = ({ convention, onBack, onRefresh }) => {
                         <div className="p-6 bg-gray-50 dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700">
                             <div className="flex justify-between items-center text-sm">
                                 <span className="text-gray-600 dark:text-gray-400">Total Abonado:</span>
-                                <span className="font-bold text-green-600">{formatCurrency(selectedHistoryRegistration.totalPaid)}</span>
+                                <span className="font-bold text-green-600 dark:text-green-400">{formatCurrency(selectedHistoryRegistration.totalPaid)}</span>
                             </div>
                         </div>
                     </div>

@@ -80,7 +80,7 @@ async function main() {
                 name: 'Pedro Sánchez',
                 phone: '3007777777',
                 address: 'Calle 90 #12-34',
-                invitedById: 5, // MIEMBRO (Jose Carlos aguila)
+                invitedById: 5, // DISCIPULO (Jose Carlos aguila)
                 status: 'NUEVO'
             },
             {

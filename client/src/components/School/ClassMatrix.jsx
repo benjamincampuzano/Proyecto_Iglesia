@@ -141,7 +141,7 @@ const ClassMatrix = ({ courseId }) => {
                                             {isProfessor && (
                                                 <button
                                                     onClick={() => { setSelectedClassNum(classNum); setShowMaterialModal(true); }}
-                                                    className={`p-1 rounded transition-colors ${hasMaterial ? 'text-blue-600 bg-blue-50' : 'text-gray-400 hover:text-blue-500'}`}
+                                                    className={`p-1 rounded transition-colors ${hasMaterial ? 'text-blue-600 bg-blue-50 dark:bg-blue-900/20 dark:text-blue-400' : 'text-gray-400 hover:text-blue-500'}`}
                                                     title="Gestionar Material"
                                                 >
                                                     <BookOpen size={14} />
@@ -191,9 +191,9 @@ const ClassMatrix = ({ courseId }) => {
                                             <td key={classNum} className="px-1 py-2 border-l border-gray-100 dark:border-gray-700">
                                                 <div className="flex flex-col space-y-1">
                                                     <select
-                                                        className={`text-xs p-1 rounded border-none focus:ring-1 focus:ring-blue-500 bg-gray-50 dark:bg-gray-700 dark:text-white font-bold ${attendStatus === 'ASISTE' ? 'text-green-600' :
-                                                            attendStatus === 'AUSENCIA_JUSTIFICADA' ? 'text-yellow-600' :
-                                                                attendStatus === 'AUSENCIA_NO_JUSTIFICADA' ? 'text-red-500' :
+                                                        className={`text-xs p-1 rounded border-none focus:ring-1 focus:ring-blue-500 bg-gray-50 dark:bg-gray-700 dark:text-white font-bold ${attendStatus === 'ASISTE' ? 'text-green-600 dark:text-green-400' :
+                                                            attendStatus === 'AUSENCIA_JUSTIFICADA' ? 'text-yellow-600 dark:text-yellow-400' :
+                                                                attendStatus === 'AUSENCIA_NO_JUSTIFICADA' ? 'text-red-500 dark:text-red-400' :
                                                                     attendStatus === 'BAJA' ? 'text-gray-900 dark:text-gray-300' : ''
                                                             }`}
                                                         defaultValue={attendStatus}

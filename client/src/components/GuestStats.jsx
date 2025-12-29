@@ -110,8 +110,8 @@ const GuestStats = () => {
 
     return (
         <div className="space-y-6">
-            <div className="bg-gray-800 rounded-lg p-6 border border-gray-700">
-                <h2 className="text-2xl font-bold text-white mb-6">Estadísticas de Invitados</h2>
+            <div className="bg-white dark:bg-gray-800 rounded-lg p-6 border border-gray-200 dark:border-gray-700">
+                <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">Estadísticas de Invitados</h2>
 
                 {error && (
                     <div className="bg-red-900/20 border border-red-500 text-red-400 px-4 py-3 rounded mb-4">
@@ -122,25 +122,25 @@ const GuestStats = () => {
                 {/* Date Filters */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
                     <div>
-                        <label className="block text-sm font-medium text-gray-300 mb-2">
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                             Fecha Inicio
                         </label>
                         <input
                             type="date"
                             value={startDate}
                             onChange={(e) => setStartDate(e.target.value)}
-                            className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-blue-500"
+                            className="w-full px-4 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:border-blue-500"
                         />
                     </div>
                     <div>
-                        <label className="block text-sm font-medium text-gray-300 mb-2">
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                             Fecha Fin
                         </label>
                         <input
                             type="date"
                             value={endDate}
                             onChange={(e) => setEndDate(e.target.value)}
-                            className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-blue-500"
+                            className="w-full px-4 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:border-blue-500"
                         />
                     </div>
                     {['SUPER_ADMIN', 'LIDER_DOCE', 'PASTOR'].includes(user?.role) && (
@@ -165,52 +165,52 @@ const GuestStats = () => {
                     <>
                         {/* Summary Cards */}
                         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-                            <div className="bg-gray-700 rounded-lg p-4 border border-gray-600">
+                            <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 border border-gray-200 dark:border-gray-600">
                                 <div className="flex items-center justify-between">
                                     <div>
-                                        <p className="text-gray-400 text-sm">Total Invitados</p>
-                                        <p className="text-3xl font-bold text-white mt-1">{stats.totalGuests}</p>
+                                        <p className="text-gray-500 dark:text-gray-400 text-sm">Total Invitados</p>
+                                        <p className="text-3xl font-bold text-gray-900 dark:text-white mt-1">{stats.totalGuests}</p>
                                     </div>
                                     <Users className="text-blue-500" size={32} />
                                 </div>
                             </div>
 
-                            <div className="bg-gray-700 rounded-lg p-4 border border-gray-600">
+                            <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 border border-gray-200 dark:border-gray-600">
                                 <div className="flex items-center justify-between">
                                     <div>
-                                        <p className="text-gray-400 text-sm">Pr. Mensual</p>
-                                        <p className="text-3xl font-bold text-white mt-1">{stats.monthlyAverage || 0}</p>
+                                        <p className="text-gray-500 dark:text-gray-400 text-sm">Pr. Mensual</p>
+                                        <p className="text-3xl font-bold text-gray-900 dark:text-white mt-1">{stats.monthlyAverage || 0}</p>
                                     </div>
                                     <TrendingUp className="text-purple-500" size={32} />
                                 </div>
                             </div>
 
 
-                            <div className="bg-gray-700 rounded-lg p-4 border border-gray-600">
+                            <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 border border-gray-200 dark:border-gray-600">
                                 <div className="flex items-center justify-between">
                                     <div>
-                                        <p className="text-gray-400 text-sm">Nuevos</p>
-                                        <p className="text-3xl font-bold text-blue-400 mt-1">{stats.byStatus.NUEVO || 0}</p>
+                                        <p className="text-gray-500 dark:text-gray-400 text-sm">Nuevos</p>
+                                        <p className="text-3xl font-bold text-blue-600 dark:text-blue-400 mt-1">{stats.byStatus.NUEVO || 0}</p>
                                     </div>
                                     <TrendingUp className="text-blue-500" size={32} />
                                 </div>
                             </div>
 
-                            <div className="bg-gray-700 rounded-lg p-4 border border-gray-600">
+                            <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 border border-gray-200 dark:border-gray-600">
                                 <div className="flex items-center justify-between">
                                     <div>
-                                        <p className="text-gray-400 text-sm">Ganados</p>
-                                        <p className="text-3xl font-bold text-green-400 mt-1">{stats.byStatus.GANADO || 0}</p>
+                                        <p className="text-gray-500 dark:text-gray-400 text-sm">Ganados</p>
+                                        <p className="text-3xl font-bold text-green-600 dark:text-green-400 mt-1">{stats.byStatus.GANADO || 0}</p>
                                     </div>
                                     <UserCheck className="text-green-500" size={32} />
                                 </div>
                             </div>
 
-                            <div className="bg-gray-700 rounded-lg p-4 border border-gray-600">
+                            <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 border border-gray-200 dark:border-gray-600">
                                 <div className="flex items-center justify-between">
                                     <div>
-                                        <p className="text-gray-400 text-sm">Tasa Conversión</p>
-                                        <p className="text-3xl font-bold text-purple-400 mt-1">{stats.conversionRate}%</p>
+                                        <p className="text-gray-500 dark:text-gray-400 text-sm">Tasa Conversión</p>
+                                        <p className="text-3xl font-bold text-purple-600 dark:text-purple-400 mt-1">{stats.conversionRate}%</p>
                                     </div>
                                     <TrendingUp className="text-purple-500" size={32} />
                                 </div>
@@ -220,8 +220,8 @@ const GuestStats = () => {
                         {/* Charts */}
                         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
                             {/* Status Distribution */}
-                            <div className="bg-gray-700 rounded-lg p-6 border border-gray-600">
-                                <h3 className="text-lg font-semibold text-white mb-4">Distribución por Estado</h3>
+                            <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-6 border border-gray-200 dark:border-gray-600">
+                                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Distribución por Estado</h3>
                                 <ResponsiveContainer width="100%" height={300}>
                                     <PieChart>
                                         <Pie
@@ -244,16 +244,15 @@ const GuestStats = () => {
                             </div>
 
                             {/* Top Inviters */}
-                            <div className="bg-gray-700 rounded-lg p-6 border border-gray-600">
-                                <h3 className="text-lg font-semibold text-white mb-4">Top Invitadores</h3>
+                            <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-6 border border-gray-200 dark:border-gray-600">
+                                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Top Invitadores</h3>
                                 <ResponsiveContainer width="100%" height={300}>
                                     <BarChart data={stats.topInviters || []}>
-                                        <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-                                        <XAxis dataKey="name" stroke="#9CA3AF" />
-                                        <YAxis stroke="#9CA3AF" />
+                                        <CartesianGrid strokeDasharray="3 3" stroke="#94a3b8" strokeOpacity={0.2} />
+                                        <XAxis dataKey="name" stroke="#64748b" />
+                                        <YAxis stroke="#64748b" />
                                         <Tooltip
-                                            contentStyle={{ backgroundColor: '#1F2937', border: '1px solid #374151' }}
-                                            labelStyle={{ color: '#F3F4F6' }}
+                                            contentStyle={{ backgroundColor: 'rgba(255, 255, 255, 0.9)', border: '1px solid #e2e8f0', borderRadius: '8px', color: '#1e293b' }}
                                         />
                                         <Bar dataKey="count" fill="#3B82F6" name="Invitados" />
                                     </BarChart>
@@ -262,16 +261,15 @@ const GuestStats = () => {
 
                             {/* Invitations by LIDER_DOCE */}
                             {stats.invitationsByLiderDoce && stats.invitationsByLiderDoce.length > 0 && (
-                                <div className="bg-gray-700 rounded-lg p-6 border border-gray-600 col-span-1 lg:col-span-2">
-                                    <h3 className="text-lg font-semibold text-white mb-4">Invitaciones por Líder 12</h3>
+                                <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-6 border border-gray-200 dark:border-gray-600 col-span-1 lg:col-span-2">
+                                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Invitaciones por Líder 12</h3>
                                     <ResponsiveContainer width="100%" height={300}>
                                         <BarChart data={stats.invitationsByLiderDoce}>
-                                            <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-                                            <XAxis dataKey="name" stroke="#9CA3AF" />
-                                            <YAxis stroke="#9CA3AF" />
+                                            <CartesianGrid strokeDasharray="3 3" stroke="#94a3b8" strokeOpacity={0.2} />
+                                            <XAxis dataKey="name" stroke="#64748b" />
+                                            <YAxis stroke="#64748b" />
                                             <Tooltip
-                                                contentStyle={{ backgroundColor: '#1F2937', border: '1px solid #374151' }}
-                                                labelStyle={{ color: '#F3F4F6' }}
+                                                contentStyle={{ backgroundColor: 'rgba(255, 255, 255, 0.9)', border: '1px solid #e2e8f0', borderRadius: '8px', color: '#1e293b' }}
                                             />
                                             <Bar dataKey="count" fill="#10B981" name="Invitados" />
                                         </BarChart>
@@ -283,23 +281,23 @@ const GuestStats = () => {
 
                         {/* Top Inviters Table */}
                         {stats.topInviters && stats.topInviters.length > 0 && (
-                            <div className="bg-gray-700 rounded-lg p-6 border border-gray-600">
-                                <h3 className="text-lg font-semibold text-white">Detalle de Invitadores</h3>
+                            <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-6 border border-gray-200 dark:border-gray-600">
+                                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Detalle de Invitadores</h3>
                                 <div className="overflow-x-auto">
                                     <table className="w-full">
-                                        <thead className="bg-gray-600">
+                                        <thead className="bg-gray-100 dark:bg-gray-800">
                                             <tr>
-                                                <th className="px-4 py-3 text-left text-sm font-semibold text-gray-200">#</th>
-                                                <th className="px-4 py-3 text-left text-sm font-semibold text-gray-200">Nombre</th>
-                                                <th className="px-4 py-3 text-right text-sm font-semibold text-gray-200">Total Invitados</th>
+                                                <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600 dark:text-gray-200">#</th>
+                                                <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600 dark:text-gray-200">Nombre</th>
+                                                <th className="px-4 py-3 text-right text-sm font-semibold text-gray-600 dark:text-gray-200">Total Invitados</th>
                                             </tr>
                                         </thead>
                                         <tbody className="divide-y divide-gray-600">
                                             {stats.topInviters.map((inviter, index) => (
-                                                <tr key={index} className="hover:bg-gray-600/50">
-                                                    <td className="px-4 py-3 text-gray-300">{index + 1}</td>
-                                                    <td className="px-4 py-3 text-white">{inviter.name}</td>
-                                                    <td className="px-4 py-3 text-right text-white font-semibold">{inviter.count}</td>
+                                                <tr key={index} className="hover:bg-white dark:hover:bg-gray-600/50 transition-colors">
+                                                    <td className="px-4 py-3 text-gray-500 dark:text-gray-300">{index + 1}</td>
+                                                    <td className="px-4 py-3 text-gray-900 dark:text-white">{inviter.name}</td>
+                                                    <td className="px-4 py-3 text-right text-gray-900 dark:text-white font-semibold">{inviter.count}</td>
                                                 </tr>
                                             ))}
                                         </tbody>

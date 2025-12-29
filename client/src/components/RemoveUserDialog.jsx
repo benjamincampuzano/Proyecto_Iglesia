@@ -81,7 +81,7 @@ const RemoveUserDialog = ({ isOpen, onClose, user, onUserRemoved }) => {
                                 {user.role === 'SUPER_ADMIN' ? 'Super Admin' :
                                     user.role === 'PASTOR' ? 'Pastor' :
                                         user.role === 'LIDER_DOCE' ? 'Líder de Los Doce' :
-                                            user.role === 'LIDER_CELULA' ? 'Líder de Célula' : 'Miembro'}
+                                            user.role === 'LIDER_CELULA' ? 'Líder de Célula' : 'Discípulo'}
                             </span>
                         </div>
                     </div>

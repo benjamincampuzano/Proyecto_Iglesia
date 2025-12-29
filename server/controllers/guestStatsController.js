@@ -33,7 +33,7 @@ const getGuestStats = async (req, res) => {
 
 
         } else {
-            // LIDER_CELULA and Miembro see only their own guests
+            // LIDER_CELULA and DISCIPULO see only their own guests
             securityFilter = {
                 invitedById: currentUserId
             };
