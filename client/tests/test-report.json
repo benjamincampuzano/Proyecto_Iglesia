@@ -1,0 +1,36 @@
+{
+  "timestamp": "2025-12-30T11:39:10.189Z",
+  "summary": {
+    "total": 5,
+    "passed": 0,
+    "failed": 5,
+    "successRate": "0.0"
+  },
+  "results": [
+    {
+      "file": "test-auth-frontend.js",
+      "status": "ERROR",
+      "error": "Command failed: node test-auth-frontend.js\nnode:internal/modules/esm/resolve:283\r\n    throw new ERR_MODULE_NOT_FOUND(\r\n          ^\r\n\r\nError [ERR_MODULE_NOT_FOUND]: Cannot find module 'C:\\Users\\Usuario\\Documents\\Proyecto_Iglesia\\client\\src\\utils\\auth' imported from C:\\Users\\Usuario\\Documents\\Proyecto_Iglesia\\client\\tests\\test-auth-frontend.js\r\n    at finalizeResolution (node:internal/modules/esm/resolve:283:11)\r\n    at moduleResolve (node:internal/modules/esm/resolve:952:10)\r\n    at defaultResolve (node:internal/modules/esm/resolve:1188:11)\r\n    at ModuleLoader.defaultResolve (node:internal/modules/esm/loader:708:12)\r\n    at #cachedDefaultResolve (node:internal/modules/esm/loader:657:25)\r\n    at ModuleLoader.resolve (node:internal/modules/esm/loader:640:38)\r\n    at ModuleLoader.getModuleJobForImport (node:internal/modules/esm/loader:264:38)\r\n    at ModuleJob._link (node:internal/modules/esm/module_job:168:49) {\r\n  code: 'ERR_MODULE_NOT_FOUND',\r\n  url: 'file:///C:/Users/Usuario/Documents/Proyecto_Iglesia/client/src/utils/auth'\r\n}\r\n\r\nNode.js v20.19.6\r\n"
+    },
+    {
+      "file": "test-users-frontend.js",
+      "status": "ERROR",
+      "error": "Command failed: node test-users-frontend.js\nnode:internal/modules/esm/resolve:283\r\n    throw new ERR_MODULE_NOT_FOUND(\r\n          ^\r\n\r\nError [ERR_MODULE_NOT_FOUND]: Cannot find module 'C:\\Users\\Usuario\\Documents\\Proyecto_Iglesia\\client\\src\\services\\userService' imported from C:\\Users\\Usuario\\Documents\\Proyecto_Iglesia\\client\\tests\\test-users-frontend.js\r\n    at finalizeResolution (node:internal/modules/esm/resolve:283:11)\r\n    at moduleResolve (node:internal/modules/esm/resolve:952:10)\r\n    at defaultResolve (node:internal/modules/esm/resolve:1188:11)\r\n    at ModuleLoader.defaultResolve (node:internal/modules/esm/loader:708:12)\r\n    at #cachedDefaultResolve (node:internal/modules/esm/loader:657:25)\r\n    at ModuleLoader.resolve (node:internal/modules/esm/loader:640:38)\r\n    at ModuleLoader.getModuleJobForImport (node:internal/modules/esm/loader:264:38)\r\n    at ModuleJob._link (node:internal/modules/esm/module_job:168:49) {\r\n  code: 'ERR_MODULE_NOT_FOUND',\r\n  url: 'file:///C:/Users/Usuario/Documents/Proyecto_Iglesia/client/src/services/userService'\r\n}\r\n\r\nNode.js v20.19.6\r\n"
+    },
+    {
+      "file": "test-guests-frontend.js",
+      "status": "ERROR",
+      "error": "Command failed: node test-guests-frontend.js\nnode:internal/modules/esm/resolve:283\r\n    throw new ERR_MODULE_NOT_FOUND(\r\n          ^\r\n\r\nError [ERR_MODULE_NOT_FOUND]: Cannot find module 'C:\\Users\\Usuario\\Documents\\Proyecto_Iglesia\\client\\src\\services\\guestService' imported from C:\\Users\\Usuario\\Documents\\Proyecto_Iglesia\\client\\tests\\test-guests-frontend.js\r\n    at finalizeResolution (node:internal/modules/esm/resolve:283:11)\r\n    at moduleResolve (node:internal/modules/esm/resolve:952:10)\r\n    at defaultResolve (node:internal/modules/esm/resolve:1188:11)\r\n    at ModuleLoader.defaultResolve (node:internal/modules/esm/loader:708:12)\r\n    at #cachedDefaultResolve (node:internal/modules/esm/loader:657:25)\r\n    at ModuleLoader.resolve (node:internal/modules/esm/loader:640:38)\r\n    at ModuleLoader.getModuleJobForImport (node:internal/modules/esm/loader:264:38)\r\n    at ModuleJob._link (node:internal/modules/esm/module_job:168:49) {\r\n  code: 'ERR_MODULE_NOT_FOUND',\r\n  url: 'file:///C:/Users/Usuario/Documents/Proyecto_Iglesia/client/src/services/guestService'\r\n}\r\n\r\nNode.js v20.19.6\r\n"
+    },
+    {
+      "file": "test-cells-frontend.js",
+      "status": "ERROR",
+      "error": "Command failed: node test-cells-frontend.js\nnode:internal/modules/esm/resolve:283\r\n    throw new ERR_MODULE_NOT_FOUND(\r\n          ^\r\n\r\nError [ERR_MODULE_NOT_FOUND]: Cannot find module 'C:\\Users\\Usuario\\Documents\\Proyecto_Iglesia\\client\\src\\services\\cellService' imported from C:\\Users\\Usuario\\Documents\\Proyecto_Iglesia\\client\\tests\\test-cells-frontend.js\r\n    at finalizeResolution (node:internal/modules/esm/resolve:283:11)\r\n    at moduleResolve (node:internal/modules/esm/resolve:952:10)\r\n    at defaultResolve (node:internal/modules/esm/resolve:1188:11)\r\n    at ModuleLoader.defaultResolve (node:internal/modules/esm/loader:708:12)\r\n    at #cachedDefaultResolve (node:internal/modules/esm/loader:657:25)\r\n    at ModuleLoader.resolve (node:internal/modules/esm/loader:640:38)\r\n    at ModuleLoader.getModuleJobForImport (node:internal/modules/esm/loader:264:38)\r\n    at ModuleJob._link (node:internal/modules/esm/module_job:168:49) {\r\n  code: 'ERR_MODULE_NOT_FOUND',\r\n  url: 'file:///C:/Users/Usuario/Documents/Proyecto_Iglesia/client/src/services/cellService'\r\n}\r\n\r\nNode.js v20.19.6\r\n"
+    },
+    {
+      "file": "test-network-frontend.js",
+      "status": "ERROR",
+      "error": "Command failed: node test-network-frontend.js\nnode:internal/modules/esm/resolve:283\r\n    throw new ERR_MODULE_NOT_FOUND(\r\n          ^\r\n\r\nError [ERR_MODULE_NOT_FOUND]: Cannot find module 'C:\\Users\\Usuario\\Documents\\Proyecto_Iglesia\\client\\src\\services\\networkService' imported from C:\\Users\\Usuario\\Documents\\Proyecto_Iglesia\\client\\tests\\test-network-frontend.js\r\n    at finalizeResolution (node:internal/modules/esm/resolve:283:11)\r\n    at moduleResolve (node:internal/modules/esm/resolve:952:10)\r\n    at defaultResolve (node:internal/modules/esm/resolve:1188:11)\r\n    at ModuleLoader.defaultResolve (node:internal/modules/esm/loader:708:12)\r\n    at #cachedDefaultResolve (node:internal/modules/esm/loader:657:25)\r\n    at ModuleLoader.resolve (node:internal/modules/esm/loader:640:38)\r\n    at ModuleLoader.getModuleJobForImport (node:internal/modules/esm/loader:264:38)\r\n    at ModuleJob._link (node:internal/modules/esm/module_job:168:49) {\r\n  code: 'ERR_MODULE_NOT_FOUND',\r\n  url: 'file:///C:/Users/Usuario/Documents/Proyecto_Iglesia/client/src/services/networkService'\r\n}\r\n\r\nNode.js v20.19.6\r\n"
+    }
+  ]
+}
