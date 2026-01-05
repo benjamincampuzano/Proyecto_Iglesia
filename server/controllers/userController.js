@@ -1,6 +1,7 @@
 const { PrismaClient } = require('@prisma/client');
 const bcrypt = require('bcryptjs');
 const axios = require('axios');
+const { logActivity } = require('../utils/auditLogger');
 
 const prisma = new PrismaClient();
 
@@ -422,6 +423,39 @@ const updateUser = async (req, res) => {
             data: updateData,
         });
 
+        // Identify what changed
+        const changes = {};
+        const fieldsToTrack = [
+            'fullName', 'email', 'role', 'sex', 'phone',
+            'address', 'city', 'pastorId', 'liderDoceId', 'liderCelulaId'
+        ];
+
+        fieldsToTrack.forEach(field => {
+            const oldValue = userToUpdate[field];
+            const newValue = updatedUser[field];
+
+            if (oldValue !== newValue) {
+                changes[field] = {
+                    old: oldValue,
+                    new: newValue
+                };
+            }
+        });
+
+        // Log Activity
+        if (Object.keys(changes).length > 0) {
+            await logActivity(
+                req.user.id,
+                'UPDATE',
+                'USER',
+                updatedUser.id,
+                {
+                    targetUser: updatedUser.fullName,
+                    changes
+                }
+            );
+        }
+
         res.status(200).json({
             user: {
                 id: updatedUser.id,
@@ -502,6 +536,15 @@ const createUser = async (req, res) => {
                 },
             });
         }
+
+        // Log Activity
+        await logActivity(
+            req.user.id,
+            'CREATE',
+            'USER',
+            user.id,
+            { targetUser: user.fullName, email: user.email, role: user.role }
+        );
 
         res.status(201).json({
             user: {

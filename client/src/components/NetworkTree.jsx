@@ -39,6 +39,51 @@ const NetworkTree = ({ network, currentUser, onNetworkChange }) => {
                 <h2 className="text-2xl font-bold mb-6 text-gray-800 dark:text-white">
                     Red de Discipulado: {network.fullName}
                 </h2>
+
+                {/* Leadership Context for the root user */}
+                {(network.pastor || network.liderDoce || network.liderCelula) && (
+                    <div className="mb-8 p-4 bg-gray-50 dark:bg-gray-900/50 rounded-xl border border-gray-100 dark:border-gray-700">
+                        <h4 className="text-xs font-bold uppercase tracking-wider text-gray-400 dark:text-gray-500 mb-3 ml-1">
+                            Jerarquía de Liderazgo
+                        </h4>
+                        <div className="flex flex-wrap gap-4">
+                            {network.pastor && (
+                                <div className="flex items-center gap-2 px-3 py-2 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-100 dark:border-gray-700">
+                                    <div className="w-8 h-8 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center text-green-600 dark:text-green-400">
+                                        <Users className="w-4 h-4" />
+                                    </div>
+                                    <div>
+                                        <p className="text-[10px] font-bold text-green-600 dark:text-green-400 uppercase leading-none mb-0.5">Pastor</p>
+                                        <p className="text-sm font-semibold text-gray-800 dark:text-gray-200">{network.pastor.fullName}</p>
+                                    </div>
+                                </div>
+                            )}
+                            {network.liderDoce && (
+                                <div className="flex items-center gap-2 px-3 py-2 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-100 dark:border-gray-700">
+                                    <div className="w-8 h-8 rounded-full bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center text-purple-600 dark:text-purple-400">
+                                        <Users className="w-4 h-4" />
+                                    </div>
+                                    <div>
+                                        <p className="text-[10px] font-bold text-purple-600 dark:text-purple-400 uppercase leading-none mb-0.5">Líder Los Doce</p>
+                                        <p className="text-sm font-semibold text-gray-800 dark:text-gray-200">{network.liderDoce.fullName}</p>
+                                    </div>
+                                </div>
+                            )}
+                            {network.liderCelula && (
+                                <div className="flex items-center gap-2 px-3 py-2 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-100 dark:border-gray-700">
+                                    <div className="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center text-blue-600 dark:text-blue-400">
+                                        <Users className="w-4 h-4" />
+                                    </div>
+                                    <div>
+                                        <p className="text-[10px] font-bold text-blue-600 dark:text-blue-400 uppercase leading-none mb-0.5">Líder Célula</p>
+                                        <p className="text-sm font-semibold text-gray-800 dark:text-gray-200">{network.liderCelula.fullName}</p>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                )}
+
                 <NetworkNode
                     node={network}
                     level={0}

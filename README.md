@@ -33,12 +33,20 @@ Proyecto_Iglesia/
 └── README.md               # Documentación del proyecto
 ```
 
+## 📚 Documentación Oficial
+> Para una descripción detallada de todos los módulos, sub-módulos y especificaciones técnicas, consulta el archivo [PROJECT_DOCUMENTATION.md](./PROJECT_DOCUMENTATION.md).
+
 ## 🛠️ Tecnologías Utilizadas
 
-- **Frontend**: React, Vite, Tailwind CSS, Lucide React (Iconos), Recharts (Gráficos), React Router.
-- **Backend**: Node.js, Express.js.
-- **Base de Datos**: PostgreSQL (o compatible), gestionado con Prisma ORM.
-- **Autenticación**: JWT (Json Web Tokens) con bcrypt para hasheo de contraseñas.
+### Frontend
+- **React 19** + **Vite 7**
+- **Tailwind CSS 4**
+- **Librerías Clave**: Recharts, React Router DOM, React Leaflet, Lucide React.
+
+### Backend
+- **Node.js** + **Express 5**
+- **Prisma ORM** + **PostgreSQL**
+- **Otros**: JWT, Bcrypt, Helmet, CORS.
 
 ## ⚙️ Instalación y Uso
 
@@ -52,7 +60,7 @@ Proyecto_Iglesia/
 
 1. Clona el repositorio (si aún no lo has hecho):
    ```bash
-   git clone https://github.com/tu-usuario/Proyecto_Iglesia.git
+   git clone https://github.com/benjamincampuzano/Proyecto_Iglesia.git
    cd Proyecto_Iglesia
    ```
 

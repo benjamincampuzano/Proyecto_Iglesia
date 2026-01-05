@@ -15,6 +15,7 @@ const AuditDashboard = () => {
     const [logs, setLogs] = useState([]);
     const [stats, setStats] = useState(null);
     const [loading, setLoading] = useState(true);
+    const [selectedLog, setSelectedLog] = useState(null); // Modal state
     const [pagination, setPagination] = useState({ currentPage: 1, pages: 1 });
     const [filters, setFilters] = useState({
         page: 1,
@@ -92,6 +93,28 @@ const AuditDashboard = () => {
             'SESSION': 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'
         };
         return colors[type] || 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300';
+    };
+
+    const renderDetails = (detailsStr) => {
+        if (!detailsStr) return '-';
+        try {
+            const details = JSON.parse(detailsStr);
+            if (details.targetUser) {
+                return (
+                    <span className="flex flex-col">
+                        <span className="font-semibold text-gray-700 dark:text-gray-200">{details.targetUser}</span>
+                        {details.changes && (
+                            <span className="text-[10px] text-blue-500 font-medium uppercase tracking-tighter">
+                                {Object.keys(details.changes).length} cambios registrados
+                            </span>
+                        )}
+                    </span>
+                );
+            }
+            return detailsStr;
+        } catch (e) {
+            return detailsStr;
+        }
     };
 
     return (
@@ -219,18 +242,19 @@ const AuditDashboard = () => {
                                 <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Acción</th>
                                 <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Módulo</th>
                                 <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Detalles</th>
+                                <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider text-right">Acciones</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
                             {loading ? (
                                 Array(5).fill(0).map((_, i) => (
                                     <tr key={i} className="animate-pulse">
-                                        <td colSpan="5" className="px-6 py-4 h-12 bg-gray-50/50 dark:bg-gray-800/50"></td>
+                                        <td colSpan="6" className="px-6 py-4 h-12 bg-gray-50/50 dark:bg-gray-800/50"></td>
                                     </tr>
                                 ))
                             ) : logs.length === 0 ? (
                                 <tr>
-                                    <td colSpan="5" className="px-6 py-12 text-center text-gray-500">No se encontraron registros.</td>
+                                    <td colSpan="6" className="px-6 py-12 text-center text-gray-500">No se encontraron registros.</td>
                                 </tr>
                             ) : (
                                 logs.map((log) => (
@@ -262,8 +286,18 @@ const AuditDashboard = () => {
                                                 {log.entityType}
                                             </span>
                                         </td>
-                                        <td className="px-6 py-4 text-sm text-gray-500 dark:text-gray-400 max-w-xs truncate">
-                                            {log.details ? log.details : '-'}
+                                        <td className="px-6 py-4 text-sm text-gray-500 dark:text-gray-400">
+                                            {renderDetails(log.details)}
+                                        </td>
+                                        <td className="px-6 py-4 text-right">
+                                            {log.details && (
+                                                <button
+                                                    onClick={() => setSelectedLog(log)}
+                                                    className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 text-sm font-semibold transition-colors"
+                                                >
+                                                    Ver Detalles
+                                                </button>
+                                            )}
                                         </td>
                                     </tr>
                                 ))
@@ -295,6 +329,92 @@ const AuditDashboard = () => {
                     </div>
                 </div>
             </div>
+
+            {/* Modal de Detalles */}
+            {selectedLog && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm transition-opacity">
+                    <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden border border-gray-200 dark:border-gray-700">
+                        <div className="px-6 py-4 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center bg-gray-50 dark:bg-gray-900/50">
+                            <h2 className="text-xl font-bold text-gray-800 dark:text-white flex items-center gap-2">
+                                {getActionIcon(selectedLog.action)}
+                                Detalle de la Actividad
+                            </h2>
+                            <button
+                                onClick={() => setSelectedLog(null)}
+                                className="p-2 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-full transition-colors"
+                            >
+                                <ChevronRight className="rotate-90" size={20} />
+                            </button>
+                        </div>
+
+                        <div className="p-6 max-h-[70vh] overflow-y-auto">
+                            <div className="grid grid-cols-2 gap-4 mb-6">
+                                <div className="p-3 bg-gray-50 dark:bg-gray-900/50 rounded-lg">
+                                    <p className="text-xs text-gray-500 uppercase font-bold mb-1">Fecha</p>
+                                    <p className="text-sm dark:text-white">{formatDate(selectedLog.createdAt)}</p>
+                                </div>
+                                <div className="p-3 bg-gray-50 dark:bg-gray-900/50 rounded-lg">
+                                    <p className="text-xs text-gray-500 uppercase font-bold mb-1">Usuario</p>
+                                    <p className="text-sm dark:text-white">{selectedLog.user?.fullName || 'Sistema'}</p>
+                                </div>
+                            </div>
+
+                            <h3 className="font-bold text-gray-800 dark:text-white mb-4">Información Detallada</h3>
+
+                            {(() => {
+                                try {
+                                    const details = JSON.parse(selectedLog.details);
+                                    if (details.changes) {
+                                        return (
+                                            <div className="space-y-4">
+                                                <p className="text-sm text-gray-600 dark:text-gray-400">
+                                                    Se realizaron cambios en el perfil de <span className="font-bold text-blue-600">{details.targetUser}</span>:
+                                                </p>
+                                                <div className="border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden">
+                                                    <table className="w-full text-sm">
+                                                        <thead className="bg-gray-100 dark:bg-gray-800">
+                                                            <tr>
+                                                                <th className="px-4 py-2 text-left">Campo</th>
+                                                                <th className="px-4 py-2 text-left">Anterior</th>
+                                                                <th className="px-4 py-2 text-left">Nuevo</th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+                                                            {Object.entries(details.changes).map(([field, values]) => (
+                                                                <tr key={field} className="hover:bg-gray-50 dark:hover:bg-gray-800/50">
+                                                                    <td className="px-4 py-3 font-semibold text-gray-700 dark:text-gray-300 capitalize">{field}</td>
+                                                                    <td className="px-4 py-3 text-red-600 dark:text-red-400 line-through truncate max-w-[150px]">{values.old?.toString() || '(vacío)'}</td>
+                                                                    <td className="px-4 py-3 text-green-600 dark:text-green-400 font-medium truncate max-w-[150px]">{values.new?.toString() || '(vacío)'}</td>
+                                                                </tr>
+                                                            ))}
+                                                        </tbody>
+                                                    </table>
+                                                </div>
+                                            </div>
+                                        );
+                                    }
+                                    return (
+                                        <pre className="bg-gray-900 text-green-400 p-4 rounded-xl text-xs overflow-x-auto">
+                                            {JSON.stringify(details, null, 2)}
+                                        </pre>
+                                    );
+                                } catch (e) {
+                                    return <p className="text-sm dark:text-white">{selectedLog.details}</p>;
+                                }
+                            })()}
+                        </div>
+
+                        <div className="px-6 py-4 border-t border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50 flex justify-end">
+                            <button
+                                onClick={() => setSelectedLog(null)}
+                                className="px-6 py-2 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 transition-colors"
+                            >
+                                Cerrar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

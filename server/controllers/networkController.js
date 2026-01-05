@@ -103,7 +103,16 @@ const getNetwork = async (req, res) => {
                     }
                 },
                 assignedGuests: true,
-                invitedGuests: true
+                invitedGuests: true,
+                pastor: {
+                    select: { id: true, fullName: true, role: true }
+                },
+                liderDoce: {
+                    select: { id: true, fullName: true, role: true }
+                },
+                liderCelula: {
+                    select: { id: true, fullName: true, role: true }
+                }
             }
         });
 
@@ -197,6 +206,9 @@ const getNetwork = async (req, res) => {
                 role: currentUser.role,
                 assignedGuests: currentUser.assignedGuests || [],
                 invitedGuests: currentUser.invitedGuests || [],
+                pastor: currentUser.pastor || null,
+                liderDoce: currentUser.liderDoce || null,
+                liderCelula: currentUser.liderCelula || null,
                 disciples: userDisciples
                     .map(disciple => buildHierarchy(disciple, disciples, newVisited))
                     .filter(d => d !== null) // Filter out cyclic references

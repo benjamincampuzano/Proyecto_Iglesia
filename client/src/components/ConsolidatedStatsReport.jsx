@@ -162,11 +162,131 @@ const ConsolidatedStatsReport = ({ simpleMode = false }) => {
                     </div>
                 )}
 
-                {/* 1. Guests by Leader (Doce) */}
-                <div className="mb-10 page-break-inside-avoid">
-                    <h2 className="text-xl font-bold text-gray-800 dark:text-white mb-4 flex items-center gap-2">
-                        <Users className="text-blue-600" /> Personas Invitadas por Lider Doce
-                    </h2>
+                {/* 1. Global KPIs - NEW SECTION */}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
+                    <div className="bg-blue-50 dark:bg-blue-900/20 p-5 rounded-xl border border-blue-100 dark:border-blue-800 shadow-sm">
+                        <div className="flex items-center gap-3 mb-2">
+                            <div className="p-2 bg-blue-100 dark:bg-blue-800 rounded-lg text-blue-600 dark:text-blue-300">
+                                <Users size={20} />
+                            </div>
+                            <span className="text-sm font-bold text-blue-800 dark:text-blue-200 uppercase tracking-tight">Total Invitados</span>
+                        </div>
+                        <div className="flex flex-col">
+                            <span className="text-3xl font-extrabold text-blue-900 dark:text-white">{stats.summary.totalGuests}</span>
+                            <span className="text-xs text-blue-600 dark:text-blue-400 font-medium mt-1">En el período seleccionado</span>
+                        </div>
+                    </div>
+
+                    <div className="bg-green-50 dark:bg-green-900/20 p-5 rounded-xl border border-green-100 dark:border-green-800 shadow-sm">
+                        <div className="flex items-center gap-3 mb-2">
+                            <div className="p-2 bg-green-100 dark:bg-green-800 rounded-lg text-green-600 dark:text-green-300">
+                                <Award size={20} />
+                            </div>
+                            <span className="text-sm font-bold text-green-800 dark:text-green-200 uppercase tracking-tight">Conversiones</span>
+                        </div>
+                        <div className="flex flex-col">
+                            <div className="flex items-baseline gap-2">
+                                <span className="text-3xl font-extrabold text-green-900 dark:text-white">{stats.summary.totalConversions}</span>
+                                <span className="text-lg font-bold text-green-600 dark:text-green-400">({stats.summary.conversionRate}%)</span>
+                            </div>
+                            <span className="text-xs text-green-600 dark:text-green-400 font-medium mt-1">Personas Ganadas</span>
+                        </div>
+                    </div>
+
+                    <div className="bg-red-50 dark:bg-red-900/20 p-5 rounded-xl border border-red-100 dark:border-red-800 shadow-sm">
+                        <div className="flex items-center gap-3 mb-2">
+                            <div className="p-2 bg-red-100 dark:bg-red-800 rounded-lg text-red-600 dark:text-red-300">
+                                <MapPin size={20} />
+                            </div>
+                            <span className="text-sm font-bold text-red-800 dark:text-red-200 uppercase tracking-tight">Células Activas</span>
+                        </div>
+                        <div className="flex flex-col">
+                            <span className="text-3xl font-extrabold text-red-900 dark:text-white">{stats.summary.totalCells}</span>
+                            <span className="text-xs text-red-600 dark:text-red-400 font-medium mt-1">Puntos de evangelismo</span>
+                        </div>
+                    </div>
+
+                    <div className="bg-indigo-50 dark:bg-indigo-900/20 p-5 rounded-xl border border-indigo-100 dark:border-indigo-800 shadow-sm">
+                        <div className="flex items-center gap-3 mb-2">
+                            <div className="p-2 bg-indigo-100 dark:bg-indigo-800 rounded-lg text-indigo-600 dark:text-indigo-300">
+                                <BookOpen size={20} />
+                            </div>
+                            <span className="text-sm font-bold text-indigo-800 dark:text-indigo-200 uppercase tracking-tight">En Formación</span>
+                        </div>
+                        <div className="flex flex-col">
+                            <span className="text-3xl font-extrabold text-indigo-900 dark:text-white">{stats.summary.activeStudents}</span>
+                            <span className="text-xs text-indigo-600 dark:text-indigo-400 font-medium mt-1">Estudiantes en escuela</span>
+                        </div>
+                    </div>
+                </div>
+
+                {/* 2. Guest Lifecycle Tracking - NEW SECTION */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-10 page-break-inside-avoid">
+                    <div className="bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm">
+                        <h3 className="text-lg font-bold text-gray-800 dark:text-white mb-6 flex items-center gap-2">
+                            <TrendingUp className="text-blue-500" /> Seguimiento de Invitados
+                        </h3>
+                        <div className="space-y-6">
+                            <div>
+                                <div className="flex justify-between items-center mb-2">
+                                    <span className="text-sm font-semibold text-gray-600 dark:text-gray-400">Personas con Llamada</span>
+                                    <span className="text-sm font-bold text-gray-800 dark:text-white">
+                                        {stats.trackingStats.withCall} / {stats.summary.totalGuests}
+                                    </span>
+                                </div>
+                                <div className="w-full bg-gray-100 dark:bg-gray-700 h-3 rounded-full overflow-hidden">
+                                    <div
+                                        className="bg-blue-500 h-full rounded-full transition-all duration-1000"
+                                        style={{ width: `${(stats.trackingStats.withCall / stats.summary.totalGuests * 100) || 0}%` }}
+                                    ></div>
+                                </div>
+                            </div>
+                            <div>
+                                <div className="flex justify-between items-center mb-2">
+                                    <span className="text-sm font-semibold text-gray-600 dark:text-gray-400">Personas con Visita</span>
+                                    <span className="text-sm font-bold text-gray-800 dark:text-white">
+                                        {stats.trackingStats.withVisit} / {stats.summary.totalGuests}
+                                    </span>
+                                </div>
+                                <div className="w-full bg-gray-100 dark:bg-gray-700 h-3 rounded-full overflow-hidden">
+                                    <div
+                                        className="bg-green-500 h-full rounded-full transition-all duration-1000"
+                                        style={{ width: `${(stats.trackingStats.withVisit / stats.summary.totalGuests * 100) || 0}%` }}
+                                    ></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm">
+                        <h3 className="text-lg font-bold text-gray-800 dark:text-white mb-6 flex items-center gap-2">
+                            <Award className="text-yellow-500" /> Embudo de Consolidación
+                        </h3>
+                        <div className="flex flex-col items-center justify-center h-40">
+                            <div className="w-full max-w-[200px] flex flex-col gap-1">
+                                <div className="bg-blue-500/20 text-blue-700 dark:text-blue-300 py-1.5 px-4 rounded-lg text-center font-bold text-xs border border-blue-200 dark:border-blue-800">
+                                    INVITADOS: {stats.summary.totalGuests}
+                                </div>
+                                <div className="flex justify-center my-0.5"><div className="w-0.5 h-3 bg-gray-300 dark:bg-gray-600"></div></div>
+                                <div
+                                    className="bg-green-500/20 text-green-700 dark:text-green-300 py-1.5 px-4 rounded-lg text-center font-bold text-xs border border-green-200 dark:border-green-800 mx-4"
+                                    title="Miembros Ganados"
+                                >
+                                    GANADOS: {stats.summary.totalConversions}
+                                </div>
+                            </div>
+                            <p className="text-[11px] text-gray-500 dark:text-gray-400 mt-4 italic">
+                                Tasa de éxito: {stats.summary.conversionRate}%
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                {/* 3. Guests by Leader (Doce) */}
+                <div className="mb-10 page-break-inside-avoid shadow-sm border border-gray-100 dark:border-gray-700 p-6 rounded-xl">
+                    <h3 className="text-lg font-bold text-gray-800 dark:text-white mb-4 flex items-center gap-2">
+                        <Users className="text-purple-600" /> Distribución de Invitados por Red
+                    </h3>
                     <div className="h-64 w-full">
                         {guestsData.length > 0 ? (
                             <ResponsiveContainer width="100%" height="100%">
@@ -175,18 +295,18 @@ const ConsolidatedStatsReport = ({ simpleMode = false }) => {
                                     <XAxis type="number" />
                                     <YAxis dataKey="name" type="category" width={150} tick={{ fontSize: 12 }} />
                                     <Tooltip />
-                                    <Bar dataKey="count" name="Invitados" fill="#3b82f6" radius={[0, 4, 4, 0]} />
+                                    <Bar dataKey="count" name="Invitados" fill="#8b5cf6" radius={[0, 4, 4, 0]} />
                                 </BarChart>
                             </ResponsiveContainer>
                         ) : <p className="text-gray-400 italic text-center pt-10">No hay datos de invitados en este período.</p>}
                     </div>
                 </div>
 
-                {/* 2. Church Attendance by Month (Grouped by Leader) */}
-                <div className="mb-10 page-break-inside-avoid">
-                    <h2 className="text-xl font-bold text-gray-800 dark:text-white mb-4 flex items-center gap-2">
-                        <TrendingUp className="text-green-600" /> Asistencia a la Iglesia (Mensual por Lider Doce)
-                    </h2>
+                {/* 4. Church Attendance by Month (Grouped by Leader) */}
+                <div className="mb-10 page-break-inside-avoid shadow-sm border border-gray-100 dark:border-gray-700 p-6 rounded-xl">
+                    <h3 className="text-lg font-bold text-gray-800 dark:text-white mb-4 flex items-center gap-2">
+                        <TrendingUp className="text-green-600" /> Asistencia a la Iglesia (Mensual por Lider)
+                    </h3>
                     <div className="h-80 w-full">
                         {attendanceData.length > 0 ? (
                             <ResponsiveContainer width="100%" height="100%">

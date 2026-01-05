@@ -96,16 +96,42 @@ const getGeneralStats = async (req, res) => {
                         pastor: true,
                         leader: true
                     }
-                }
+                },
+                calls: true,
+                visits: true
             }
         });
 
 
 
         const guestsByLeader = {};
+        let totalGuests = 0;
+        let totalConversions = 0;
+        const genderStats = { HOMBRE: 0, MUJER: 0, UNKNOWN: 0 };
+        const trackingStats = {
+            withCall: 0,
+            withoutCall: 0,
+            withVisit: 0,
+            withoutVisit: 0
+        };
+
         guests.forEach(guest => {
+            totalGuests++;
             const leaderName = getLiderName(guest.invitedBy);
             guestsByLeader[leaderName] = (guestsByLeader[leaderName] || 0) + 1;
+
+            if (guest.status === 'GANADO') totalConversions++;
+
+            // Tracking
+            if (guest.calls && guest.calls.length > 0) trackingStats.withCall++;
+            else trackingStats.withoutCall++;
+
+            if (guest.visits && guest.visits.length > 0) trackingStats.withVisit++;
+            else trackingStats.withoutVisit++;
+
+            // Gender (requires fetching or checking guest model - assuming it has sex field like User)
+            // Checking prisma schema, Guest model does NOT have sex field.
+            // Wait, let me check the guest model in schema.prisma again.
         });
 
 
@@ -364,7 +390,12 @@ const getGeneralStats = async (req, res) => {
             cellsByLeader,
             encuentrosInfo,
             conventionsInfo,
+            trackingStats,
             summary: {
+                totalGuests,
+                totalConversions,
+                conversionRate: totalGuests > 0 ? ((totalConversions / totalGuests) * 100).toFixed(1) : 0,
+                totalCells: cells.length,
                 totalMembers: await prisma.user.count({ where: { role: { not: 'SUPER_ADMIN' } } }),
                 activeStudents: await prisma.seminarEnrollment.count({ where: { status: 'EN_PROGRESO' } }),
                 graduatedInPeriod: 0
