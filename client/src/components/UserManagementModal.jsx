@@ -20,8 +20,9 @@ const UserManagementModal = ({ isOpen, onClose }) => {
         phone: '',
         address: '',
         city: '',
+        pastorId: '',
         liderDoceId: '',
-        assignedLeaderId: ''
+        liderCelulaId: ''
     });
 
     const lideresDoce = users.filter(u => u.role === 'LIDER_DOCE');
@@ -67,34 +68,30 @@ const UserManagementModal = ({ isOpen, onClose }) => {
         setSuccess('');
 
         try {
-            const token = localStorage.getItem('token');
             const payload = { ...formData };
 
-            // Map assignedLeaderId to correct field
-            if (payload.assignedLeaderId) {
-                if (payload.role === 'LIDER_DOCE') {
-                    payload.pastorId = payload.assignedLeaderId;
-                } else if (payload.role === 'LIDER_CELULA') {
-                    payload.liderDoceId = payload.assignedLeaderId;
-                } else if (payload.role === 'DISCIPULO') {
-                    // Check if selected leader is Lider Doce or Lider Celula
-                    const leader = users.find(u => u.id === parseInt(payload.assignedLeaderId));
-                    if (leader?.role === 'LIDER_DOCE') {
-                        payload.liderDoceId = payload.assignedLeaderId;
-                    } else {
-                        payload.liderCelulaId = payload.assignedLeaderId;
-                    }
-                }
-            }
-            delete payload.assignedLeaderId;
-            // Clean empty strings
+            // Limpiar cadenas vacías y asegurar que los IDs sean enteros o eliminarlos si están vacíos
+            if (payload.pastorId) payload.pastorId = parseInt(payload.pastorId);
+            else delete payload.pastorId;
+
+            if (payload.liderDoceId) payload.liderDoceId = parseInt(payload.liderDoceId);
+            else delete payload.liderDoceId;
+
+            if (payload.liderCelulaId) payload.liderCelulaId = parseInt(payload.liderCelulaId);
+            else delete payload.liderCelulaId;
+
+            // Limpiar otros campos vacíos
             Object.keys(payload).forEach(key => payload[key] === '' && delete payload[key]);
 
             await api.post('/users', payload);
 
             setSuccess('Usuario creado exitosamente');
             setShowCreateForm(false);
-            setFormData({ fullName: '', email: '', password: '', role: 'DISCIPULO', sex: 'HOMBRE', phone: '', address: '', city: '', assignedLeaderId: '' });
+            setFormData({
+                fullName: '', email: '', password: '', role: 'DISCIPULO',
+                sex: 'HOMBRE', phone: '', address: '', city: '',
+                pastorId: '', liderDoceId: '', liderCelulaId: ''
+            });
             fetchUsers();
         } catch (err) {
             setError(err.response?.data?.message || 'Error al crear usuario');
@@ -109,12 +106,8 @@ const UserManagementModal = ({ isOpen, onClose }) => {
         setSuccess('');
 
         try {
+            // Unificar la actualización en una sola llamada al PUT /users/:id
             await api.put(`/users/${userId}`, updates);
-
-            // Update leader if assigned
-            if (updates.assignedLeaderId) {
-                await api.post(`/users/assign-leader/${userId}`, { leaderId: updates.assignedLeaderId });
-            }
 
             setSuccess('Usuario actualizado exitosamente');
             setEditingUser(null);
@@ -254,31 +247,31 @@ const UserManagementModal = ({ isOpen, onClose }) => {
                                         type="text"
                                         value={formData.fullName}
                                         onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
-                                        className="w-full px-4 py-2 bg-gray-600 border border-gray-500 rounded-lg text-white focus:outline-none focus:border-blue-500"
+                                        className="w-full px-4 py-2 bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:border-blue-500"
                                         required
                                     />
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-300 mb-2">
+                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                                         Correo Electrónico
                                     </label>
                                     <input
                                         type="email"
                                         value={formData.email}
                                         onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                                        className="w-full px-4 py-2 bg-gray-600 border border-gray-500 rounded-lg text-white focus:outline-none focus:border-blue-500"
+                                        className="w-full px-4 py-2 bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:border-blue-500"
                                         required
                                     />
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-300 mb-2">
+                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                                         Contraseña
                                     </label>
                                     <input
                                         type="password"
                                         value={formData.password}
                                         onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                                        className="w-full px-4 py-2 bg-gray-600 border border-gray-500 rounded-lg text-white focus:outline-none focus:border-blue-500"
+                                        className="w-full px-4 py-2 bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:border-blue-500"
                                         required
                                     />
                                 </div>
@@ -286,7 +279,7 @@ const UserManagementModal = ({ isOpen, onClose }) => {
                                     <select
                                         value={formData.role}
                                         onChange={(e) => setFormData({ ...formData, role: e.target.value, assignedLeaderId: '' })}
-                                        className="w-full px-4 py-2 bg-gray-600 border border-gray-500 rounded-lg text-white focus:outline-none focus:border-blue-500"
+                                        className="w-full px-4 py-2 bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:border-blue-500"
                                     >
                                         {getAssignableRoles().map(role => (
                                             <option key={role} value={role}>{role.replace('_', ' ')}</option>
@@ -295,73 +288,134 @@ const UserManagementModal = ({ isOpen, onClose }) => {
                                 </div>
 
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-300 mb-2">Sexo</label>
+                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Sexo</label>
                                     <select
                                         value={formData.sex}
                                         onChange={(e) => setFormData({ ...formData, sex: e.target.value })}
-                                        className="w-full px-4 py-2 bg-gray-600 border border-gray-500 rounded-lg text-white focus:outline-none focus:border-blue-500"
+                                        className="w-full px-4 py-2 bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:border-blue-500"
                                     >
                                         <option value="HOMBRE">Hombre</option>
                                         <option value="MUJER">Mujer</option>
                                     </select>
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-300 mb-2">Teléfono</label>
+                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Teléfono</label>
                                     <input
                                         type="tel"
                                         value={formData.phone}
                                         onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                                        className="w-full px-4 py-2 bg-gray-600 border border-gray-500 rounded-lg text-white focus:outline-none focus:border-blue-500"
+                                        className="w-full px-4 py-2 bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:border-blue-500"
                                     />
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-300 mb-2">Dirección</label>
+                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Dirección</label>
                                     <input
                                         type="text"
                                         value={formData.address}
                                         onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                                        className="w-full px-4 py-2 bg-gray-600 border border-gray-500 rounded-lg text-white focus:outline-none focus:border-blue-500"
+                                        className="w-full px-4 py-2 bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:border-blue-500"
                                     />
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-300 mb-2">Ciudad</label>
+                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Ciudad</label>
                                     <input
                                         type="text"
                                         value={formData.city}
                                         onChange={(e) => setFormData({ ...formData, city: e.target.value })}
-                                        className="w-full px-4 py-2 bg-gray-600 border border-gray-500 rounded-lg text-white focus:outline-none focus:border-blue-500"
+                                        className="w-full px-4 py-2 bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:border-blue-500"
                                     />
                                 </div>
 
-                                {/* Dynamic Leader Assignment */}
-                                {formData.role !== 'PASTOR' && formData.role !== 'SUPER_ADMIN' && (
+                                {formData.role === 'PASTOR' && (
+                                    <div className="md:col-span-2">
+                                        <div className="bg-blue-900/10 border border-blue-500/50 p-3 rounded text-blue-400 text-sm">
+                                            ℹ️ El rol PASTOR es líder de sí mismo por defecto.
+                                        </div>
+                                    </div>
+                                )}
+
+                                {formData.role === 'LIDER_DOCE' && (
                                     <div>
-                                        <label className="block text-sm font-medium text-gray-300 mb-2">
-                                            {formData.role === 'LIDER_DOCE' ? 'Asignar a Pastor' :
-                                                formData.role === 'DISCIPULO' ? 'Asignar a Líder Célula' : 'Asignar a Líder 12'}
-                                        </label>
+                                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Asignar a Pastor</label>
                                         <select
-                                            value={formData.assignedLeaderId}
-                                            onChange={(e) => setFormData({ ...formData, assignedLeaderId: e.target.value })}
+                                            value={formData.pastorId}
+                                            onChange={(e) => setFormData({ ...formData, pastorId: e.target.value })}
                                             className="w-full px-4 py-2 bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:border-blue-500"
                                         >
                                             <option value="">-- Sin Asignar --</option>
-                                            {(() => {
-                                                let options = [];
-                                                if (formData.role === 'LIDER_DOCE') options = pastores;
-                                                else if (formData.role === 'LIDER_CELULA') options = lideresDoce;
-                                                else if (formData.role === 'DISCIPULO') {
-                                                    // Default to Lider Celula, fallback to Lider Doce
-                                                    options = lideresCelula.length > 0 ? lideresCelula : lideresDoce;
-                                                }
-                                                return options.map(leader => (
+                                            {pastores.map(p => (
+                                                <option key={p.id} value={p.id}>{p.fullName}</option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                )}
+
+                                {formData.role === 'LIDER_CELULA' && (
+                                    <>
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Asignar a Líder 12</label>
+                                            <select
+                                                value={formData.liderDoceId}
+                                                onChange={(e) => setFormData({ ...formData, liderDoceId: e.target.value })}
+                                                className="w-full px-4 py-2 bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:border-blue-500"
+                                            >
+                                                <option value="">-- Sin Asignar --</option>
+                                                {lideresDoce.map(l => (
+                                                    <option key={l.id} value={l.id}>{l.fullName}</option>
+                                                ))}
+                                            </select>
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Asignar a Pastor (Opcional)</label>
+                                            <select
+                                                value={formData.pastorId}
+                                                onChange={(e) => setFormData({ ...formData, pastorId: e.target.value })}
+                                                className="w-full px-4 py-2 bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:border-blue-500"
+                                            >
+                                                <option value="">-- Sin Asignar --</option>
+                                                {pastores.map(p => (
+                                                    <option key={p.id} value={p.id}>{p.fullName}</option>
+                                                ))}
+                                            </select>
+                                        </div>
+                                    </>
+                                )}
+
+                                {formData.role === 'DISCIPULO' && (
+                                    <>
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Líder 12</label>
+                                            <select
+                                                className="w-full p-2.5 bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 text-gray-900 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
+                                                value={formData.liderDoceId}
+                                                onChange={(e) => setFormData({ ...formData, liderDoceId: e.target.value, liderCelulaId: '' })}
+                                            >
+                                                <option value="">Seleccionar Líder de 12</option>
+                                                {lideresDoce.map((leader) => (
                                                     <option key={leader.id} value={leader.id}>
                                                         {leader.fullName}
                                                     </option>
-                                                ));
-                                            })()}
-                                        </select>
-                                    </div>
+                                                ))}
+                                            </select>
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Líder Célula</label>
+                                            <select
+                                                className="w-full p-2.5 bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 text-gray-900 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
+                                                value={formData.liderCelulaId}
+                                                onChange={(e) => setFormData({ ...formData, liderCelulaId: e.target.value })}
+                                            >
+                                                <option value="">Seleccionar Líder de Célula</option>
+                                                {lideresCelula
+                                                    .filter(lc => !formData.liderDoceId || lc.liderDoceId === parseInt(formData.liderDoceId))
+                                                    .map((leader) => (
+                                                        <option key={leader.id} value={leader.id}>
+                                                            {leader.fullName}
+                                                        </option>
+                                                    ))}
+                                            </select>
+                                        </div>
+                                    </>
                                 )}
                             </div>
                             <div className="flex space-x-3">
@@ -531,35 +585,71 @@ const UserManagementModal = ({ isOpen, onClose }) => {
                                                 )}
                                             </td>
                                             <td className="px-4 py-3">
-                                                {editingUser?.id === user.id && (currentUser?.role === 'SUPER_ADMIN' || currentUser?.role === 'PASTOR') ? (
-                                                    <select
-                                                        value={editingUser.assignedLeaderId || ''}
-                                                        onChange={(e) =>
-                                                            setEditingUser({ ...editingUser, assignedLeaderId: e.target.value })
-                                                        }
-                                                        className="w-full px-2 py-1 bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded text-gray-900 dark:text-white text-sm"
-                                                    >
-                                                        <option value="">-- Sin Asignar --</option>
-                                                        {(() => {
-                                                            let options = [];
-                                                            // Determine valid leader options based on user's role (not current user)
-                                                            if (editingUser.role === 'LIDER_DOCE') options = pastores;
-                                                            else if (editingUser.role === 'LIDER_CELULA') options = lideresDoce;
-                                                            else if (editingUser.role === 'DISCIPULO') {
-                                                                options = lideresCelula.length > 0 ? lideresCelula : lideresDoce;
-                                                            }
-                                                            // If editing a Pastor, maybe show nothing or generic?
-                                                            return options.map(leader => (
-                                                                <option key={leader.id} value={leader.id}>
-                                                                    {leader.fullName}
-                                                                </option>
-                                                            ));
-                                                        })()}
-                                                    </select>
+                                                {editingUser?.id === user.id ? (
+                                                    <div className="flex flex-col gap-1">
+                                                        {editingUser.role === 'LIDER_DOCE' && (
+                                                            <select
+                                                                value={editingUser.pastorId || ''}
+                                                                onChange={(e) => setEditingUser({ ...editingUser, pastorId: e.target.value })}
+                                                                className="w-full px-2 py-1 bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded text-gray-900 dark:text-white text-xs"
+                                                            >
+                                                                <option value="">-- Sin Pastor --</option>
+                                                                {pastores.map(p => <option key={p.id} value={p.id}>{p.fullName}</option>)}
+                                                            </select>
+                                                        )}
+                                                        {editingUser.role === 'LIDER_CELULA' && (
+                                                            <>
+                                                                <select
+                                                                    value={editingUser.liderDoceId || ''}
+                                                                    onChange={(e) => setEditingUser({ ...editingUser, liderDoceId: e.target.value })}
+                                                                    className="w-full px-2 py-1 bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded text-gray-900 dark:text-white text-xs"
+                                                                >
+                                                                    <option value="">-- Sin Líder 12 --</option>
+                                                                    {lideresDoce.map(l => <option key={l.id} value={l.id}>{l.fullName}</option>)}
+                                                                </select>
+                                                                <select
+                                                                    value={editingUser.pastorId || ''}
+                                                                    onChange={(e) => setEditingUser({ ...editingUser, pastorId: e.target.value })}
+                                                                    className="w-full px-2 py-1 bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded text-gray-900 dark:text-white text-xs"
+                                                                >
+                                                                    <option value="">-- Sin Pastor --</option>
+                                                                    {pastores.map(p => <option key={p.id} value={p.id}>{p.fullName}</option>)}
+                                                                </select>
+                                                            </>
+                                                        )}
+                                                        {editingUser.role === 'DISCIPULO' && (
+                                                            <>
+                                                                <select
+                                                                    value={editingUser.liderDoceId || ''}
+                                                                    onChange={(e) => setEditingUser({ ...editingUser, liderDoceId: e.target.value, liderCelulaId: '' })}
+                                                                    className="w-full px-2 py-1 bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded text-gray-900 dark:text-white text-xs"
+                                                                >
+                                                                    <option value="">-- Líder 12 --</option>
+                                                                    {lideresDoce.map(l => <option key={l.id} value={l.id}>{l.fullName}</option>)}
+                                                                </select>
+                                                                <select
+                                                                    value={editingUser.liderCelulaId || ''}
+                                                                    onChange={(e) => setEditingUser({ ...editingUser, liderCelulaId: e.target.value })}
+                                                                    className="w-full px-2 py-1 bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded text-gray-900 dark:text-white text-xs"
+                                                                >
+                                                                    <option value="">-- Líder Célula --</option>
+                                                                    {lideresCelula
+                                                                        .filter(lc => !editingUser.liderDoceId || lc.liderDoceId === parseInt(editingUser.liderDoceId))
+                                                                        .map(lc => <option key={lc.id} value={lc.id}>{lc.fullName}</option>)}
+                                                                </select>
+                                                            </>
+                                                        )}
+                                                        {editingUser.role === 'PASTOR' && (
+                                                            <span className="text-xs text-blue-400">Autoliderado</span>
+                                                        )}
+                                                    </div>
                                                 ) : (
-                                                    <span className="text-gray-900 dark:text-gray-300 text-sm">
-                                                        {user.leader?.fullName || '-'}
-                                                    </span>
+                                                    <div className="flex flex-col text-xs text-gray-500 dark:text-gray-400">
+                                                        {user.pastor && <div>P: {user.pastor.fullName}</div>}
+                                                        {user.liderDoce && <div>D: {user.liderDoce.fullName}</div>}
+                                                        {user.liderCelula && <div>C: {user.liderCelula.fullName}</div>}
+                                                        {!user.pastor && !user.liderDoce && !user.liderCelula && <span>-</span>}
+                                                    </div>
                                                 )}
                                             </td>
                                             <td className="px-4 py-3">
@@ -576,7 +666,9 @@ const UserManagementModal = ({ isOpen, onClose }) => {
                                                                         address: editingUser.address || '',
                                                                         city: editingUser.city || '',
                                                                         sex: editingUser.sex || '',
-                                                                        assignedLeaderId: editingUser.assignedLeaderId
+                                                                        pastorId: editingUser.pastorId,
+                                                                        liderDoceId: editingUser.liderDoceId,
+                                                                        liderCelulaId: editingUser.liderCelulaId
                                                                     })
                                                                 }
                                                                 className="p-1 text-green-400 hover:text-green-300"
@@ -595,7 +687,12 @@ const UserManagementModal = ({ isOpen, onClose }) => {
                                                     ) : (
                                                         <>
                                                             <button
-                                                                onClick={() => setEditingUser({ ...user, assignedLeaderId: user.leaderId })}
+                                                                onClick={() => setEditingUser({
+                                                                    ...user,
+                                                                    pastorId: user.pastorId || '',
+                                                                    liderDoceId: user.liderDoceId || '',
+                                                                    liderCelulaId: user.liderCelulaId || ''
+                                                                })}
                                                                 className="p-1 text-blue-400 hover:text-blue-300"
                                                                 title="Editar"
                                                             >

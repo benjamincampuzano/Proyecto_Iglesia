@@ -141,7 +141,16 @@ const getNetwork = async (req, res) => {
         );
 
         // Build hierarchy recursively
-        const buildHierarchy = (currentUser, disciples) => {
+        // Build hierarchy recursively with cycle detection
+        const buildHierarchy = (currentUser, disciples, visited = new Set()) => {
+            // Check for cycles
+            if (visited.has(currentUser.id)) {
+                return null;
+            }
+
+            const newVisited = new Set(visited);
+            newVisited.add(currentUser.id);
+
             const isTargetAnotherLeader = currentUser.role === 'LIDER_CELULA' && currentUser.id !== parseInt(userId);
 
             if (isCellLeaderView && isTargetAnotherLeader) {
@@ -188,7 +197,9 @@ const getNetwork = async (req, res) => {
                 role: currentUser.role,
                 assignedGuests: currentUser.assignedGuests || [],
                 invitedGuests: currentUser.invitedGuests || [],
-                disciples: userDisciples.map(disciple => buildHierarchy(disciple, disciples))
+                disciples: userDisciples
+                    .map(disciple => buildHierarchy(disciple, disciples, newVisited))
+                    .filter(d => d !== null) // Filter out cyclic references
             };
         };
 

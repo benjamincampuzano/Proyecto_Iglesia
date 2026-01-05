@@ -239,9 +239,33 @@ const getAllUsers = async (req, res) => {
                 latitude: true,
                 longitude: true,
                 leaderId: true,
+                pastorId: true,
+                liderDoceId: true,
+                liderCelulaId: true,
                 createdAt: true,
                 updatedAt: true,
                 leader: {
+                    select: {
+                        id: true,
+                        fullName: true,
+                        role: true
+                    }
+                },
+                pastor: {
+                    select: {
+                        id: true,
+                        fullName: true,
+                        role: true
+                    }
+                },
+                liderDoce: {
+                    select: {
+                        id: true,
+                        fullName: true,
+                        role: true
+                    }
+                },
+                liderCelula: {
                     select: {
                         id: true,
                         fullName: true,
@@ -320,7 +344,7 @@ const getUserById = async (req, res) => {
 const updateUser = async (req, res) => {
     try {
         const { id } = req.params;
-        const { fullName, email, role, sex, phone, address, city } = req.body;
+        const { fullName, email, role, sex, phone, address, city, pastorId, liderDoceId, liderCelulaId } = req.body;
 
         // Geocode address if provided
         let latitude = undefined;
@@ -361,19 +385,41 @@ const updateUser = async (req, res) => {
             }
         }
 
+        const updateData = {
+            ...(fullName && { fullName }),
+            ...(email && { email }),
+            ...(role && { role }),
+            ...(sex && { sex }),
+            ...(phone && { phone }),
+            ...(address && { address }),
+            ...(city && { city }),
+            ...(latitude !== undefined && { latitude }),
+            ...(longitude !== undefined && { longitude }),
+        };
+
+        // Asignación jerárquica de líderes en actualización
+        if (pastorId !== undefined) updateData.pastorId = pastorId ? parseInt(pastorId) : null;
+        if (liderDoceId !== undefined) updateData.liderDoceId = liderDoceId ? parseInt(liderDoceId) : null;
+        if (liderCelulaId !== undefined) updateData.liderCelulaId = liderCelulaId ? parseInt(liderCelulaId) : null;
+
+        // Recalcular leaderId basado en la jerarquía (Célula > Doce > Pastor)
+        if (updateData.pastorId !== undefined || updateData.liderDoceId !== undefined || updateData.liderCelulaId !== undefined) {
+            const currentPastor = updateData.pastorId !== undefined ? updateData.pastorId : userToUpdate.pastorId;
+            const currentDoce = updateData.liderDoceId !== undefined ? updateData.liderDoceId : userToUpdate.liderDoceId;
+            const currentCelula = updateData.liderCelulaId !== undefined ? updateData.liderCelulaId : userToUpdate.liderCelulaId;
+
+            updateData.leaderId = currentCelula || currentDoce || currentPastor || null;
+
+            // Si el rol es PASTOR, siempre es su propio líder
+            if ((role || userToUpdate.role) === 'PASTOR') {
+                updateData.leaderId = parseInt(id);
+                updateData.pastorId = parseInt(id);
+            }
+        }
+
         const updatedUser = await prisma.user.update({
             where: { id: parseInt(id) },
-            data: {
-                ...(fullName && { fullName }),
-                ...(email && { email }),
-                ...(role && { role }),
-                ...(sex && { sex }),
-                ...(phone && { phone }),
-                ...(address && { address }),
-                ...(city && { city }),
-                ...(latitude !== undefined && { latitude }),
-                ...(longitude !== undefined && { longitude }),
-            },
+            data: updateData,
         });
 
         res.status(200).json({
@@ -424,22 +470,38 @@ const createUser = async (req, res) => {
             longitude: coords.lng
         };
 
-        if (liderDoceId) {
-            userData.liderDoceId = parseInt(liderDoceId);
-            userData.leaderId = parseInt(liderDoceId); // Asignar también como líder directo por defecto
-        }
+        // Asignación jerárquica de líderes
         if (req.body.pastorId) {
             userData.pastorId = parseInt(req.body.pastorId);
-            userData.leaderId = parseInt(req.body.pastorId);
-        }
-        if (req.body.liderCelulaId) {
-            userData.liderCelulaId = parseInt(req.body.liderCelulaId);
-            userData.leaderId = parseInt(req.body.liderCelulaId);
+            userData.leaderId = userData.pastorId;
         }
 
-        const user = await prisma.user.create({
+        if (req.body.liderDoceId || liderDoceId) {
+            const ldoceId = parseInt(req.body.liderDoceId || liderDoceId);
+            userData.liderDoceId = ldoceId;
+            userData.leaderId = ldoceId;
+        }
+
+        if (req.body.liderCelulaId) {
+            const lcelulaId = parseInt(req.body.liderCelulaId);
+            userData.liderCelulaId = lcelulaId;
+            userData.leaderId = lcelulaId;
+        }
+
+        let user = await prisma.user.create({
             data: userData,
         });
+
+        // Caso especial: El Pastor es líder de sí mismo
+        if (user.role === 'PASTOR') {
+            user = await prisma.user.update({
+                where: { id: user.id },
+                data: {
+                    leaderId: user.id,
+                    pastorId: user.id
+                },
+            });
+        }
 
         res.status(201).json({
             user: {
@@ -603,17 +665,27 @@ const assignLeader = async (req, res) => {
             }
         }
 
-        // Actualizar el leaderId del usuario (y mantener coherencia con campos antiguos si es necesario)
+        // Actualizar el leaderId del usuario y sincronizar la jerarquía
         let updateData = {
             leaderId: leaderId ? parseInt(leaderId) : null
         };
 
-        // Sincronizar campos específicos para compatibilidad
         if (leaderId) {
-            const leader = await prisma.user.findUnique({ where: { id: parseInt(leaderId) } });
-            if (leader.role === 'PASTOR') updateData.pastorId = parseInt(leaderId);
-            else if (leader.role === 'LIDER_DOCE') updateData.liderDoceId = parseInt(leaderId);
-            else if (leader.role === 'LIDER_CELULA') updateData.liderCelulaId = parseInt(leaderId);
+            const leader = await prisma.user.findUnique({
+                where: { id: parseInt(leaderId) },
+                select: { id: true, role: true, pastorId: true, liderDoceId: true }
+            });
+
+            if (leader.role === 'PASTOR') {
+                updateData.pastorId = leader.id;
+            } else if (leader.role === 'LIDER_DOCE') {
+                updateData.liderDoceId = leader.id;
+                updateData.pastorId = leader.pastorId;
+            } else if (leader.role === 'LIDER_CELULA') {
+                updateData.liderCelulaId = leader.id;
+                updateData.liderDoceId = leader.liderDoceId;
+                updateData.pastorId = leader.pastorId;
+            }
         } else {
             updateData.pastorId = null;
             updateData.liderDoceId = null;

@@ -26,7 +26,9 @@ const UserManagement = () => {
         phone: '',
         address: '',
         city: '',
-        assignedLeaderId: ''
+        pastorId: '',
+        liderDoceId: '',
+        liderCelulaId: ''
     });
 
     useEffect(() => {
@@ -53,20 +55,28 @@ const UserManagement = () => {
         setError('');
         try {
             const payload = { ...formData };
-            if (payload.assignedLeaderId) {
-                if (payload.role === 'LIDER_DOCE') payload.pastorId = payload.assignedLeaderId;
-                else if (payload.role === 'LIDER_CELULA') payload.liderDoceId = payload.assignedLeaderId;
-                else if (payload.role === 'DISCIPULO') {
-                    const leader = users.find(u => u.id === parseInt(payload.assignedLeaderId));
-                    if (leader?.role === 'LIDER_DOCE') payload.liderDoceId = payload.assignedLeaderId;
-                    else payload.liderCelulaId = payload.assignedLeaderId;
-                }
-            }
-            delete payload.assignedLeaderId;
+
+            // Limpiar cadenas vacías y asegurar que los IDs sean enteros o eliminarlos si están vacíos
+            if (payload.pastorId) payload.pastorId = parseInt(payload.pastorId);
+            else delete payload.pastorId;
+
+            if (payload.liderDoceId) payload.liderDoceId = parseInt(payload.liderDoceId);
+            else delete payload.liderDoceId;
+
+            if (payload.liderCelulaId) payload.liderCelulaId = parseInt(payload.liderCelulaId);
+            else delete payload.liderCelulaId;
+
+            // Limpiar otros campos vacíos
+            Object.keys(payload).forEach(key => payload[key] === '' && delete payload[key]);
+
             await api.post('/users', payload);
             setSuccess('Usuario creado exitosamente');
             setShowCreateForm(false);
-            setFormData({ fullName: '', email: '', password: '', role: 'DISCIPULO', sex: 'HOMBRE', phone: '', address: '', city: '', assignedLeaderId: '' });
+            setFormData({
+                fullName: '', email: '', password: '', role: 'DISCIPULO',
+                sex: 'HOMBRE', phone: '', address: '', city: '',
+                pastorId: '', liderDoceId: '', liderCelulaId: ''
+            });
             fetchUsers();
         } catch (err) {
             setError(err.response?.data?.message || 'Error al crear usuario');
@@ -87,12 +97,12 @@ const UserManagement = () => {
                 sex: editingUser.sex,
                 phone: editingUser.phone,
                 address: editingUser.address,
-                city: editingUser.city
+                city: editingUser.city,
+                pastorId: editingUser.pastorId ? parseInt(editingUser.pastorId) : null,
+                liderDoceId: editingUser.liderDoceId ? parseInt(editingUser.liderDoceId) : null,
+                liderCelulaId: editingUser.liderCelulaId ? parseInt(editingUser.liderCelulaId) : null
             };
             await api.put(`/users/${userId}`, payload);
-            if (editingUser.assignedLeaderId && editingUser.assignedLeaderId !== editingUser.leaderId) {
-                await api.post(`/users/assign-leader/${userId}`, { leaderId: editingUser.assignedLeaderId });
-            }
             setSuccess('Usuario actualizado');
             setEditingUser(null);
             fetchUsers();
@@ -113,6 +123,10 @@ const UserManagement = () => {
             setError(err.response?.data?.message || 'Error al eliminar');
         }
     };
+
+    const pastores = users.filter(u => u.role === 'PASTOR');
+    const lideresDoce = users.filter(u => u.role === 'LIDER_DOCE');
+    const lideresCelula = users.filter(u => u.role === 'LIDER_CELULA');
 
     const filteredUsers = users.filter(u => {
         const matchesSearch = u.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -239,7 +253,12 @@ const UserManagement = () => {
                                     <td className="px-6 py-4 text-right">
                                         <div className="flex justify-end gap-2">
                                             <button
-                                                onClick={() => setEditingUser({ ...user, assignedLeaderId: user.leaderId })}
+                                                onClick={() => setEditingUser({
+                                                    ...user,
+                                                    pastorId: user.pastorId || '',
+                                                    liderDoceId: user.liderDoceId || '',
+                                                    liderCelulaId: user.liderCelulaId || ''
+                                                })}
                                                 className="p-2 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors"
                                             >
                                                 <Edit size={18} />
@@ -270,39 +289,108 @@ const UserManagement = () => {
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div>
                                     <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">Nombre Completo</label>
-                                    <input required type="text" className="w-full p-2 rounded-lg bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white focus:outline-none focus:border-blue-500" value={formData.fullName} onChange={e => setFormData({ ...formData, fullName: e.target.value })} />
+                                    <input required type="text" className="w-full p-2 rounded-lg bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white focus:outline-none focus:border-blue-500" value={formData.fullName} onChange={e => setFormData({ ...formData, fullName: e.target.value })} />
                                 </div>
                                 <div>
                                     <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">Email</label>
-                                    <input required type="email" className="w-full p-2 rounded-lg bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white focus:outline-none focus:border-blue-500" value={formData.email} onChange={e => setFormData({ ...formData, email: e.target.value })} />
+                                    <input required type="email" className="w-full p-2 rounded-lg bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white focus:outline-none focus:border-blue-500" value={formData.email} onChange={e => setFormData({ ...formData, email: e.target.value })} />
                                 </div>
                                 <div>
                                     <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">Password</label>
-                                    <input required type="password" placeholder="Mínimo 6 caracteres" className="w-full p-2 rounded-lg bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white focus:outline-none focus:border-blue-500" value={formData.password} onChange={e => setFormData({ ...formData, password: e.target.value })} />
+                                    <input required type="password" placeholder="Mínimo 6 caracteres" className="w-full p-2 rounded-lg bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white focus:outline-none focus:border-blue-500" value={formData.password} onChange={e => setFormData({ ...formData, password: e.target.value })} />
                                 </div>
                                 <div>
                                     <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">Rol</label>
-                                    <select className="w-full p-2 rounded-lg bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white focus:outline-none focus:border-blue-500" value={formData.role} onChange={e => setFormData({ ...formData, role: e.target.value })}>
-                                        {getAssignableRoles().map(r => <option key={r} value={r}>{r}</option>)}
+                                    <select className="w-full p-2 rounded-lg bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white focus:outline-none focus:border-blue-500" value={formData.role} onChange={e => setFormData({ ...formData, role: e.target.value, pastorId: '', liderDoceId: '', liderCelulaId: '' })}>
+                                        {getAssignableRoles().map(r => <option key={r} value={r}>{r.replace('_', ' ')}</option>)}
+                                    </select>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">Sexo</label>
+                                    <select className="w-full p-2 rounded-lg bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white focus:outline-none focus:border-blue-500" value={formData.sex} onChange={e => setFormData({ ...formData, sex: e.target.value })}>
+                                        <option value="HOMBRE">Hombre</option>
+                                        <option value="MUJER">Mujer</option>
                                     </select>
                                 </div>
                                 <div>
                                     <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">Teléfono</label>
-                                    <input type="text" className="w-full p-2 rounded-lg bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white focus:outline-none focus:border-blue-500" value={formData.phone} onChange={e => setFormData({ ...formData, phone: e.target.value })} />
+                                    <input type="text" className="w-full p-2 rounded-lg bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white focus:outline-none focus:border-blue-500" value={formData.phone} onChange={e => setFormData({ ...formData, phone: e.target.value })} />
                                 </div>
                                 <div>
                                     <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">Dirección</label>
-                                    <input type="text" className="w-full p-2 rounded-lg bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white focus:outline-none focus:border-blue-500" value={formData.address} onChange={e => setFormData({ ...formData, address: e.target.value })} />
+                                    <input type="text" className="w-full p-2 rounded-lg bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white focus:outline-none focus:border-blue-500" value={formData.address} onChange={e => setFormData({ ...formData, address: e.target.value })} />
                                 </div>
-                                <div className="md:col-span-2">
+                                <div>
                                     <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">Ciudad</label>
-                                    <input type="text" className="w-full p-2 rounded-lg bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white focus:outline-none focus:border-blue-500" value={formData.city} onChange={e => setFormData({ ...formData, city: e.target.value })} />
+                                    <input type="text" className="w-full p-2 rounded-lg bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white focus:outline-none focus:border-blue-500" value={formData.city} onChange={e => setFormData({ ...formData, city: e.target.value })} />
                                 </div>
+
+                                {/* Dynamic Leader Selection */}
+                                {formData.role === 'PASTOR' && (
+                                    <div className="md:col-span-2 bg-blue-50 dark:bg-blue-900/20 p-3 rounded-lg border border-blue-200 dark:border-blue-800 text-blue-700 dark:text-blue-300 text-sm">
+                                        ℹ️ El rol PASTOR es líder de sí mismo por defecto.
+                                    </div>
+                                )}
+
+                                {formData.role === 'LIDER_DOCE' && (
+                                    <div>
+                                        <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">Asignar a Pastor</label>
+                                        <select className="w-full p-2 rounded-lg bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white focus:outline-none focus:border-blue-500" value={formData.pastorId} onChange={e => setFormData({ ...formData, pastorId: e.target.value })}>
+                                            <option value="">-- Sin Asignar --</option>
+                                            {pastores.map(p => <option key={p.id} value={p.id}>{p.fullName}</option>)}
+                                        </select>
+                                    </div>
+                                )}
+
+                                {formData.role === 'LIDER_CELULA' && (
+                                    <>
+                                        <div>
+                                            <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">Asignar a Líder 12</label>
+                                            <select className="w-full p-2 rounded-lg bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white focus:outline-none focus:border-blue-500" value={formData.liderDoceId} onChange={e => setFormData({ ...formData, liderDoceId: e.target.value })}>
+                                                <option value="">-- Sin Asignar --</option>
+                                                {lideresDoce.map(l => <option key={l.id} value={l.id}>{l.fullName}</option>)}
+                                            </select>
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">Asignar a Pastor (Opcional)</label>
+                                            <select className="w-full p-2 rounded-lg bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white focus:outline-none focus:border-blue-500" value={formData.pastorId} onChange={e => setFormData({ ...formData, pastorId: e.target.value })}>
+                                                <option value="">-- Sin Asignar --</option>
+                                                {pastores.map(p => <option key={p.id} value={p.id}>{p.fullName}</option>)}
+                                            </select>
+                                        </div>
+                                    </>
+                                )}
+
+                                {formData.role === 'DISCIPULO' && (
+                                    <>
+                                        <div>
+                                            <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">Líder 12</label>
+                                            <select className="w-full p-2 rounded-lg bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white focus:outline-none focus:border-blue-500" value={formData.liderDoceId} onChange={e => setFormData({ ...formData, liderDoceId: e.target.value, liderCelulaId: '' })}>
+                                                <option value="">-- Sin Asignar --</option>
+                                                {lideresDoce.map(l => <option key={l.id} value={l.id}>{l.fullName}</option>)}
+                                            </select>
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">Líder Célula</label>
+                                            <select className="w-full p-2 rounded-lg bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white focus:outline-none focus:border-blue-500" value={formData.liderCelulaId} onChange={e => setFormData({ ...formData, liderCelulaId: e.target.value })}>
+                                                <option value="">-- Sin Asignar --</option>
+                                                {lideresCelula
+                                                    .filter(lc => !formData.liderDoceId || lc.liderDoceId === parseInt(formData.liderDoceId))
+                                                    .map(lc => <option key={lc.id} value={lc.id}>{lc.fullName}</option>)}
+                                            </select>
+                                        </div>
+                                    </>
+                                )}
                             </div>
                             <div className="flex justify-end gap-3 pt-4 border-t border-gray-100 dark:border-gray-700">
                                 <button type="button" onClick={() => setShowCreateForm(false)} className="px-4 py-2 text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200 transition-colors">Cancelar</button>
-                                <button type="submit" disabled={submitting} className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors">
-                                    {submitting ? 'Creando...' : 'Crear Usuario'}
+                                <button type="submit" disabled={submitting} className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors shadow-lg shadow-blue-500/30">
+                                    {submitting ? (
+                                        <div className="flex items-center gap-2">
+                                            <Loader className="animate-spin" size={18} />
+                                            <span>Creando...</span>
+                                        </div>
+                                    ) : 'Crear Usuario'}
                                 </button>
                             </div>
                         </form>
@@ -320,35 +408,98 @@ const UserManagement = () => {
                         <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
                                 <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">Nombre</label>
-                                <input type="text" className="w-full p-2 rounded-lg bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white focus:outline-none focus:border-blue-500" value={editingUser.fullName} onChange={e => setEditingUser({ ...editingUser, fullName: e.target.value })} />
+                                <input type="text" className="w-full p-2 rounded-lg bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white focus:outline-none focus:border-blue-500" value={editingUser.fullName} onChange={e => setEditingUser({ ...editingUser, fullName: e.target.value })} />
                             </div>
                             <div>
                                 <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">Email</label>
-                                <input type="email" className="w-full p-2 rounded-lg bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white focus:outline-none focus:border-blue-500" value={editingUser.email} onChange={e => setEditingUser({ ...editingUser, email: e.target.value })} />
+                                <input type="email" className="w-full p-2 rounded-lg bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white focus:outline-none focus:border-blue-500" value={editingUser.email} onChange={e => setEditingUser({ ...editingUser, email: e.target.value })} />
                             </div>
                             <div>
                                 <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">Rol</label>
-                                <select className="w-full p-2 rounded-lg bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white focus:outline-none focus:border-blue-500" value={editingUser.role} onChange={e => setEditingUser({ ...editingUser, role: e.target.value })}>
-                                    {getAssignableRoles().map(r => <option key={r} value={r}>{r}</option>)}
+                                <select className="w-full p-2 rounded-lg bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white focus:outline-none focus:border-blue-500" value={editingUser.role} onChange={e => setEditingUser({ ...editingUser, role: e.target.value })}>
+                                    {getAssignableRoles().map(r => <option key={r} value={r}>{r.replace('_', ' ')}</option>)}
+                                </select>
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">Sexo</label>
+                                <select className="w-full p-2 rounded-lg bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white focus:outline-none focus:border-blue-500" value={editingUser.sex} onChange={e => setEditingUser({ ...editingUser, sex: e.target.value })}>
+                                    <option value="HOMBRE">Hombre</option>
+                                    <option value="MUJER">Mujer</option>
                                 </select>
                             </div>
                             <div>
                                 <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">Teléfono</label>
-                                <input type="text" className="w-full p-2 rounded-lg bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white focus:outline-none focus:border-blue-500" value={editingUser.phone || ''} onChange={e => setEditingUser({ ...editingUser, phone: e.target.value })} />
+                                <input type="text" className="w-full p-2 rounded-lg bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white focus:outline-none focus:border-blue-500" value={editingUser.phone || ''} onChange={e => setEditingUser({ ...editingUser, phone: e.target.value })} />
                             </div>
                             <div>
                                 <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">Dirección</label>
-                                <input type="text" className="w-full p-2 rounded-lg bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white focus:outline-none focus:border-blue-500" value={editingUser.address || ''} onChange={e => setEditingUser({ ...editingUser, address: e.target.value })} />
+                                <input type="text" className="w-full p-2 rounded-lg bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white focus:outline-none focus:border-blue-500" value={editingUser.address || ''} onChange={e => setEditingUser({ ...editingUser, address: e.target.value })} />
                             </div>
                             <div>
                                 <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">Ciudad</label>
-                                <input type="text" className="w-full p-2 rounded-lg bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white focus:outline-none focus:border-blue-500" value={editingUser.city || ''} onChange={e => setEditingUser({ ...editingUser, city: e.target.value })} />
+                                <input type="text" className="w-full p-2 rounded-lg bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white focus:outline-none focus:border-blue-500" value={editingUser.city || ''} onChange={e => setEditingUser({ ...editingUser, city: e.target.value })} />
                             </div>
+
+                            {/* Dynamic Leader Selection in Edit */}
+                            {editingUser.role === 'LIDER_DOCE' && (
+                                <div className="md:col-span-2">
+                                    <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">Asignar a Pastor</label>
+                                    <select className="w-full p-2 rounded-lg bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white focus:outline-none focus:border-blue-500" value={editingUser.pastorId} onChange={e => setEditingUser({ ...editingUser, pastorId: e.target.value })}>
+                                        <option value="">-- Sin Asignar --</option>
+                                        {pastores.map(p => <option key={p.id} value={p.id}>{p.fullName}</option>)}
+                                    </select>
+                                </div>
+                            )}
+
+                            {editingUser.role === 'LIDER_CELULA' && (
+                                <>
+                                    <div>
+                                        <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">Asignar a Líder 12</label>
+                                        <select className="w-full p-2 rounded-lg bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white focus:outline-none focus:border-blue-500" value={editingUser.liderDoceId} onChange={e => setEditingUser({ ...editingUser, liderDoceId: e.target.value })}>
+                                            <option value="">-- Sin Asignar --</option>
+                                            {lideresDoce.map(l => <option key={l.id} value={l.id}>{l.fullName}</option>)}
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">Asignar a Pastor (Opcional)</label>
+                                        <select className="w-full p-2 rounded-lg bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white focus:outline-none focus:border-blue-500" value={editingUser.pastorId} onChange={e => setEditingUser({ ...editingUser, pastorId: e.target.value })}>
+                                            <option value="">-- Sin Asignar --</option>
+                                            {pastores.map(p => <option key={p.id} value={p.id}>{p.fullName}</option>)}
+                                        </select>
+                                    </div>
+                                </>
+                            )}
+
+                            {editingUser.role === 'DISCIPULO' && (
+                                <>
+                                    <div>
+                                        <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">Líder 12</label>
+                                        <select className="w-full p-2 rounded-lg bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white focus:outline-none focus:border-blue-500" value={editingUser.liderDoceId} onChange={e => setEditingUser({ ...editingUser, liderDoceId: e.target.value, liderCelulaId: '' })}>
+                                            <option value="">-- Sin Asignar --</option>
+                                            {lideresDoce.map(l => <option key={l.id} value={l.id}>{l.fullName}</option>)}
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">Líder Célula</label>
+                                        <select className="w-full p-2 rounded-lg bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white focus:outline-none focus:border-blue-500" value={editingUser.liderCelulaId} onChange={e => setEditingUser({ ...editingUser, liderCelulaId: e.target.value })}>
+                                            <option value="">-- Sin Asignar --</option>
+                                            {lideresCelula
+                                                .filter(lc => !editingUser.liderDoceId || lc.liderDoceId === parseInt(editingUser.liderDoceId))
+                                                .map(lc => <option key={lc.id} value={lc.id}>{lc.fullName}</option>)}
+                                        </select>
+                                    </div>
+                                </>
+                            )}
                         </div>
                         <div className="p-6 flex justify-end gap-3 border-t border-gray-100 dark:border-gray-700">
                             <button type="button" onClick={() => setEditingUser(null)} className="px-4 py-2 text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200 transition-colors">Cancelar</button>
-                            <button disabled={submitting} onClick={() => handleUpdateUser(editingUser.id)} className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors">
-                                {submitting ? 'Guardando...' : 'Guardar Cambios'}
+                            <button disabled={submitting} onClick={() => handleUpdateUser(editingUser.id)} className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors shadow-lg shadow-blue-500/30">
+                                {submitting ? (
+                                    <div className="flex items-center gap-2">
+                                        <Loader className="animate-spin" size={18} />
+                                        <span>Guardando...</span>
+                                    </div>
+                                ) : 'Guardar Cambios'}
                             </button>
                         </div>
                     </div>
