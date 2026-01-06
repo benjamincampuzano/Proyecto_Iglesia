@@ -95,6 +95,37 @@ const AuditDashboard = () => {
         return colors[type] || 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300';
     };
 
+    const propertyMap = {
+        'UserId': 'ID Usuario',
+        'conventionId': 'ID Convención',
+        'ConventionId': 'ID Convención',
+        'encuentroId': 'ID Encuentro',
+        'EncuentroId': 'ID Encuentro',
+        'guestId': 'ID Invitado',
+        'GuestId': 'ID Invitado',
+        'name': 'Nombre',
+        'fullName': 'Nombre Completo',
+        'email': 'Email',
+        'role': 'Rol',
+        'phone': 'Teléfono',
+        'address': 'Dirección',
+        'city': 'Ciudad',
+        'lastLogin': 'Último Acceso',
+        'action': 'Acción',
+        'cellId': 'ID Célula',
+        'cellType': 'Tipo de Célula',
+        'hostId': 'ID Anfitrión',
+        'leaderId': 'ID Líder',
+        'liderDoceId': 'ID Líder Doce',
+        'liderCelulaId': 'ID Líder Célula',
+        'pastorId': 'ID Pastor',
+        'status': 'Estado',
+        'Usuario': 'Participante',
+        'Evento': 'Evento',
+        'Invitado': 'Nombre del Invitado',
+        'Encuentro': 'Nombre del Encuentro'
+    };
+
     const renderDetails = (detailsStr) => {
         if (!detailsStr) return '-';
         try {
@@ -108,6 +139,17 @@ const AuditDashboard = () => {
                                 {Object.keys(details.changes).length} cambios registrados
                             </span>
                         )}
+                    </span>
+                );
+            }
+            // For registrations or creations that now have explicit Name/Event fields
+            if (details.Usuario || details.Invitado) {
+                return (
+                    <span className="flex flex-col">
+                        <span className="font-semibold text-gray-700 dark:text-gray-200">{details.Usuario || details.Invitado}</span>
+                        <span className="text-[10px] text-blue-500 font-medium uppercase tracking-tighter">
+                            {details.Evento || details.Encuentro}
+                        </span>
                     </span>
                 );
             }
@@ -364,6 +406,8 @@ const AuditDashboard = () => {
                             {(() => {
                                 try {
                                     const details = JSON.parse(selectedLog.details);
+
+                                    // Case 1: Modification Log (Diff)
                                     if (details.changes) {
                                         return (
                                             <div className="space-y-4">
@@ -393,13 +437,46 @@ const AuditDashboard = () => {
                                             </div>
                                         );
                                     }
+
+                                    // Case 2: Creation or other flat data log
+                                    const isCreate = selectedLog.action === 'CREATE';
                                     return (
-                                        <pre className="bg-gray-900 text-green-400 p-4 rounded-xl text-xs overflow-x-auto">
-                                            {JSON.stringify(details, null, 2)}
-                                        </pre>
+                                        <div className="space-y-4">
+                                            <p className="text-sm text-gray-600 dark:text-gray-400">
+                                                {isCreate ? 'Información registrada en la creación:' : 'Detalles de la operación:'}
+                                            </p>
+                                            <div className="border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden">
+                                                <table className="w-full text-sm">
+                                                    <thead className="bg-gray-100 dark:bg-gray-800">
+                                                        <tr>
+                                                            <th className="px-4 py-2 text-left w-1/3">Propiedad</th>
+                                                            <th className="px-4 py-2 text-left">Valor Registrado</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+                                                        {Object.entries(details).map(([key, value]) => {
+                                                            // Skip targetUser if it's already in the header or just noise
+                                                            if (key === 'targetUser' && isCreate) return null;
+                                                            return (
+                                                                <tr key={key} className="hover:bg-gray-50 dark:hover:bg-gray-800/50">
+                                                                    <td className="px-4 py-3 font-semibold text-gray-700 dark:text-gray-300 capitalize">{propertyMap[key] || key}</td>
+                                                                    <td className="px-4 py-3 text-gray-600 dark:text-gray-400">
+                                                                        {typeof value === 'object' ? JSON.stringify(value) : value.toString()}
+                                                                    </td>
+                                                                </tr>
+                                                            );
+                                                        })}
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        </div>
                                     );
                                 } catch (e) {
-                                    return <p className="text-sm dark:text-white">{selectedLog.details}</p>;
+                                    return (
+                                        <div className="p-4 bg-gray-50 dark:bg-gray-900/50 rounded-xl border border-gray-200 dark:border-gray-700">
+                                            <p className="text-sm dark:text-white">{selectedLog.details}</p>
+                                        </div>
+                                    );
                                 }
                             })()}
                         </div>

@@ -289,13 +289,15 @@ const ConventionDetails = ({ convention, onBack, onRefresh }) => {
                                 Exportar Excel
                             </button>
                         )}
-                        <button
-                            onClick={() => setShowRegisterModal(true)}
-                            className="flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
-                        >
-                            <UserPlus size={20} className="mr-2" />
-                            Registrar Asistente
-                        </button>
+                        {!(user.role === 'LIDER_CELULA' || user.role === 'DISCIPULO') && (
+                            <button
+                                onClick={() => setShowRegisterModal(true)}
+                                className="flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+                            >
+                                <UserPlus size={20} className="mr-2" />
+                                Registrar Asistente
+                            </button>
+                        )}
                     </div>
 
                     {/* Registrations List */}
@@ -343,15 +345,17 @@ const ConventionDetails = ({ convention, onBack, onRefresh }) => {
                                                 {formatCurrency(reg.balance)}
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium flex items-center justify-end space-x-3">
-                                                <button
-                                                    onClick={() => openPaymentModal(reg)}
-                                                    className="text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-300 inline-flex items-center"
-                                                    title="Agregar Abono"
-                                                >
-                                                    <DollarSign size={16} className="mr-1" />
-                                                    Abonar
-                                                </button>
-                                                {(user.role === 'SUPER_ADMIN' || user.role === 'LIDER_DOCE') && (
+                                                {!(user.role === 'LIDER_CELULA' || user.role === 'DISCIPULO') && (
+                                                    <button
+                                                        onClick={() => openPaymentModal(reg)}
+                                                        className="text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-300 inline-flex items-center"
+                                                        title="Agregar Abono"
+                                                    >
+                                                        <DollarSign size={16} className="mr-1" />
+                                                        Abonar
+                                                    </button>
+                                                )}
+                                                {(user.role === 'SUPER_ADMIN' || user.role === 'LIDER_DOCE' || user.role === 'PASTOR') && (
                                                     <button
                                                         onClick={() => handleDelete(reg.id)}
                                                         className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300 inline-flex items-center"

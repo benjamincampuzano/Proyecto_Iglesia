@@ -1,0 +1,80 @@
+Roles distribution: [
+  {
+    "_count": {
+      "_all": 48
+    },
+    "role": "LIDER_CELULA"
+  },
+  {
+    "_count": {
+      "_all": 13
+    },
+    "role": "LIDER_DOCE"
+  },
+  {
+    "_count": {
+      "_all": 1
+    },
+    "role": "SUPER_ADMIN"
+  },
+  {
+    "_count": {
+      "_all": 2
+    },
+    "role": "PASTOR"
+  },
+  {
+    "_count": {
+      "_all": 31
+    },
+    "role": "DISCIPULO"
+  }
+]
+Invitados found: []
+Sample Disciples: [
+  {
+    "id": 148,
+    "fullName": "Gabino Olivera",
+    "leaderId": 144,
+    "leader": {
+      "fullName": "Ani Benavides",
+      "id": 144
+    }
+  },
+  {
+    "id": 149,
+    "fullName": "Jose Carlos aguila",
+    "leaderId": 143,
+    "leader": {
+      "fullName": "Danilo Cortes",
+      "id": 143
+    }
+  },
+  {
+    "id": 150,
+    "fullName": "Cloe Silva",
+    "leaderId": 147,
+    "leader": {
+      "fullName": "Graciana Canet",
+      "id": 147
+    }
+  },
+  {
+    "id": 151,
+    "fullName": "Paulina Ochoa",
+    "leaderId": 142,
+    "leader": {
+      "fullName": "Juan Pablo Heras",
+      "id": 142
+    }
+  },
+  {
+    "id": 152,
+    "fullName": "Maria Fernanda Bauzà",
+    "leaderId": 141,
+    "leader": {
+      "fullName": "Mayte Quiros",
+      "id": 141
+    }
+  }
+]

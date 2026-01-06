@@ -21,10 +21,11 @@ const Home = () => {
             fetchPastores();
         } else if (['PASTOR', 'LIDER_DOCE', 'LIDER_CELULA', 'DISCIPULO'].includes(user?.role)) {
             // Automatically load their network context
-            // If member, try to show their Doce leader's network, or just their own
-            const leaderId = (user.role === 'DISCIPULO')
-                ? (user.liderDoceId || user.pastorId || user.id)
-                : user.id;
+            // If disciple, show their hierarchy: Cell Leader -> Doce Leader -> Pastor
+            let leaderId = user.id;
+            if (user.role === 'DISCIPULO') {
+                leaderId = user.liderCelulaId || user.liderDoceId || user.pastorId || user.id;
+            }
             handleSelectLeader({ id: leaderId, fullName: user.fullName, role: user.role });
             setLoading(false);
         } else {

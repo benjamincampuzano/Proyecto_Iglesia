@@ -20,15 +20,31 @@ export const AuthProvider = ({ children }) => {
 
         checkInit();
 
-        const token = localStorage.getItem('token');
-        if (token) {
-            // En una app real, verificarías el token con el backend aquí
-            // Por ahora, solo lo decodificamos o asumimos que es válido si está presente
-            // Idealmente, obtener perfil de usuario
-            const storedUser = JSON.parse(localStorage.getItem('user'));
-            if (storedUser) setUser(storedUser);
-        }
-        setLoading(false);
+        const checkAuth = async () => {
+            const token = localStorage.getItem('token');
+            if (token) {
+                try {
+                    const res = await api.get('/users/profile');
+                    if (res.data.user) {
+                        setUser(res.data.user);
+                        localStorage.setItem('user', JSON.stringify(res.data.user));
+                    }
+                } catch (error) {
+                    console.error('Error fetching user profile:', error);
+                    // If error is 401, token might be invalid, logout
+                    if (error.response?.status === 401) {
+                        logout();
+                    } else {
+                        // Fallback to stored user if server fails but not 401
+                        const storedUser = JSON.parse(localStorage.getItem('user'));
+                        if (storedUser) setUser(storedUser);
+                    }
+                }
+            }
+            setLoading(false);
+        };
+
+        checkAuth();
     }, []);
 
     const login = async (email, password) => {

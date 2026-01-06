@@ -2,6 +2,7 @@ const { PrismaClient } = require('@prisma/client');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { logActivity } = require('../utils/auditLogger');
+const { validatePassword } = require('../utils/passwordValidator');
 
 const prisma = new PrismaClient();
 
@@ -9,9 +10,9 @@ const register = async (req, res) => {
     try {
         const { email, password, fullName, role, sex, phone, address, city, liderDoceId } = req.body;
 
-        const existingUser = await prisma.user.findUnique({ where: { email } });
-        if (existingUser) {
-            return res.status(400).json({ message: 'User already exists' });
+        const validation = validatePassword(password, { email, fullName });
+        if (!validation.isValid) {
+            return res.status(400).json({ message: validation.message });
         }
 
         const hashedPassword = await bcrypt.hash(password, 10);
@@ -28,11 +29,26 @@ const register = async (req, res) => {
         };
 
         if (liderDoceId) {
-            userData.liderDoceId = parseInt(liderDoceId);
+            const numericLdoceId = parseInt(liderDoceId);
+            userData.liderDoceId = numericLdoceId;
+
+            // Inherit pastor from the 12 leader
+            const leader12 = await prisma.user.findUnique({
+                where: { id: numericLdoceId },
+                select: { pastorId: true }
+            });
+            if (leader12 && leader12.pastorId) {
+                userData.pastorId = leader12.pastorId;
+            }
         }
 
         const user = await prisma.user.create({
             data: userData,
+            include: {
+                pastor: true,
+                liderDoce: true,
+                liderCelula: true
+            }
         });
 
         const token = jwt.sign({ userId: user.id, role: user.role }, process.env.JWT_SECRET, {
@@ -49,7 +65,10 @@ const register = async (req, res) => {
                 phone: user.phone,
                 address: user.address,
                 city: user.city,
-                sex: user.sex
+                sex: user.sex,
+                pastorId: user.pastorId,
+                liderDoceId: user.liderDoceId,
+                liderCelulaId: user.liderCelulaId
             }
         });
     } catch (error) {
@@ -95,7 +114,10 @@ const login = async (req, res) => {
                 phone: user.phone,
                 address: user.address,
                 city: user.city,
-                sex: user.sex
+                sex: user.sex,
+                pastorId: user.pastorId,
+                liderDoceId: user.liderDoceId,
+                liderCelulaId: user.liderCelulaId
             }
         });
     } catch (error) {
@@ -136,6 +158,11 @@ const registerSetup = async (req, res) => {
 
         const { email, password, fullName, sex, phone, address, city } = req.body;
 
+        const validation = validatePassword(password, { email, fullName });
+        if (!validation.isValid) {
+            return res.status(400).json({ message: validation.message });
+        }
+
         const hashedPassword = await bcrypt.hash(password, 10);
 
         const user = await prisma.user.create({
@@ -164,15 +191,14 @@ const registerSetup = async (req, res) => {
                 email: user.email,
                 fullName: user.fullName,
                 role: user.role,
-                phone: user.phone,
-                address: user.address,
-                city: user.city,
-                sex: user.sex
-            }
+                pastorId: user.pastorId,
+                liderDoceId: user.liderDoceId,
+                liderCelulaId: user.liderCelulaId
+            },
         });
-    } catch (error) {
-        console.error('Error in setup registration:', error);
-        res.status(500).json({ message: 'Server error during setup' });
+    } catch (err) {
+        console.error('Setup error:', err);
+        res.status(500).json({ message: 'Error initializing system' });
     }
 };
 

@@ -18,6 +18,7 @@ enum Role {
   DISCIPULO
   PROFESOR
   AUXILIAR
+  INVITADO
 }
 
 enum GuestStatus {
@@ -176,6 +177,7 @@ model GuestVisit {
   longitude   Float?
   dayOfWeek   String?
   time        String?
+  cellType    String   @default("ABIERTA") // ABIERTA, CERRADA
   members     User[]   @relation("CellMembers")
   attendances CellAttendance[]
   createdAt   DateTime @default(now())

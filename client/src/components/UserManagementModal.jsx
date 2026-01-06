@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import { X, Save, Loader, Plus, Trash2, Edit2, Search } from 'lucide-react';
+import { X, Save, Loader, Plus, Trash2, Edit2, Search, Check, X as XIcon } from 'lucide-react';
+import { validatePassword, getPasswordStrength } from '../utils/passwordValidator';
 import api from '../utils/api';
 
 const UserManagementModal = ({ isOpen, onClose }) => {
@@ -60,12 +61,18 @@ const UserManagementModal = ({ isOpen, onClose }) => {
             setLoading(false);
         }
     };
-
     const handleCreateUser = async (e) => {
         e.preventDefault();
         setLoading(true);
         setError('');
         setSuccess('');
+
+        const validation = validatePassword(formData.password, { email: formData.email, fullName: formData.fullName });
+        if (!validation.isValid) {
+            setError(validation.message);
+            setLoading(false);
+            return;
+        }
 
         try {
             const payload = { ...formData };
@@ -274,6 +281,27 @@ const UserManagementModal = ({ isOpen, onClose }) => {
                                         className="w-full px-4 py-2 bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:border-blue-500"
                                         required
                                     />
+                                    {formData.password && (
+                                        <div className="mt-2 space-y-2">
+                                            <div className="flex gap-1">
+                                                {[...Array(4)].map((_, i) => (
+                                                    <div
+                                                        key={i}
+                                                        className={`h-1 flex-1 rounded-full transition-colors ${i < getPasswordStrength(formData.password)
+                                                            ? ['bg-red-500', 'bg-orange-500', 'bg-yellow-500', 'bg-green-500'][getPasswordStrength(formData.password) - 1]
+                                                            : 'bg-gray-700'
+                                                            }`}
+                                                    />
+                                                ))}
+                                            </div>
+                                            <div className="grid grid-cols-2 gap-2 text-[10px]">
+                                                <Requirement label="8+ caracteres" met={formData.password.length >= 8} />
+                                                <Requirement label="Mayúscula/Minúscula" met={/[A-Z]/.test(formData.password) && /[a-z]/.test(formData.password)} />
+                                                <Requirement label="Número" met={/\d/.test(formData.password)} />
+                                                <Requirement label="Símbolo" met={/[!@#$%^&*(),.?":{}|<>]/.test(formData.password)} />
+                                            </div>
+                                        </div>
+                                    )}
                                 </div>
                                 <div>
                                     <select
@@ -722,5 +750,12 @@ const UserManagementModal = ({ isOpen, onClose }) => {
         </div>
     );
 };
+
+const Requirement = ({ label, met }) => (
+    <div className={`flex items-center gap-1 ${met ? 'text-green-500' : 'text-gray-500'}`}>
+        {met ? <Check size={10} /> : <XIcon size={10} />}
+        <span>{label}</span>
+    </div>
+);
 
 export default UserManagementModal;

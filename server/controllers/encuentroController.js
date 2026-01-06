@@ -152,6 +152,11 @@ const registerGuest = async (req, res) => {
         const { encuentroId } = req.params;
         const { guestId, discountPercentage } = req.body;
 
+        // Restriction: Only SUPER_ADMIN, PASTOR, or LIDER_DOCE can register
+        if (req.user.role === 'LIDER_CELULA' || req.user.role === 'DISCIPULO') {
+            return res.status(403).json({ error: 'No tienes permisos para registrar invitados en encuentros' });
+        }
+
         const registration = await prisma.encuentroRegistration.create({
             data: {
                 encuentroId: parseInt(encuentroId),
@@ -167,7 +172,17 @@ const registerGuest = async (req, res) => {
             data: { status: 'GANADO' }
         });
 
-        await logActivity(req.user.id, 'CREATE', 'ENCUENTRO_REGISTRATION', registration.id, { guestId, encuentroId });
+        const encuentro = await prisma.encuentro.findUnique({
+            where: { id: parseInt(encuentroId) },
+            select: { name: true }
+        });
+
+        await logActivity(req.user.id, 'CREATE', 'ENCUENTRO_REGISTRATION', registration.id, {
+            Invitado: registration.guest.name,
+            Encuentro: encuentro.name,
+            GuestId: guestId,
+            EncuentroId: encuentroId
+        });
 
         res.status(201).json(registration);
     } catch (error) {
@@ -202,6 +217,11 @@ const addPayment = async (req, res) => {
     try {
         const { registrationId } = req.params;
         const { amount, notes } = req.body;
+
+        // Restriction: Only SUPER_ADMIN, PASTOR, or LIDER_DOCE
+        if (req.user.role === 'LIDER_CELULA' || req.user.role === 'DISCIPULO') {
+            return res.status(403).json({ error: 'No tienes permisos para agregar pagos' });
+        }
         const payment = await prisma.encuentroPayment.create({
             data: {
                 registrationId: parseInt(registrationId),
@@ -219,6 +239,11 @@ const updateClassAttendance = async (req, res) => {
     try {
         const { registrationId, classNumber } = req.params; // classNumber 1-10
         const { attended } = req.body;
+
+        // Restriction: Only SUPER_ADMIN, PASTOR, or LIDER_DOCE
+        if (req.user.role === 'LIDER_CELULA' || req.user.role === 'DISCIPULO') {
+            return res.status(403).json({ error: 'No tienes permisos para actualizar asistencia' });
+        }
 
         const record = await prisma.encuentroClassAttendance.upsert({
             where: {

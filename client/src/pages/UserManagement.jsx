@@ -12,6 +12,8 @@ const UserManagement = () => {
     const [success, setSuccess] = useState('');
     const [searchTerm, setSearchTerm] = useState('');
     const [roleFilter, setRoleFilter] = useState('');
+    const [sexFilter, setSexFilter] = useState('');
+    const [liderDoceFilter, setLiderDoceFilter] = useState('');
     const [editingUser, setEditingUser] = useState(null);
     const [showCreateForm, setShowCreateForm] = useState(false);
     const [submitting, setSubmitting] = useState(false);
@@ -132,14 +134,16 @@ const UserManagement = () => {
         const matchesSearch = u.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
             u.email.toLowerCase().includes(searchTerm.toLowerCase());
         const matchesRole = roleFilter === '' || u.role === roleFilter;
-        return matchesSearch && matchesRole;
+        const matchesSex = sexFilter === '' || u.sex === sexFilter;
+        const matchesLiderDoce = liderDoceFilter === '' || u.liderDoceId === parseInt(liderDoceFilter);
+        return matchesSearch && matchesRole && matchesSex && matchesLiderDoce;
     });
 
     const getAssignableRoles = () => {
         if (!currentUser) return [];
-        if (currentUser.role === 'SUPER_ADMIN') return ['DISCIPULO', 'LIDER_CELULA', 'LIDER_DOCE', 'PASTOR', 'SUPER_ADMIN', 'PROFESOR', 'AUXILIAR'];
-        if (currentUser.role === 'PASTOR') return ['DISCIPULO', 'LIDER_CELULA', 'LIDER_DOCE', 'PASTOR'];
-        return ['DISCIPULO', 'LIDER_CELULA'];
+        if (currentUser.role === 'SUPER_ADMIN') return ['INVITADO', 'DISCIPULO', 'LIDER_CELULA', 'LIDER_DOCE', 'PASTOR', 'SUPER_ADMIN', 'PROFESOR', 'AUXILIAR'];
+        if (currentUser.role === 'PASTOR') return ['INVITADO', 'DISCIPULO', 'LIDER_CELULA', 'LIDER_DOCE', 'PASTOR'];
+        return ['INVITADO', 'DISCIPULO', 'LIDER_CELULA'];
     };
 
     return (
@@ -164,7 +168,7 @@ const UserManagement = () => {
             {error && <div className="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 rounded shadow-sm">{error}</div>}
             {success && <div className="bg-green-100 border-l-4 border-green-500 text-green-700 p-4 rounded shadow-sm">{success}</div>}
 
-            <div className="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 flex flex-col md:row gap-4">
+            <div className="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 flex flex-row flex-wrap items-center gap-4">
                 <div className="flex-1 relative">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
                     <input
@@ -175,7 +179,7 @@ const UserManagement = () => {
                         onChange={(e) => setSearchTerm(e.target.value)}
                     />
                 </div>
-                <div className="w-full md:w-48 relative">
+                <div className="relative min-w-[200px]">
                     <Filter className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
                     <select
                         className="w-full pl-10 pr-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 appearance-none text-gray-900 dark:text-white"
@@ -183,8 +187,33 @@ const UserManagement = () => {
                         onChange={(e) => setRoleFilter(e.target.value)}
                     >
                         <option value="">Todos los roles</option>
-                        {['SUPER_ADMIN', 'PASTOR', 'LIDER_DOCE', 'LIDER_CELULA', 'DISCIPULO', 'PROFESOR', 'AUXILIAR'].map(r => (
+                        {['SUPER_ADMIN', 'PASTOR', 'LIDER_DOCE', 'LIDER_CELULA', 'DISCIPULO', 'INVITADO', 'PROFESOR', 'AUXILIAR'].map(r => (
                             <option key={r} value={r}>{r.replace('_', ' ')}</option>
+                        ))}
+                    </select>
+                </div>
+                <div className="relative min-w-[150px]">
+                    <Filter className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+                    <select
+                        className="w-full pl-10 pr-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 appearance-none text-gray-900 dark:text-white"
+                        value={sexFilter}
+                        onChange={(e) => setSexFilter(e.target.value)}
+                    >
+                        <option value="">Todos los sexos</option>
+                        <option value="HOMBRE">Hombre</option>
+                        <option value="MUJER">Mujer</option>
+                    </select>
+                </div>
+                <div className="relative min-w-[200px]">
+                    <Filter className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+                    <select
+                        className="w-full pl-10 pr-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 appearance-none text-gray-900 dark:text-white"
+                        value={liderDoceFilter}
+                        onChange={(e) => setLiderDoceFilter(e.target.value)}
+                    >
+                        <option value="">Todos los Líderes 12</option>
+                        {lideresDoce.map(l => (
+                            <option key={l.id} value={l.id}>{l.fullName}</option>
                         ))}
                     </select>
                 </div>

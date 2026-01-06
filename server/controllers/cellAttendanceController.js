@@ -52,7 +52,7 @@ const recordCellAttendance = async (req, res) => {
         }
 
         const userRole = req.user.role;
-        const userId = req.user.userId;
+        const userId = req.user.id;
 
         if (userRole !== 'SUPER_ADMIN' && userRole !== 'LIDER_DOCE' && userRole !== 'PASTOR' && cell.leaderId !== userId) {
             return res.status(403).json({ error: 'Not authorized to record attendance for this cell' });
@@ -91,7 +91,7 @@ const getCellAttendance = async (req, res) => {
     try {
         const { cellId, date } = req.params;
         const userRole = req.user.role;
-        const userId = req.user.userId;
+        const userId = req.user.id;
 
         // Check authorization
         const cell = await prisma.cell.findUnique({
@@ -144,7 +144,7 @@ const getCellAttendance = async (req, res) => {
 const getCells = async (req, res) => {
     try {
         const userRole = req.user.role;
-        const userId = req.user.userId;
+        const userId = req.user.id;
 
         let where = {};
 
@@ -174,6 +174,10 @@ const getCells = async (req, res) => {
                 longitude: true,
                 dayOfWeek: true,
                 time: true,
+                leaderId: true,
+                hostId: true,
+                liderDoceId: true,
+                cellType: true,
                 leader: {
                     select: {
                         id: true,
@@ -218,7 +222,7 @@ const getCellMembers = async (req, res) => {
     try {
         const { cellId } = req.params;
         const userRole = req.user.role;
-        const userId = req.user.userId;
+        const userId = req.user.id;
 
         const cell = await prisma.cell.findUnique({
             where: { id: parseInt(cellId) },
@@ -257,7 +261,7 @@ const getAttendanceStats = async (req, res) => {
     try {
         const { startDate, endDate, cellId } = req.query;
         const userRole = req.user.role;
-        const userId = req.user.userId;
+        const userId = req.user.id;
 
         // Default to last 30 days if no date range provided
         const end = endDate ? new Date(endDate) : new Date();

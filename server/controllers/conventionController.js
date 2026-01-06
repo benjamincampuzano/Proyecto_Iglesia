@@ -270,6 +270,11 @@ const registerUser = async (req, res) => {
         const { conventionId } = req.params;
         const { userId, discountPercentage, needsTransport, needsAccommodation } = req.body;
 
+        // Restriction: Only SUPER_ADMIN, PASTOR, or LIDER_DOCE
+        if (req.user.role === 'LIDER_CELULA' || req.user.role === 'DISCIPULO') {
+            return res.status(403).json({ error: 'No tienes permisos para registrar participantes en convenciones' });
+        }
+
         const existing = await prisma.conventionRegistration.findUnique({
             where: {
                 userId_conventionId: {
@@ -304,7 +309,17 @@ const registerUser = async (req, res) => {
             }
         });
 
-        await logActivity(req.user.id, 'CREATE', 'CONVENTION_REGISTRATION', registration.id, { userId, conventionId });
+        const convention = await prisma.convention.findUnique({
+            where: { id: parseInt(conventionId) },
+            select: { type: true, year: true }
+        });
+
+        await logActivity(req.user.id, 'CREATE', 'CONVENTION_REGISTRATION', registration.id, {
+            Usuario: registration.user.fullName,
+            Evento: `${convention.type} ${convention.year}`,
+            UserId: userId,
+            ConventionId: conventionId
+        });
 
         res.status(201).json(registration);
     } catch (error) {
@@ -317,6 +332,11 @@ const addPayment = async (req, res) => {
     try {
         const { registrationId } = req.params;
         const { amount, notes } = req.body;
+
+        // Restriction: Only SUPER_ADMIN, PASTOR, or LIDER_DOCE
+        if (req.user.role === 'LIDER_CELULA' || req.user.role === 'DISCIPULO') {
+            return res.status(403).json({ error: 'No tienes permisos para agregar pagos' });
+        }
 
         const payment = await prisma.conventionPayment.create({
             data: {

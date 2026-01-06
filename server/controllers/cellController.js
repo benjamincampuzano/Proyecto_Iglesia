@@ -61,9 +61,9 @@ const getNetworkIds = async (leaderId) => {
 // Create a new cell
 const createCell = async (req, res) => {
     try {
-        const { name, leaderId, hostId, address, city, dayOfWeek, time, liderDoceId } = req.body;
+        const { name, leaderId, hostId, address, city, dayOfWeek, time, liderDoceId, cellType } = req.body;
         const requestedLeaderId = parseInt(leaderId);
-        const requestedHostId = parseInt(hostId);
+        const requestedHostId = hostId ? parseInt(hostId) : null;
         const requestedLiderDoceId = liderDoceId ? parseInt(liderDoceId) : null;
 
         if (!name || !leaderId || !address || !city || !dayOfWeek || !time) {
@@ -82,6 +82,15 @@ const createCell = async (req, res) => {
             }
         }
 
+        // New Cell Type Leadership Rules
+        const targetLeader = await prisma.user.findUnique({ where: { id: requestedLeaderId }, select: { role: true } });
+        if (cellType === 'CERRADA' && targetLeader.role !== 'LIDER_DOCE') {
+            return res.status(400).json({ error: 'Una célula CERRADA debe ser dirigida por un Líder de 12' });
+        }
+        if (cellType === 'ABIERTA' && !['LIDER_CELULA', 'LIDER_DOCE', 'PASTOR'].includes(targetLeader.role)) {
+            return res.status(400).json({ error: 'Rol de líder no apto para célula ABIERTA' });
+        }
+
         // Geocoding
         const coords = await getCoordinates(address, city);
 
@@ -96,7 +105,8 @@ const createCell = async (req, res) => {
                 latitude: coords.lat,
                 longitude: coords.lon,
                 dayOfWeek,
-                time
+                time,
+                cellType: cellType || 'ABIERTA'
             }
         });
 
@@ -189,22 +199,57 @@ const getEligibleHosts = async (req, res) => {
 const getEligibleMembers = async (req, res) => {
     try {
         const { role, id } = req.user;
+        const { leaderId, cellType } = req.query;
         let networkIds = [];
 
-        if (role === 'SUPER_ADMIN') {
-            // Can search anyone ideally, but let's limit to query if needed or return all
-            const allUsers = await prisma.user.findMany({ select: { id: true, fullName: true, cellId: true } });
-            return res.json(allUsers);
-        } else if (role === 'LIDER_DOCE' || role === 'PASTOR' || role === 'LIDER_CELULA') {
-            networkIds = await getNetworkIds(id);
-        } else {
-            networkIds = [parseInt(id)];
+        // If a leaderId is provided, we fetch the network of THAT leader
+        // Otherwise, we use the network of the current user
+        const targetId = leaderId ? parseInt(leaderId) : id;
+
+        // Fetch target leader to check their role
+        const targetLeader = await prisma.user.findUnique({
+            where: { id: targetId },
+            select: { role: true }
+        });
+
+        if (!targetLeader) {
+            return res.status(404).json({ error: 'Líder no encontrado' });
         }
 
-        const where = { id: { in: networkIds } };
+        // --- NEW Invitation-based filter Logic ---
+        // A member is eligible for targetId's cell if:
+        // 1. Their leaderId is targetId (Directly invited by OR reporting to the leader)
+        // 2. OR their leader's leaderId is targetId (Invited by a disciple of the leader)
 
-        // PASTOR requirement: only LIDER_DOCE can be members in cells created by PASTOR
-        if (role === 'PASTOR') {
+        const where = {
+            OR: [
+                { leaderId: targetId },
+                { liderCelulaId: targetId },
+                { liderDoceId: targetId },
+                { pastorId: targetId },
+                {
+                    leader: {
+                        OR: [
+                            { liderCelulaId: targetId },
+                            { liderDoceId: targetId },
+                            { leaderId: targetId }
+                        ]
+                    }
+                }
+            ]
+        };
+
+        // --- Refined Role Filtering based on Cell Type ---
+        if (cellType === 'CERRADA') {
+            // Cerrada: LIDER_CELULA or DISCIPULO
+            where.role = { in: ['LIDER_CELULA', 'DISCIPULO'] };
+        } else if (cellType === 'ABIERTA' || !cellType) {
+            // Abierta: DISCIPULO or INVITADO
+            where.role = { in: ['DISCIPULO', 'INVITADO'] };
+        }
+
+        // Special restriction for PASTOR (can lead cells of LIDER_DOCE)
+        if (role === 'PASTOR' && !leaderId) {
             where.role = 'LIDER_DOCE';
         }
 
@@ -314,6 +359,89 @@ const updateCellCoordinates = async (req, res) => {
     }
 };
 
+// Update an existing cell
+const updateCell = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const cellId = parseInt(id);
+        const { name, leaderId, hostId, address, city, dayOfWeek, time, liderDoceId, cellType } = req.body;
+
+        const { role, id: userId } = req.user;
+
+        // Find existing cell
+        const existingCell = await prisma.cell.findUnique({
+            where: { id: cellId }
+        });
+
+        if (!existingCell) {
+            return res.status(404).json({ error: 'Célula no encontrada' });
+        }
+
+        // Permission check
+        if (role !== 'SUPER_ADMIN') {
+            const networkIds = await getNetworkIds(userId);
+            if (!networkIds.includes(existingCell.leaderId) && existingCell.leaderId !== userId) {
+                return res.status(403).json({ error: 'No autorizado para editar esta célula' });
+            }
+        }
+
+        const data = {
+            name,
+            leaderId: parseInt(leaderId),
+            hostId: parseInt(hostId),
+            liderDoceId: liderDoceId ? parseInt(liderDoceId) : null,
+            address,
+            city,
+            dayOfWeek,
+            time,
+            cellType: cellType || existingCell.cellType
+        };
+
+        if (leaderId) data.leaderId = parseInt(leaderId);
+        if (hostId) data.hostId = parseInt(hostId);
+        if (liderDoceId) data.liderDoceId = parseInt(liderDoceId);
+
+        // Geocoding if address or city changed
+        if (address !== existingCell.address || city !== existingCell.city) {
+            const coords = await getCoordinates(address, city);
+            data.latitude = coords.lat;
+            data.longitude = coords.lon;
+        }
+
+        const updatedCell = await prisma.cell.update({
+            where: { id: cellId },
+            data
+        });
+
+        await logActivity(userId, 'UPDATE', 'CELL', cellId, { name: updatedCell.name });
+
+        res.json(updatedCell);
+    } catch (error) {
+        console.error('Error updating cell:', error);
+        res.status(500).json({ error: 'Error al actualizar la célula' });
+    }
+};
+
+// Unassign member from cell
+const unassignMember = async (req, res) => {
+    try {
+        const { userId } = req.body;
+        const { id: currentUserId } = req.user;
+
+        await prisma.user.update({
+            where: { id: parseInt(userId) },
+            data: { cellId: null }
+        });
+
+        await logActivity(currentUserId, 'UPDATE', 'USER', parseInt(userId), { action: 'UNASSIGN_CELL' });
+
+        res.json({ message: 'Miembro desvinculado correctamente' });
+    } catch (error) {
+        console.error('Error unassigning member:', error);
+        res.status(500).json({ error: 'Error al desvincular miembro' });
+    }
+};
+
 // Get Eligible Doce Leaders
 const getEligibleDoceLeaders = async (req, res) => {
     try {
@@ -350,5 +478,7 @@ module.exports = {
     getEligibleHosts,
     getEligibleMembers,
     updateCellCoordinates,
-    getEligibleDoceLeaders
+    getEligibleDoceLeaders,
+    updateCell,
+    unassignMember
 };

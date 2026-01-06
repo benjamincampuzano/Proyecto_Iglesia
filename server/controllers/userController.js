@@ -2,6 +2,7 @@ const { PrismaClient } = require('@prisma/client');
 const bcrypt = require('bcryptjs');
 const axios = require('axios');
 const { logActivity } = require('../utils/auditLogger');
+const { validatePassword } = require('../utils/passwordValidator');
 
 const prisma = new PrismaClient();
 
@@ -70,10 +71,8 @@ const getUserNetwork = async (leaderId) => {
 
 // Obtener perfil propio
 const getProfile = async (req, res) => {
-    return res.status(200).json({ message: 'Profile route hit' });
     try {
         const userId = parseInt(req.user.id);
-        console.log('Fetching profile for userId:', userId, 'type:', typeof userId);
         const user = await prisma.user.findUnique({
             where: { id: userId },
             select: {
@@ -86,7 +85,10 @@ const getProfile = async (req, res) => {
                 address: true,
                 city: true,
                 latitude: true,
-                longitude: true
+                longitude: true,
+                pastorId: true,
+                liderDoceId: true,
+                liderCelulaId: true
             }
         });
 
@@ -177,6 +179,12 @@ const changePassword = async (req, res) => {
         const isMatch = await bcrypt.compare(currentPassword, user.password);
         if (!isMatch) {
             return res.status(400).json({ message: 'Current password is incorrect' });
+        }
+
+        // Validar nueva contraseña
+        const validation = validatePassword(newPassword, { email: user.email, fullName: user.fullName });
+        if (!validation.isValid) {
+            return res.status(400).json({ message: validation.message });
         }
 
         // Hashear nueva contraseña
@@ -358,9 +366,14 @@ const updateUser = async (req, res) => {
             }
         }
 
-        // Obtener el usuario que se está actualizando
+        // Obtener el usuario que se está actualizando (incluyendo nombres de líderes para auditoría)
         const userToUpdate = await prisma.user.findUnique({
-            where: { id: parseInt(id) }
+            where: { id: parseInt(id) },
+            include: {
+                pastor: { select: { fullName: true } },
+                liderDoce: { select: { fullName: true } },
+                liderCelula: { select: { fullName: true } }
+            }
         });
 
         if (!userToUpdate) {
@@ -421,6 +434,11 @@ const updateUser = async (req, res) => {
         const updatedUser = await prisma.user.update({
             where: { id: parseInt(id) },
             data: updateData,
+            include: {
+                pastor: { select: { fullName: true } },
+                liderDoce: { select: { fullName: true } },
+                liderCelula: { select: { fullName: true } }
+            }
         });
 
         // Identify what changed
@@ -431,11 +449,28 @@ const updateUser = async (req, res) => {
         ];
 
         fieldsToTrack.forEach(field => {
-            const oldValue = userToUpdate[field];
-            const newValue = updatedUser[field];
+            let oldValue = userToUpdate[field];
+            let newValue = updatedUser[field];
 
             if (oldValue !== newValue) {
-                changes[field] = {
+                let displayField = field;
+
+                // Mapeo de IDs a nombres para auditoría legible
+                if (field === 'pastorId') {
+                    displayField = 'Pastor';
+                    oldValue = userToUpdate.pastor?.fullName || 'Ninguno';
+                    newValue = updatedUser.pastor?.fullName || 'Ninguno';
+                } else if (field === 'liderDoceId') {
+                    displayField = 'Líder Doce';
+                    oldValue = userToUpdate.liderDoce?.fullName || 'Ninguno';
+                    newValue = updatedUser.liderDoce?.fullName || 'Ninguno';
+                } else if (field === 'liderCelulaId') {
+                    displayField = 'Líder Célula';
+                    oldValue = userToUpdate.liderCelula?.fullName || 'Ninguno';
+                    newValue = updatedUser.liderCelula?.fullName || 'Ninguno';
+                }
+
+                changes[displayField] = {
                     old: oldValue,
                     new: newValue
                 };
@@ -481,6 +516,11 @@ const createUser = async (req, res) => {
             return res.status(400).json({ message: 'Email, password, and full name are required' });
         }
 
+        const validation = validatePassword(password, { email, fullName });
+        if (!validation.isValid) {
+            return res.status(400).json({ message: validation.message });
+        }
+
         const existingUser = await prisma.user.findUnique({ where: { email } });
         if (existingUser) {
             return res.status(400).json({ message: 'User already exists' });
@@ -504,22 +544,37 @@ const createUser = async (req, res) => {
             longitude: coords.lng
         };
 
-        // Asignación jerárquica de líderes
-        if (req.body.pastorId) {
-            userData.pastorId = parseInt(req.body.pastorId);
-            userData.leaderId = userData.pastorId;
-        }
-
-        if (req.body.liderDoceId || liderDoceId) {
-            const ldoceId = parseInt(req.body.liderDoceId || liderDoceId);
-            userData.liderDoceId = ldoceId;
-            userData.leaderId = ldoceId;
-        }
-
+        // Asignación jerárquica de líderes con herencia
         if (req.body.liderCelulaId) {
             const lcelulaId = parseInt(req.body.liderCelulaId);
             userData.liderCelulaId = lcelulaId;
             userData.leaderId = lcelulaId;
+
+            // Heredar Líder 12 y Pastor del Líder de Célula
+            const lCelula = await prisma.user.findUnique({
+                where: { id: lcelulaId },
+                select: { liderDoceId: true, pastorId: true }
+            });
+            if (lCelula) {
+                if (lCelula.liderDoceId) userData.liderDoceId = lCelula.liderDoceId;
+                if (lCelula.pastorId) userData.pastorId = lCelula.pastorId;
+            }
+        } else if (req.body.liderDoceId || liderDoceId) {
+            const ldoceId = parseInt(req.body.liderDoceId || liderDoceId);
+            userData.liderDoceId = ldoceId;
+            userData.leaderId = ldoceId;
+
+            // Heredar Pastor del Líder 12
+            const lDoce = await prisma.user.findUnique({
+                where: { id: ldoceId },
+                select: { pastorId: true }
+            });
+            if (lDoce && lDoce.pastorId) {
+                userData.pastorId = lDoce.pastorId;
+            }
+        } else if (req.body.pastorId) {
+            userData.pastorId = parseInt(req.body.pastorId);
+            userData.leaderId = userData.pastorId;
         }
 
         let user = await prisma.user.create({

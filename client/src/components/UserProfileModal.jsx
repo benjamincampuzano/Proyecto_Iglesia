@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import { X, Save, Loader } from 'lucide-react';
+import { X, Save, Loader, Check, X as XIcon } from 'lucide-react';
+import { validatePassword, getPasswordStrength } from '../utils/passwordValidator';
 import { useAuth } from '../context/AuthContext';
 import api from '../utils/api';
 
@@ -119,8 +120,9 @@ const UserProfileModal = ({ isOpen, onClose }) => {
             return;
         }
 
-        if (formData.newPassword.length < 6) {
-            setError('La contraseña debe tener al menos 6 caracteres');
+        const validation = validatePassword(formData.newPassword, { email: formData.email, fullName: formData.fullName });
+        if (!validation.isValid) {
+            setError(validation.message);
             setLoading(false);
             return;
         }
@@ -315,6 +317,27 @@ const UserProfileModal = ({ isOpen, onClose }) => {
                                         className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:border-blue-500"
                                         required
                                     />
+                                    {formData.newPassword && (
+                                        <div className="mt-2 space-y-2">
+                                            <div className="flex gap-1">
+                                                {[...Array(4)].map((_, i) => (
+                                                    <div
+                                                        key={i}
+                                                        className={`h-1 flex-1 rounded-full transition-colors ${i < getPasswordStrength(formData.newPassword)
+                                                                ? ['bg-red-500', 'bg-orange-500', 'bg-yellow-500', 'bg-green-500'][getPasswordStrength(formData.newPassword) - 1]
+                                                                : 'bg-gray-700'
+                                                            }`}
+                                                    />
+                                                ))}
+                                            </div>
+                                            <div className="grid grid-cols-2 gap-2 text-[10px]">
+                                                <Requirement label="8+ caracteres" met={formData.newPassword.length >= 8} />
+                                                <Requirement label="Mayúscula/Minúscula" met={/[A-Z]/.test(formData.newPassword) && /[a-z]/.test(formData.newPassword)} />
+                                                <Requirement label="Número" met={/\d/.test(formData.newPassword)} />
+                                                <Requirement label="Símbolo" met={/[!@#$%^&*(),.?":{}|<>]/.test(formData.newPassword)} />
+                                            </div>
+                                        </div>
+                                    )}
                                 </div>
 
                                 <div>
@@ -370,5 +393,12 @@ const UserProfileModal = ({ isOpen, onClose }) => {
         </div>
     );
 };
+
+const Requirement = ({ label, met }) => (
+    <div className={`flex items-center gap-1 ${met ? 'text-green-500' : 'text-gray-500'}`}>
+        {met ? <Check size={10} /> : <XIcon size={10} />}
+        <span>{label}</span>
+    </div>
+);
 
 export default UserProfileModal;
