@@ -21,7 +21,6 @@ const ClassMatrix = ({ courseId }) => {
 
     useEffect(() => {
         fetchMatrix();
-        fetchUsers();
         fetchMaterials();
     }, [courseId]);
 
@@ -95,9 +94,18 @@ const ClassMatrix = ({ courseId }) => {
     if (loading) return <div className="text-center py-10">Cargando matriz...</div>;
     if (error) return <div className="text-center text-red-500 py-10">{error}</div>;
 
-    const { module, matrix, permissions } = data;
-    const { isProfessor, isAuxiliar } = permissions;
-    const canEnroll = isProfessor || permissions.isProfessor; // Corrected check
+    const { module, matrix } = data;
+    const permissions = data?.permissions || {};
+    const { isProfessor = false, isAuxiliar = false, isStudent = true } = permissions;
+
+    // Logic: Professors can edit everything. 
+    // Auxiliaries can edit if assigned (usually handled in row).
+    // Students (or Disciples in this context) cannot edit.
+    // We'll rely on backend 403 for detailed row-level security, but primarily disable UI here.
+    const canEnroll = isProfessor;
+
+    // Note: 'permissions' object structure from backend is { isProfessor, isAuxiliar, isStudent }.
+    // So 'isStudent' being true effectively means Read-Only for this matrix.
 
     return (
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-4 overflow-hidden">
@@ -111,7 +119,7 @@ const ClassMatrix = ({ courseId }) => {
                 </div>
                 {canEnroll && (
                     <button
-                        onClick={() => setShowEnrollModal(true)}
+                        onClick={() => { fetchUsers(); setShowEnrollModal(true); }}
                         className="flex items-center px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg"
                     >
                         <UserPlus size={18} className="mr-2" />
@@ -198,6 +206,7 @@ const ClassMatrix = ({ courseId }) => {
                                                             }`}
                                                         defaultValue={attendStatus}
                                                         onChange={(e) => handleUpdate(row.id, 'attendance', classNum, e.target.value)}
+                                                        disabled={isStudent}
                                                     >
                                                         <option value="">-</option>
                                                         <option value="ASISTE">AS</option>
@@ -211,9 +220,10 @@ const ClassMatrix = ({ courseId }) => {
                                                         max="5"
                                                         step="0.1"
                                                         placeholder="Nota"
-                                                        className="w-full text-xs p-1 bg-transparent border-b border-gray-200 dark:border-gray-600 focus:outline-none focus:border-blue-500 text-center dark:text-white"
+                                                        className="w-full text-xs p-1 bg-transparent border-b border-gray-200 dark:border-gray-600 focus:outline-none focus:border-blue-500 text-center dark:text-white disabled:opacity-50"
                                                         defaultValue={grade}
                                                         onBlur={(e) => handleUpdate(row.id, 'grade', classNum, e.target.value)}
+                                                        disabled={isStudent}
                                                     />
                                                 </div>
                                             </td>
@@ -224,10 +234,11 @@ const ClassMatrix = ({ courseId }) => {
                                     <td className="px-2 py-4 text-sm ">
                                         <textarea
                                             rows="2"
-                                            className="w-full text-xs p-1 border rounded dark:bg-gray-700 dark:text-white dark:border-gray-600"
+                                            className="w-full text-xs p-1 border rounded dark:bg-gray-700 dark:text-white dark:border-gray-600 disabled:opacity-50"
                                             placeholder="Obs..."
                                             defaultValue={row.projectNotes || ''}
                                             onBlur={(e) => handleUpdate(row.id, 'projectNotes', null, e.target.value)}
+                                            disabled={isStudent}
                                         />
                                     </td>
 
@@ -238,9 +249,10 @@ const ClassMatrix = ({ courseId }) => {
                                             min="1"
                                             max="5"
                                             step="0.1"
-                                            className="w-16 p-1 border rounded text-center dark:bg-gray-700 dark:text-white dark:border-gray-600"
+                                            className="w-16 p-1 border rounded text-center dark:bg-gray-700 dark:text-white dark:border-gray-600 disabled:opacity-50"
                                             defaultValue={row.finalGrade || ''}
                                             onBlur={(e) => handleUpdate(row.id, 'finalGrade', null, e.target.value)}
+                                            disabled={isStudent}
                                         />
                                     </td>
 

@@ -100,7 +100,9 @@ model User {
   cellAttendances   CellAttendance[]
   seminarEnrollments SeminarEnrollment[]
   classAttendances  ClassAttendance[]
+
   conventionRegistrations ConventionRegistration[]
+  registeredConventions ConventionRegistration[] @relation("ConventionRegistrar")
   
   guestCalls      GuestCall[]
   guestVisits     GuestVisit[]
@@ -145,8 +147,8 @@ model GuestCall {
   guest       Guest    @relation(fields: [guestId], references: [id], onDelete: Cascade)
   date        DateTime @default(now())
   observation String
-  callerId    Int
-  caller      User     @relation(fields: [callerId], references: [id])
+  callerId    Int?
+  caller      User?    @relation(fields: [callerId], references: [id], onDelete: SetNull)
   createdAt   DateTime @default(now())
 }
 
@@ -156,8 +158,8 @@ model GuestVisit {
   guest       Guest    @relation(fields: [guestId], references: [id], onDelete: Cascade)
   date        DateTime @default(now())
   observation String
-  visitorId   Int
-  visitor     User     @relation(fields: [visitorId], references: [id])
+  visitorId   Int?
+  visitor     User?    @relation(fields: [visitorId], references: [id], onDelete: SetNull)
   createdAt   DateTime @default(now())
 }
 
@@ -222,7 +224,7 @@ model SeminarModule {
   startDate   DateTime?
   endDate     DateTime?
   professorId Int?
-  professor   User?               @relation("ModuleProfessor", fields: [professorId], references: [id])
+  professor   User?               @relation("ModuleProfessor", fields: [professorId], references: [id], onDelete: SetNull)
   auxiliaries User[]              @relation("ModuleAuxiliaries")
 
   enrollments SeminarEnrollment[]
@@ -324,6 +326,10 @@ model ConventionRegistration {
   discountPercentage Float              @default(0)
   needsTransport     Boolean            @default(false)
   needsAccommodation Boolean            @default(false)
+  
+  registeredById     Int?
+  registeredBy       User?              @relation("ConventionRegistrar", fields: [registeredById], references: [id], onDelete: SetNull)
+
   payments           ConventionPayment[]
   createdAt          DateTime           @default(now())
   updatedAt          DateTime           @updatedAt

@@ -39,7 +39,44 @@ const getConventions = async (req, res) => {
             }
         });
 
-        // Calculate stats
+        // Filter for DISCIPULO: Only show conventions they are registered for
+        if (req.user.role === 'DISCIPULO') {
+            const userRegistrations = await prisma.conventionRegistration.findMany({
+                where: { userId: req.user.id },
+                select: { conventionId: true }
+            });
+            const registeredConventionIds = new Set(userRegistrations.map(r => r.conventionId));
+
+            // Filter the conventions list
+            const filteredConventions = conventions.filter(c => registeredConventionIds.has(c.id));
+
+            // Re-assign conventions to the filtered list for further processing (stats calculation)
+            // Note: const conventions above prevents reassignment, so we'll just return early or adapt the map below.
+            // Better approach: wrap the map
+            const conventionsWithStats = filteredConventions.map(conv => {
+                const totalCollected = conv.registrations.reduce((acc, reg) => {
+                    const paymentsSum = reg.payments.reduce((sum, p) => sum + p.amount, 0);
+                    return acc + paymentsSum;
+                }, 0);
+
+                const expectedIncome = conv.registrations.reduce((acc, reg) => {
+                    const cost = conv.cost * (1 - (reg.discountPercentage / 100));
+                    return acc + cost;
+                }, 0);
+
+                return {
+                    ...conv,
+                    stats: {
+                        registeredCount: conv._count.registrations,
+                        totalCollected,
+                        expectedIncome
+                    }
+                };
+            });
+            return res.json(conventionsWithStats);
+        }
+
+        // Calculate stats (Original Logic)
         const conventionsWithStats = conventions.map(conv => {
             const totalCollected = conv.registrations.reduce((acc, reg) => {
                 const paymentsSum = reg.payments.reduce((sum, p) => sum + p.amount, 0);
@@ -161,7 +198,11 @@ const getConventionById = async (req, res) => {
             const userId = parseInt(user.id);
             const networkIds = await getNetworkIds(userId);
             const allowedIds = new Set([...networkIds, userId]);
-            visibleRegistrations = convention.registrations.filter(reg => allowedIds.has(reg.userId));
+            visibleRegistrations = convention.registrations.filter(reg => {
+                const assignedCheck = allowedIds.has(reg.userId);
+                const registeredByCheck = reg.registeredById === userId;
+                return assignedCheck || registeredByCheck;
+            });
         } else {
             // Member sees only themselves
             visibleRegistrations = convention.registrations.filter(reg => reg.userId === parseInt(user.id));
@@ -447,7 +488,11 @@ const getConventionBalanceReport = async (req, res) => {
             const userId = parseInt(user.id);
             const networkIds = await getNetworkIds(userId);
             const allowedIds = new Set([...networkIds, userId]);
-            visibleRegistrations = convention.registrations.filter(reg => allowedIds.has(reg.userId));
+            visibleRegistrations = convention.registrations.filter(reg => {
+                const assignedCheck = allowedIds.has(reg.userId);
+                const registeredByCheck = reg.registeredById === userId;
+                return assignedCheck || registeredByCheck;
+            });
         } else {
             // Members see only themselves
             visibleRegistrations = convention.registrations.filter(reg => reg.userId === parseInt(user.id));

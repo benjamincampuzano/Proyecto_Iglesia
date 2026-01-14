@@ -636,24 +636,32 @@ const deleteUser = async (req, res) => {
         }
 
         // 1. Verificar si tiene invitados invitados (bloqueante)
-        const invitedGuestsCount = await prisma.guest.count({
-            where: { invitedById: userId }
+        const invitedGuests = await prisma.guest.findMany({
+            where: { invitedById: userId },
+            select: { name: true },
+            take: 5
         });
 
-        if (invitedGuestsCount > 0) {
+        if (invitedGuests.length > 0) {
+            const guestNames = invitedGuests.map(g => g.name).join(', ');
+            const total = await prisma.guest.count({ where: { invitedById: userId } });
             return res.status(400).json({
-                message: `No se puede eliminar: El usuario tiene ${invitedGuestsCount} invitados registrados. Reasígnalos o elimínalos primero.`
+                message: `No se puede eliminar: El usuario registró a ${total} invitados (ej: ${guestNames}...). Reasigna o elimina estos invitados antes de continuar.`
             });
         }
 
         // 2. Verificar si es LIDER de alguna célula (bloqueante)
-        const ledCellsCount = await prisma.cell.count({
-            where: { leaderId: userId }
+        const ledCells = await prisma.cell.findMany({
+            where: { leaderId: userId },
+            select: { name: true },
+            take: 5
         });
 
-        if (ledCellsCount > 0) {
+        if (ledCells.length > 0) {
+            const cellNames = ledCells.map(c => c.name).join(', ');
+            const total = await prisma.cell.count({ where: { leaderId: userId } });
             return res.status(400).json({
-                message: `No se puede eliminar: El usuario es líder de ${ledCellsCount} células. Asigna un nuevo líder a estas células antes de eliminar el usuario.`
+                message: `No se puede eliminar: El usuario es líder de ${total} células (ej: ${cellNames}...). Asigna un nuevo líder a estas células antes de eliminar el usuario.`
             });
         }
 
@@ -667,10 +675,10 @@ const deleteUser = async (req, res) => {
             await tx.user.updateMany({ where: { liderDoceId: userId }, data: { liderDoceId: null } });
             await tx.user.updateMany({ where: { liderCelulaId: userId }, data: { liderCelulaId: null } });
 
-            // B. Desvincular como Host de célula (opcional)
+            // B. Desvincular como Host de célula o Lider 12 de célula
             await tx.cell.updateMany({
-                where: { hostId: userId },
-                data: { hostId: null }
+                where: { OR: [{ hostId: userId }, { liderDoceId: userId }] },
+                data: { hostId: null, liderDoceId: null }
             });
 
             // C. Desvincular asignación de invitados
@@ -679,14 +687,23 @@ const deleteUser = async (req, res) => {
                 data: { assignedToId: null }
             });
 
-            // D. Borrar datos relacionados (Historiales, Asistencias, Inscripciones)
+            // D. Desvincular Escuela (Professor & Auxiliar)
+            // Professor is handled by schema onDelete: SetNull, but we can be explicit if preferred.
+            // But we MUST handle implicit M2M auxiliaries if we want to be clean, 
+            // although deletion usually cleans up join table.
+            await tx.seminarEnrollment.updateMany({
+                where: { assignedAuxiliarId: userId },
+                data: { assignedAuxiliarId: null }
+            });
+
+            // E. Borrar datos relacionados (Historiales, Asistencias, Inscripciones)
             await tx.classAttendance.deleteMany({ where: { userId: userId } });
             await tx.seminarEnrollment.deleteMany({ where: { userId: userId } });
             await tx.churchAttendance.deleteMany({ where: { userId: userId } });
             await tx.cellAttendance.deleteMany({ where: { userId: userId } });
             await tx.conventionRegistration.deleteMany({ where: { userId: userId } });
 
-            // E. Finalmente eliminar usuario
+            // F. Finalmente eliminar usuario
             await tx.user.delete({
                 where: { id: userId },
             });

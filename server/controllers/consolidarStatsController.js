@@ -37,14 +37,20 @@ const getGeneralStats = async (req, res) => {
         const currentUserId = parseInt(req.user.id);
 
         let networkIds = [];
-        if (userRole === 'LIDER_DOCE' || userRole === 'PASTOR') {
+        const isAdmin = userRole === 'SUPER_ADMIN';
+
+        if (userRole === 'LIDER_DOCE' || userRole === 'PASTOR' || userRole === 'LIDER_CELULA') {
             networkIds = await getNetworkIds(currentUserId);
             networkIds.push(currentUserId);
         }
 
-        const networkFilter = (path = 'invitedById') => {
-            if (userRole === 'SUPER_ADMIN') return {};
-            return { [path]: { in: networkIds } };
+        const networkFilter = (invitedKey = 'invitedById', assignedKey = 'assignedToId', registeredKey = 'registeredById') => {
+            if (isAdmin) return {};
+            const filters = [];
+            if (invitedKey) filters.push({ [invitedKey]: { in: networkIds } });
+            if (assignedKey) filters.push({ [assignedKey]: { in: networkIds } });
+            if (registeredKey) filters.push({ [registeredKey]: { in: networkIds } });
+            return { OR: filters };
         };
         // Default date range
         const end = endDate ? new Date(endDate) : new Date();
@@ -85,7 +91,7 @@ const getGeneralStats = async (req, res) => {
             where: {
                 AND: [
                     { createdAt: { gte: start, lte: end } },
-                    networkFilter('invitedById')
+                    networkFilter('invitedById', 'assignedToId', null)
                 ]
             },
             include: {
@@ -142,7 +148,7 @@ const getGeneralStats = async (req, res) => {
                 AND: [
                     { date: { gte: start, lte: end } },
                     { status: 'PRESENTE' },
-                    networkFilter('userId')
+                    networkFilter('userId', null, null)
                 ]
             },
             include: {
@@ -209,7 +215,7 @@ const getGeneralStats = async (req, res) => {
 
         // 4. CELLS: Count, Attendance, Location Map by Lider_Doce
         const cells = await prisma.cell.findMany({
-            where: networkFilter('leaderId'), // Approximated filter for cells
+            where: networkFilter('leaderId', null, null), // Approximated filter for cells
             select: {
                 id: true,
                 name: true,
@@ -292,11 +298,12 @@ const getGeneralStats = async (req, res) => {
             where: {
                 status: { not: 'CANCELLED' },
                 encuentro: {
-                    startDate: { gte: start, lte: end }
+                    startDate: { gte: start } // Show everything since start, including future
                 },
-                guest: {
-                    invitedById: userRole === 'SUPER_ADMIN' ? undefined : { in: networkIds }
-                }
+                OR: isAdmin ? undefined : [
+                    { guest: { invitedById: { in: networkIds } } },
+                    { guest: { assignedToId: { in: networkIds } } }
+                ]
             },
             include: {
                 encuentro: true,
@@ -343,11 +350,12 @@ const getGeneralStats = async (req, res) => {
             where: {
                 status: { not: 'CANCELLED' },
                 convention: {
-                    startDate: { gte: start, lte: end }
+                    startDate: { gte: start } // Show everything since start, including future
                 },
-                user: {
-                    id: userRole === 'SUPER_ADMIN' ? undefined : { in: networkIds }
-                }
+                OR: isAdmin ? undefined : [
+                    { user: { id: { in: networkIds } } },
+                    { registeredById: { in: networkIds } }
+                ]
             },
             include: {
                 convention: true,

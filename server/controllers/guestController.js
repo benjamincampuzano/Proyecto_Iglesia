@@ -106,8 +106,8 @@ const getAllGuests = async (req, res) => {
         if (user.role === 'SUPER_ADMIN') {
             // Super admin puede ver todos los invitados
             securityFilter = {};
-        } else if (user.role === 'LIDER_DOCE' || user.role === 'PASTOR') {
-            // LIDER_DOCE y PASTOR pueden ver invitados invitados/asignados a cualquiera en su red
+        } else if (user.role === 'LIDER_DOCE' || user.role === 'LIDER_CELULA' || user.role === 'PASTOR') {
+            // LIDER_DOCE, LIDER_CELULA y PASTOR pueden ver invitados invitados/asignados a cualquiera en su red
             const userId = parseInt(user.id);
             const networkUserIds = await getUserNetwork(userId);
             securityFilter = {
@@ -279,8 +279,8 @@ const updateGuest = async (req, res) => {
                 ...(visited !== undefined && { visited: Boolean(visited) }),
                 ...(visitObservation !== undefined && { visitObservation }),
             };
-        } else if (user.role === 'LIDER_DOCE' || user.role === 'PASTOR') {
-            // LIDER_DOCE y PASTOR pueden actualizar todos los campos para invitados en su red
+        } else if (user.role === 'LIDER_DOCE' || user.role === 'LIDER_CELULA' || user.role === 'PASTOR') {
+            // LIDER_DOCE, LIDER_CELULA y PASTOR pueden actualizar todos los campos para invitados en su red
             const networkUserIds = await getUserNetwork(user.id);
             const isInNetwork = networkUserIds.includes(existingGuest.invitedById) ||
                 (existingGuest.assignedToId && networkUserIds.includes(existingGuest.assignedToId)) ||
@@ -364,8 +364,8 @@ const deleteGuest = async (req, res) => {
         // Verificar permisos de eliminación basados en rol
         if (user.role === 'SUPER_ADMIN') {
             // Super admin puede eliminar cualquier invitado
-        } else if (user.role === 'LIDER_DOCE' || user.role === 'PASTOR') {
-            // LIDER_DOCE y PASTOR pueden eliminar invitados en su red
+        } else if (user.role === 'LIDER_DOCE' || user.role === 'LIDER_CELULA' || user.role === 'PASTOR') {
+            // LIDER_DOCE, LIDER_CELULA y PASTOR pueden eliminar invitados en su red
             const networkUserIds = await getUserNetwork(user.id);
             const isInNetwork = networkUserIds.includes(existingGuest.invitedById) ||
                 (existingGuest.assignedToId && networkUserIds.includes(existingGuest.assignedToId)) ||

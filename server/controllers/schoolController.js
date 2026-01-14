@@ -2,6 +2,37 @@ const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 const { SCHOOL_LEVELS } = require('../utils/levelConstants');
 
+// Helper to get network
+const getNetworkIds = async (leaderId) => {
+    const id = parseInt(leaderId);
+    if (isNaN(id)) return [];
+
+    // Find all users who report to this leader via ANY of the hierarchy fields
+    const directDisciples = await prisma.user.findMany({
+        where: {
+            OR: [
+                { leaderId: id },
+                { liderDoceId: id },
+                { liderCelulaId: id },
+                { pastorId: id }
+            ]
+        },
+        select: { id: true }
+    });
+
+    let networkIds = directDisciples.map(d => d.id);
+
+    // Recursively find their disciples
+    for (const disciple of directDisciples) {
+        if (disciple.id !== id) {
+            const subNetwork = await getNetworkIds(disciple.id);
+            networkIds = [...networkIds, ...subNetwork];
+        }
+    }
+
+    return [...new Set(networkIds)];
+};
+
 // --- Module / Class Management ---
 
 const createModule = async (req, res) => {
@@ -52,14 +83,25 @@ const getModules = async (req, res) => {
         // Filtering based on role
         if (user.role === 'SUPER_ADMIN' || user.role === 'PASTOR') {
             // See all
-        } else if (user.role === 'LIDER_DOCE') {
-            // See classes where they are Professor OR Auxiliar
+        } else if (user.role === 'LIDER_DOCE' || user.role === 'LIDER_CELULA') {
+            // See classes where they are Professor OR Auxiliar OR have disciples enrolled
+            const networkUserIds = await getNetworkIds(user.id);
             whereClause = {
                 type: 'ESCUELA',
                 OR: [
                     { professorId: parseInt(user.id) },
-                    { auxiliaries: { some: { id: parseInt(user.id) } } }
+                    { auxiliaries: { some: { id: parseInt(user.id) } } },
+                    { enrollments: { some: { userId: { in: [...networkUserIds, user.id] } } } }
                 ]
+            };
+        } else if (user.role === 'DISCIPULO') {
+            // Students: See classes they are enrolled in
+            // BUT prevent them from seeing classes where they might be auxiliar if they are just Discipulo role? 
+            // Requirement says: "Discípulo solo puede ver..." and "desactivar funciones...". 
+            // Existing logic was okay, but I'll ensure it's tight.
+            whereClause = {
+                type: 'ESCUELA',
+                enrollments: { some: { userId: parseInt(user.id) } }
             };
         } else {
             // Students: See classes they are enrolled in
@@ -262,14 +304,26 @@ const getModuleMatrix = async (req, res) => {
         // Access Control
         const isProfessor = moduleData.professorId === user.id || user.role === 'SUPER_ADMIN';
         const isAuxiliar = moduleData.auxiliaries.some(a => a.id === user.id);
+        const isDisciple = user.role === 'DISCIPULO';
 
         // Determine which enrollments to show
         let enrollmentsQuery = { moduleId };
 
-        if (isProfessor) {
+        if (isDisciple) {
+            // Force them to only see their own enrollment? 
+            // Requirement says "desactivar funciones de cambios...". It doesn't explicitly say "only see self" for School, 
+            // but usually matrices are for leaders. 
+            // Ideally a student just sees their own grades.
+            // But existing logic was:
+            enrollmentsQuery.userId = user.id;
+        } else if (isProfessor) {
             // See all
-        } else if (isAuxiliar) {
-            enrollmentsQuery.assignedAuxiliarId = user.id;
+        } else if (isAuxiliar || user.role === 'LIDER_CELULA' || user.role === 'LIDER_DOCE') {
+            const networkIds = await getNetworkIds(user.id);
+            enrollmentsQuery.OR = [
+                { assignedAuxiliarId: user.id },
+                { userId: { in: [...networkIds, user.id] } }
+            ];
         } else {
             enrollmentsQuery.userId = user.id;
         }
@@ -321,9 +375,9 @@ const getModuleMatrix = async (req, res) => {
             module: moduleData,
             matrix,
             permissions: {
-                isProfessor,
-                isAuxiliar,
-                isStudent: !isProfessor && !isAuxiliar
+                isProfessor: isProfessor && !isDisciple,
+                isAuxiliar: isAuxiliar && !isDisciple,
+                isStudent: !isProfessor && !isAuxiliar || isDisciple
             }
         });
 
@@ -353,6 +407,10 @@ const updateMatrixCell = async (req, res) => {
 
         const isProfessorOfModule = enrollment.module.professorId === user.id || isAdmin || isProfesorRole;
         const isAssignedAuxiliar = enrollment.assignedAuxiliarId === user.id || isAuxiliarRole;
+
+        if (user.role === 'DISCIPULO') {
+            return res.status(403).json({ error: 'Estudiantes no pueden modificar notas o asistencia.' });
+        }
 
         if (!isProfessorOfModule && !isAssignedAuxiliar) {
             return res.status(403).json({ error: 'Not authorized to edit this student' });
@@ -429,13 +487,24 @@ const updateMatrixCell = async (req, res) => {
 
 const getSchoolStatsByLeader = async (req, res) => {
     try {
+        const user = req.user;
+        const userId = parseInt(user.id);
+
+        let whereClause = { module: { type: 'ESCUELA' } };
+
+        // Filter by network for leaders
+        if (user.role === 'LIDER_DOCE' || user.role === 'LIDER_CELULA' || user.role === 'PASTOR') {
+            const networkUserIds = await getNetworkIds(userId);
+            whereClause.userId = { in: [...networkUserIds, userId] };
+        } else if (user.role === 'DISCIPULO') {
+            whereClause.userId = userId;
+        }
+
         const enrollments = await prisma.seminarEnrollment.findMany({
-            where: {
-                module: { type: 'ESCUELA' }
-            },
+            where: whereClause,
             include: {
                 user: {
-                    include: { liderDoce: true, leader: true }
+                    include: { liderDoce: true, liderCelula: true, leader: true }
                 },
                 classAttendances: true
             }
@@ -443,9 +512,10 @@ const getSchoolStatsByLeader = async (req, res) => {
 
         const statsByLeader = {};
 
-        const getLiderName = (user) => {
-            if (!user) return 'Sin Asignar';
-            const leader = user.liderDoce || user.leader;
+        const getLiderName = (student) => {
+            if (!student) return 'Sin Asignar';
+            // Use the most specific leader assigned
+            const leader = student.liderCelula || student.liderDoce || student.leader;
             return leader ? leader.fullName : 'Sin Asignar';
         };
 

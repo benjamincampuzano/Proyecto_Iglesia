@@ -38,7 +38,22 @@ const getEncuentroById = async (req, res) => {
         if (!encuentro) return res.status(404).json({ error: 'Not found' });
 
         // Calculate metadata for each registration
-        const registrationsWithStats = encuentro.registrations.map(reg => {
+        let filteredRegistrations = encuentro.registrations;
+
+        // Restriction for non-admin roles: Only see guests in their network
+        if (req.user.role !== 'SUPER_ADMIN') {
+            const userId = parseInt(req.user.id);
+            const networkIds = await getNetworkIds(userId);
+            const allowedIds = new Set([...networkIds, userId]);
+
+            filteredRegistrations = encuentro.registrations.filter(reg => {
+                const assignedCheck = reg.guest.assignedToId && allowedIds.has(reg.guest.assignedToId);
+                const invitedCheck = reg.guest.invitedById && allowedIds.has(reg.guest.invitedById);
+                return assignedCheck || invitedCheck;
+            });
+        }
+
+        const registrationsWithStats = filteredRegistrations.map(reg => {
             const totalPaid = reg.payments.reduce((sum, p) => sum + p.amount, 0);
             const finalCost = encuentro.cost * (1 - reg.discountPercentage / 100);
             const balance = finalCost - totalPaid;

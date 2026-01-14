@@ -202,7 +202,7 @@ const ConsolidatedStatsReport = ({ simpleMode = false }) => {
                         </div>
                         <div className="flex flex-col">
                             <span className="text-3xl font-extrabold text-red-900 dark:text-white">{stats.summary.totalCells}</span>
-                            <span className="text-xs text-red-600 dark:text-red-400 font-medium mt-1">Puntos de evangelismo</span>
+                            <span className="text-xs text-red-600 dark:text-red-400 font-medium mt-1">Puntos de evangelización</span>
                         </div>
                     </div>
 
@@ -211,11 +211,11 @@ const ConsolidatedStatsReport = ({ simpleMode = false }) => {
                             <div className="p-2 bg-indigo-100 dark:bg-indigo-800 rounded-lg text-indigo-600 dark:text-indigo-300">
                                 <BookOpen size={20} />
                             </div>
-                            <span className="text-sm font-bold text-indigo-800 dark:text-indigo-200 uppercase tracking-tight">En Formación</span>
+                            <span className="text-sm font-bold text-indigo-800 dark:text-indigo-200 uppercase tracking-tight">Capacitación Destino</span>
                         </div>
                         <div className="flex flex-col">
                             <span className="text-3xl font-extrabold text-indigo-900 dark:text-white">{stats.summary.activeStudents}</span>
-                            <span className="text-xs text-indigo-600 dark:text-indigo-400 font-medium mt-1">Estudiantes en escuela</span>
+                            <span className="text-xs text-indigo-600 dark:text-indigo-400 font-medium mt-1">Estudiantes en capacitación</span>
                         </div>
                     </div>
                 </div>
