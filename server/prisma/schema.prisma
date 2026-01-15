@@ -52,6 +52,15 @@ enum Sex {
   MUJER
 }
 
+enum DocumentType {
+  RC   // Registro Civil
+  TI   // Tarjeta de Identidad
+  CC   // Cédula de Ciudadanía
+  CE   // Cédula de Extranjería
+  PP   // Pasaporte
+  PEP  // Permiso Especial de Permanencia
+}
+
 model User {
   id             Int      @id @default(autoincrement())
   email          String   @unique
@@ -59,6 +68,9 @@ model User {
   fullName       String
   role           Role     @default(DISCIPULO)
   sex            Sex?
+  documentType   DocumentType?
+  documentNumber String?
+  birthDate      DateTime?
   phone          String?
   address        String?
   city           String?
@@ -111,13 +123,22 @@ model User {
   professedModules SeminarModule[] @relation("ModuleProfessor")
   auxiliaryModules SeminarModule[] @relation("ModuleAuxiliaries") // Many-to-Many
   guidedEnrollments SeminarEnrollment[] @relation("AssignedAuxiliar")
+
+  // Encuentro Relations
+  coordinatedEncuentros Encuentro[] @relation("EncuentroCoordinator")
+  encuentroRegistrations EncuentroRegistration[]
 }
 
 model Guest {
   id            Int         @id @default(autoincrement())
   name          String
   phone         String
+  documentType   DocumentType?
+  documentNumber String?
+  birthDate      DateTime?
+  sex            Sex?
   address       String?
+  city          String?
   prayerRequest String?
   status        GuestStatus @default(NUEVO)
   
@@ -364,14 +385,23 @@ model Encuentro {
   endDate     DateTime
   liderDoceIds Int[]   @default([])
   registrations EncuentroRegistration[]
+  
+  coordinatorId Int?
+  coordinator   User?    @relation("EncuentroCoordinator", fields: [coordinatorId], references: [id])
+
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 }
 
 model EncuentroRegistration {
   id                 Int                @id @default(autoincrement())
-  guestId            Int
-  guest              Guest              @relation(fields: [guestId], references: [id])
+  
+  guestId            Int?
+  guest              Guest?             @relation(fields: [guestId], references: [id])
+  
+  userId             Int?
+  user               User?              @relation(fields: [userId], references: [id])
+
   encuentroId        Int
   encuentro          Encuentro          @relation(fields: [encuentroId], references: [id], onDelete: Cascade)
   status             RegistrationStatus @default(REGISTERED)
@@ -382,6 +412,7 @@ model EncuentroRegistration {
   updatedAt          DateTime           @updatedAt
 
   @@unique([guestId, encuentroId])
+  @@unique([userId, encuentroId])
 }
 
 model EncuentroPayment {

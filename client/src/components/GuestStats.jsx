@@ -60,9 +60,9 @@ const GuestStats = () => {
             [''],
             ['Total de Invitados', stats.totalGuests],
             ['Nuevos', stats.byStatus.NUEVO || 0],
-            ['Contactados', stats.byStatus.CONTACTADO || 0],
-            ['Consolidado', stats.byStatus.CONSOLIDADO || 0],
-            ['Ganados', stats.byStatus.GANADO || 0],
+            ['Llamados', stats.byStatus.CONTACTADO || 0],
+            ['Visitados', stats.byStatus.CONSOLIDADO || 0],
+            ['Consolidados', stats.byStatus.GANADO || 0],
             [''],
             ['Tasa de Conversión', `${stats.conversionRate}%`],
         ];
@@ -94,9 +94,9 @@ const GuestStats = () => {
 
     const statusLabels = {
         NUEVO: 'Nuevo',
-        CONTACTADO: 'Contactado',
-        CONSOLIDADO: 'Consolidado',
-        GANADO: 'Ganado',
+        CONTACTADO: 'Llamado',
+        CONSOLIDADO: 'Visitado',
+        GANADO: 'Consolidado',
     };
 
     const getStatusChartData = () => {
@@ -199,7 +199,7 @@ const GuestStats = () => {
                             <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 border border-gray-200 dark:border-gray-600">
                                 <div className="flex items-center justify-between">
                                     <div>
-                                        <p className="text-gray-500 dark:text-gray-400 text-sm">Ganados</p>
+                                        <p className="text-gray-500 dark:text-gray-400 text-sm">Consolidados</p>
                                         <p className="text-3xl font-bold text-green-600 dark:text-green-400 mt-1">{stats.byStatus.GANADO || 0}</p>
                                     </div>
                                     <UserCheck className="text-green-500" size={32} />

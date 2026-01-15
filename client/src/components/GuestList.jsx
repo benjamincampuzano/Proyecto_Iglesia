@@ -101,7 +101,7 @@ const GuestList = ({ refreshTrigger }) => {
             setConversionEmail('');
             setConversionPassword('');
             fetchGuests();
-            alert('Invitado ganado a Discípulo exitosamente');
+            alert('Invitado consolidado a Discípulo exitosamente');
         } catch (err) {
             setError(err.response?.data?.message || 'Error al convertir invitado');
         }
@@ -120,9 +120,9 @@ const GuestList = ({ refreshTrigger }) => {
     const getStatusLabel = (status) => {
         const labels = {
             NUEVO: 'Nuevo',
-            CONTACTADO: 'Contactado',
-            CONSOLIDADO: 'Consolidado',
-            GANADO: 'Ganado',
+            CONTACTADO: 'Llamado',
+            CONSOLIDADO: 'Visitado',
+            GANADO: 'Consolidado',
         };
         return labels[status] || status;
     };
@@ -172,9 +172,9 @@ const GuestList = ({ refreshTrigger }) => {
                     >
                         <option value="">Estado (Todos)</option>
                         <option value="NUEVO">Nuevo</option>
-                        <option value="CONTACTADO">Contactado</option>
-                        <option value="CONSOLIDADO">Consolidado</option>
-                        <option value="GANADO">Ganado</option>
+                        <option value="CONTACTADO">Llamado</option>
+                        <option value="CONSOLIDADO">Visitado</option>
+                        <option value="GANADO">Consolidado</option>
                     </select>
                 </div>
 
@@ -290,9 +290,9 @@ const GuestList = ({ refreshTrigger }) => {
                                                 className="w-full px-2 py-1 bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded text-gray-900 dark:text-white text-sm"
                                             >
                                                 <option value="NUEVO">Nuevo</option>
-                                                <option value="CONTACTADO">Contactado</option>
-                                                <option value="CONSOLIDADO">Consolidado</option>
-                                                <option value="GANADO">Ganado</option>
+                                                <option value="CONTACTADO">Llamado</option>
+                                                <option value="CONSOLIDADO">Visitado</option>
+                                                <option value="GANADO">Consolidado</option>
                                             </select>
                                         ) : (
                                             <span className={`inline-block px-2 py-1 rounded text-xs ${getStatusBadgeColor(guest.status)}`}>

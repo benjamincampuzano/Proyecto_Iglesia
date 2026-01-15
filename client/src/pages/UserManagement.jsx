@@ -20,7 +20,10 @@ const UserManagement = () => {
     const [currentUser, setCurrentUser] = useState(null);
 
     const [formData, setFormData] = useState({
+        documentType: '',
+        documentNumber: '',
         fullName: '',
+        birthDate: '',
         email: '',
         password: '',
         role: 'DISCIPULO',
@@ -309,7 +312,7 @@ const UserManagement = () => {
 
             {showCreateForm && (
                 <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-                    <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden animate-in fade-in zoom-in duration-200 border border-gray-200 dark:border-gray-700">
+                    <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-2xl md:max-w-4xl overflow-hidden animate-in fade-in zoom-in duration-200 border border-gray-200 dark:border-gray-700">
                         <div className="p-6 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center">
                             <h2 className="text-xl font-bold text-gray-900 dark:text-white">Crear Nuevo Usuario</h2>
                             <button onClick={() => setShowCreateForm(false)} className="text-gray-400 hover:text-gray-600 dark:hover:text-white transition-colors"><X size={24} /></button>
@@ -317,8 +320,43 @@ const UserManagement = () => {
                         <form onSubmit={handleCreateUser} className="p-6 space-y-4">
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div>
+                                    <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">Tipo de Documento</label>
+                                    <select
+                                        className="w-full p-2 rounded-lg bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white focus:outline-none focus:border-blue-500"
+                                        value={formData.documentType}
+                                        onChange={e => setFormData({ ...formData, documentType: e.target.value })}
+                                    >
+                                        <option value="">Seleccionar...</option>
+                                        <option value="RC">RC</option>
+                                        <option value="TI">TI</option>
+                                        <option value="CC">CC</option>
+                                        <option value="CE">CE</option>
+                                        <option value="PP">PP</option>
+                                        <option value="PEP">PEP</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">Número de Documento</label>
+                                    <input
+                                        type="text"
+                                        className="w-full p-2 rounded-lg bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white focus:outline-none focus:border-blue-500"
+                                        value={formData.documentNumber || ''}
+                                        onChange={e => setFormData({ ...formData, documentNumber: e.target.value })}
+                                        placeholder="12345678"
+                                    />
+                                </div>
+                                <div>
                                     <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">Nombre Completo</label>
                                     <input required type="text" className="w-full p-2 rounded-lg bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white focus:outline-none focus:border-blue-500" value={formData.fullName} onChange={e => setFormData({ ...formData, fullName: e.target.value })} />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">Fecha de Nacimiento</label>
+                                    <input
+                                        type="date"
+                                        className="w-full p-2 rounded-lg bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white focus:outline-none focus:border-blue-500"
+                                        value={formData.birthDate || ''}
+                                        onChange={e => setFormData({ ...formData, birthDate: e.target.value })}
+                                    />
                                 </div>
                                 <div>
                                     <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">Email</label>
@@ -351,7 +389,13 @@ const UserManagement = () => {
                                 </div>
                                 <div>
                                     <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">Ciudad</label>
-                                    <input type="text" className="w-full p-2 rounded-lg bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white focus:outline-none focus:border-blue-500" value={formData.city} onChange={e => setFormData({ ...formData, city: e.target.value })} />
+                                    <input
+                                        type="text"
+                                        className="w-full p-2 rounded-lg bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white focus:outline-none focus:border-blue-500"
+                                        value={formData.city || ''}
+                                        onChange={e => setFormData({ ...formData, city: e.target.value })}
+                                        placeholder="Ciudad"
+                                    />
                                 </div>
 
                                 {/* Dynamic Leader Selection */}
@@ -429,7 +473,7 @@ const UserManagement = () => {
 
             {editingUser && (
                 <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-                    <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden border border-gray-200 dark:border-gray-700">
+                    <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-2xl md:max-w-4xl overflow-hidden border border-gray-200 dark:border-gray-700">
                         <div className="p-6 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center">
                             <h2 className="text-xl font-bold text-gray-900 dark:text-white">Editar: {editingUser.fullName}</h2>
                             <button onClick={() => setEditingUser(null)} className="text-gray-400 hover:text-gray-600 dark:hover:text-white transition-colors"><X size={24} /></button>

@@ -113,7 +113,10 @@ const GuestTracking = () => {
                                                         guest.status === 'CONTACTADO' ? 'bg-orange-100 text-orange-700 dark:bg-orange-900/30' :
                                                             'bg-gray-100 text-gray-600 dark:bg-gray-700'
                                                     }`}>
-                                                    {guest.status}
+                                                    {guest.status === 'GANADO' ? 'Consolidado' :
+                                                        guest.status === 'CONSOLIDADO' ? 'Visitado' :
+                                                            guest.status === 'CONTACTADO' ? 'Llamado' :
+                                                                guest.status}
                                                 </span>
                                             </div>
                                             <div className="mt-1 flex flex-wrap gap-1">

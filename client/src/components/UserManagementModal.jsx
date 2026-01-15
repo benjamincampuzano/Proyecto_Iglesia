@@ -13,7 +13,10 @@ const UserManagementModal = ({ isOpen, onClose }) => {
     const [showCreateForm, setShowCreateForm] = useState(false);
     const [currentUser, setCurrentUser] = useState(null);
     const [formData, setFormData] = useState({
+        documentType: '',
+        documentNumber: '',
         fullName: '',
+        birthDate: '',
         email: '',
         password: '',
         role: 'DISCIPULO',
@@ -97,7 +100,8 @@ const UserManagementModal = ({ isOpen, onClose }) => {
             setFormData({
                 fullName: '', email: '', password: '', role: 'DISCIPULO',
                 sex: 'HOMBRE', phone: '', address: '', city: '',
-                pastorId: '', liderDoceId: '', liderCelulaId: ''
+                pastorId: '', liderDoceId: '', liderCelulaId: '',
+                documentType: '', documentNumber: '', birthDate: ''
             });
             fetchUsers();
         } catch (err) {
@@ -247,6 +251,33 @@ const UserManagementModal = ({ isOpen, onClose }) => {
                             <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Nuevo Usuario</h3>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div>
+                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Tipo de Documento</label>
+                                    <select
+                                        value={formData.documentType}
+                                        onChange={(e) => setFormData({ ...formData, documentType: e.target.value })}
+                                        className="w-full px-4 py-2 bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:border-blue-500"
+                                    >
+                                        <option value="">Seleccionar...</option>
+                                        <option value="RC">RC - Registro Civil</option>
+                                        <option value="TI">TI - Tarjeta de Identidad</option>
+                                        <option value="CC">CC - Cédula de Ciudadanía</option>
+                                        <option value="CE">CE - Cédula de Extranjería</option>
+                                        <option value="PP">PP - Pasaporte</option>
+                                        <option value="PEP">PEP - Permiso Especial de Permanencia</option>
+                                    </select>
+                                </div>
+
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Número de Documento</label>
+                                    <input
+                                        type="text"
+                                        value={formData.documentNumber}
+                                        onChange={(e) => setFormData({ ...formData, documentNumber: e.target.value })}
+                                        className="w-full px-4 py-2 bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:border-blue-500"
+                                    />
+                                </div>
+
+                                <div>
                                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                                         Nombre Completo
                                     </label>
@@ -258,6 +289,17 @@ const UserManagementModal = ({ isOpen, onClose }) => {
                                         required
                                     />
                                 </div>
+
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Fecha de Nacimiento</label>
+                                    <input
+                                        type="date"
+                                        value={formData.birthDate}
+                                        onChange={(e) => setFormData({ ...formData, birthDate: e.target.value })}
+                                        className="w-full px-4 py-2 bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:border-blue-500"
+                                    />
+                                </div>
+
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                                         Correo Electrónico
@@ -270,6 +312,7 @@ const UserManagementModal = ({ isOpen, onClose }) => {
                                         required
                                     />
                                 </div>
+
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                                         Contraseña
@@ -303,7 +346,9 @@ const UserManagementModal = ({ isOpen, onClose }) => {
                                         </div>
                                     )}
                                 </div>
+
                                 <div>
+                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Rol</label>
                                     <select
                                         value={formData.role}
                                         onChange={(e) => setFormData({ ...formData, role: e.target.value, assignedLeaderId: '' })}
@@ -326,6 +371,7 @@ const UserManagementModal = ({ isOpen, onClose }) => {
                                         <option value="MUJER">Mujer</option>
                                     </select>
                                 </div>
+
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Teléfono</label>
                                     <input
@@ -335,6 +381,7 @@ const UserManagementModal = ({ isOpen, onClose }) => {
                                         className="w-full px-4 py-2 bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:border-blue-500"
                                     />
                                 </div>
+
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Dirección</label>
                                     <input
@@ -344,6 +391,7 @@ const UserManagementModal = ({ isOpen, onClose }) => {
                                         className="w-full px-4 py-2 bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:border-blue-500"
                                     />
                                 </div>
+
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Ciudad</label>
                                     <input
@@ -465,7 +513,7 @@ const UserManagementModal = ({ isOpen, onClose }) => {
                                     type="button"
                                     onClick={() => {
                                         setShowCreateForm(false);
-                                        setFormData({ fullName: '', email: '', password: '', role: 'DISCIPULO', sex: 'HOMBRE', phone: '', address: '', city: '', liderDoceId: '' });
+                                        setFormData({ fullName: '', email: '', password: '', role: 'DISCIPULO', sex: 'HOMBRE', phone: '', address: '', city: '', liderDoceId: '', documentType: '', documentNumber: '', birthDate: '' });
                                     }}
                                     className="px-4 py-2 bg-gray-200 dark:bg-gray-600 hover:bg-gray-300 dark:hover:bg-gray-500 text-gray-700 dark:text-white rounded-lg transition-colors"
                                 >

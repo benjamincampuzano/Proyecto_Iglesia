@@ -4,7 +4,7 @@ const prisma = new PrismaClient();
 // Crear nuevo invitado
 const createGuest = async (req, res) => {
     try {
-        let { name, phone, address, prayerRequest, invitedById, called, callObservation, visited, visitObservation } = req.body;
+        let { name, phone, address, city, prayerRequest, invitedById, called, callObservation, visited, visitObservation, documentType, documentNumber, birthDate, sex } = req.body;
         const user = req.user;
 
         if (!name || !phone) {
@@ -38,12 +38,17 @@ const createGuest = async (req, res) => {
                 name,
                 phone,
                 address,
+                city,
                 prayerRequest,
                 invitedById: parseInt(invitedById),
                 called: called || false,
                 callObservation,
                 visited: visited || false,
                 visitObservation,
+                documentType,
+                documentNumber,
+                birthDate: birthDate ? new Date(birthDate) : null,
+                sex,
             },
             include: {
                 invitedBy: {
@@ -249,7 +254,7 @@ const getGuestById = async (req, res) => {
 const updateGuest = async (req, res) => {
     try {
         const { id } = req.params;
-        const { name, phone, address, prayerRequest, status, invitedById, assignedToId, called, callObservation, visited, visitObservation } = req.body;
+        const { name, phone, address, city, prayerRequest, status, invitedById, assignedToId, called, callObservation, visited, visitObservation, documentType, documentNumber, birthDate, sex } = req.body;
         const user = req.user;
 
         // Obtener el invitado primero para verificar permisos
@@ -278,6 +283,11 @@ const updateGuest = async (req, res) => {
                 ...(callObservation !== undefined && { callObservation }),
                 ...(visited !== undefined && { visited: Boolean(visited) }),
                 ...(visitObservation !== undefined && { visitObservation }),
+                ...(documentType !== undefined && { documentType }),
+                ...(documentNumber !== undefined && { documentNumber }),
+                ...(birthDate !== undefined && { birthDate: birthDate ? new Date(birthDate) : null }),
+                ...(sex !== undefined && { sex }),
+                ...(city !== undefined && { city }),
             };
         } else if (user.role === 'LIDER_DOCE' || user.role === 'LIDER_CELULA' || user.role === 'PASTOR') {
             // LIDER_DOCE, LIDER_CELULA y PASTOR pueden actualizar todos los campos para invitados en su red
@@ -303,6 +313,11 @@ const updateGuest = async (req, res) => {
                 ...(callObservation !== undefined && { callObservation }),
                 ...(visited !== undefined && { visited: Boolean(visited) }),
                 ...(visitObservation !== undefined && { visitObservation }),
+                ...(documentType !== undefined && { documentType }),
+                ...(documentNumber !== undefined && { documentNumber }),
+                ...(birthDate !== undefined && { birthDate: birthDate ? new Date(birthDate) : null }),
+                ...(sex !== undefined && { sex }),
+                ...(city !== undefined && { city }),
             };
         } else {
             // LIDER_CELULA y DISCIPULO solo pueden actualizar campo de estado y seguimiento
@@ -475,7 +490,7 @@ const convertGuestToMember = async (req, res) => {
         });
 
         res.status(201).json({
-            message: 'Guest converted to member successfully',
+            message: 'Guest consolidated to member successfully',
             user: {
                 id: newUser.id,
                 email: newUser.email,
@@ -509,7 +524,7 @@ const addCall = async (req, res) => {
             }
         });
 
-        // Update guest status to CONTACTADO
+        // Update guest status to CONTACTADO (Llamado)
         await prisma.guest.update({
             where: { id: parseInt(id) },
             data: { status: 'CONTACTADO' }
@@ -542,7 +557,7 @@ const addVisit = async (req, res) => {
             }
         });
 
-        // Update guest status to CONSOLIDADO
+        // Update guest status to CONSOLIDADO (Visitado)
         await prisma.guest.update({
             where: { id: parseInt(id) },
             data: { status: 'CONSOLIDADO' }

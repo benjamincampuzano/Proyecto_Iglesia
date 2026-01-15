@@ -2,10 +2,26 @@ const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 const { logActivity } = require('../utils/auditLogger');
 
+// Helper to check if user has modification access to an encuentro
+const checkEncuentroAccess = async (user, encuentroId) => {
+    if (user.role === 'SUPER_ADMIN') return true;
+
+    const encuentro = await prisma.encuentro.findUnique({
+        where: { id: parseInt(encuentroId) },
+        select: { coordinatorId: true }
+    });
+
+    if (!encuentro) return false;
+    return encuentro.coordinatorId === parseInt(user.id);
+};
+
 const getEncuentros = async (req, res) => {
     try {
         const encuentros = await prisma.encuentro.findMany({
             include: {
+                coordinator: {
+                    select: { id: true, fullName: true }
+                },
                 _count: {
                     select: { registrations: true }
                 }
@@ -25,9 +41,15 @@ const getEncuentroById = async (req, res) => {
         const encuentro = await prisma.encuentro.findUnique({
             where: { id: parseInt(id) },
             include: {
+                coordinator: {
+                    select: { id: true, fullName: true }
+                },
                 registrations: {
                     include: {
                         guest: true, // Includes Guest info
+                        user: {
+                            select: { id: true, fullName: true, phone: true }
+                        },
                         payments: true,
                         classAttendances: true // Includes Class Attendance
                     }
@@ -86,7 +108,7 @@ const createEncuentro = async (req, res) => {
         if (req.user.role !== 'SUPER_ADMIN') {
             return res.status(403).json({ error: 'Not authorized' });
         }
-        const { type, name, description, cost, startDate, endDate, liderDoceIds } = req.body;
+        const { type, name, description, cost, startDate, endDate, liderDoceIds, coordinatorId } = req.body;
         const encuentro = await prisma.encuentro.create({
             data: {
                 type,
@@ -95,7 +117,8 @@ const createEncuentro = async (req, res) => {
                 cost: parseFloat(cost),
                 startDate: new Date(startDate),
                 endDate: new Date(endDate),
-                liderDoceIds: liderDoceIds || []
+                liderDoceIds: liderDoceIds || [],
+                coordinatorId: coordinatorId ? parseInt(coordinatorId) : null
             }
         });
 
@@ -131,12 +154,14 @@ const deleteEncuentro = async (req, res) => {
 const updateEncuentro = async (req, res) => {
     try {
         const { id } = req.params;
-        // Check permissions (SUPER_ADMIN, LIDER_DOCE or PASTOR)
-        if (req.user.role !== 'SUPER_ADMIN' && req.user.role !== 'LIDER_DOCE' && req.user.role !== 'PASTOR') {
-            return res.status(403).json({ error: 'Not authorized' });
+
+        // Restriction: Only SUPER_ADMIN or Coordinator
+        const hasAccess = await checkEncuentroAccess(req.user, id);
+        if (!hasAccess) {
+            return res.status(403).json({ error: 'No tienes permisos para modificar este encuentro. Solo el coordinador asignado o un administrador pueden hacerlo.' });
         }
 
-        const { type, name, description, cost, startDate, endDate, liderDoceIds } = req.body;
+        const { type, name, description, cost, startDate, endDate, liderDoceIds, coordinatorId } = req.body;
 
         const updateData = {};
         if (type !== undefined) updateData.type = type;
@@ -146,6 +171,7 @@ const updateEncuentro = async (req, res) => {
         if (startDate !== undefined) updateData.startDate = new Date(startDate);
         if (endDate !== undefined) updateData.endDate = new Date(endDate);
         if (liderDoceIds !== undefined) updateData.liderDoceIds = liderDoceIds;
+        if (coordinatorId !== undefined) updateData.coordinatorId = coordinatorId ? parseInt(coordinatorId) : null;
 
         const encuentro = await prisma.encuentro.update({
             where: { id: parseInt(id) },
@@ -162,30 +188,37 @@ const updateEncuentro = async (req, res) => {
     }
 };
 
-const registerGuest = async (req, res) => {
+const registerParticipant = async (req, res) => {
     try {
         const { encuentroId } = req.params;
-        const { guestId, discountPercentage } = req.body;
+        const { guestId, userId, discountPercentage } = req.body;
 
-        // Restriction: Only SUPER_ADMIN, PASTOR, or LIDER_DOCE can register
-        if (req.user.role === 'LIDER_CELULA' || req.user.role === 'DISCIPULO') {
-            return res.status(403).json({ error: 'No tienes permisos para registrar invitados en encuentros' });
+        // Restriction: Only SUPER_ADMIN or Coordinator
+        const hasAccess = await checkEncuentroAccess(req.user, encuentroId);
+        if (!hasAccess) {
+            return res.status(403).json({ error: 'No tienes permisos para registrar participantes en este encuentro.' });
         }
 
         const registration = await prisma.encuentroRegistration.create({
             data: {
                 encuentroId: parseInt(encuentroId),
-                guestId: parseInt(guestId),
+                guestId: guestId ? parseInt(guestId) : null,
+                userId: userId ? parseInt(userId) : null,
                 discountPercentage: parseFloat(discountPercentage || 0)
             },
-            include: { guest: true }
+            include: {
+                guest: true,
+                user: { select: { fullName: true } }
+            }
         });
 
-        // Update guest status to GANADO
-        await prisma.guest.update({
-            where: { id: parseInt(guestId) },
-            data: { status: 'GANADO' }
-        });
+        // If it's a guest, update status to GANADO (Consolidado)
+        if (guestId) {
+            await prisma.guest.update({
+                where: { id: parseInt(guestId) },
+                data: { status: 'GANADO' }
+            });
+        }
 
         const encuentro = await prisma.encuentro.findUnique({
             where: { id: parseInt(encuentroId) },
@@ -212,18 +245,34 @@ const registerGuest = async (req, res) => {
 const deleteRegistration = async (req, res) => {
     try {
         const { registrationId } = req.params;
-        if (req.user.role !== 'SUPER_ADMIN') {
-            return res.status(403).json({ error: 'Not authorized' });
-        }
-        const registration = await prisma.encuentroRegistration.delete({
+
+        const registration = await prisma.encuentroRegistration.findUnique({
             where: { id: parseInt(registrationId) },
-            select: { id: true, guestId: true, encuentroId: true }
+            select: { id: true, guestId: true, userId: true, encuentroId: true }
         });
 
-        await logActivity(req.user.id, 'DELETE', 'ENCUENTRO_REGISTRATION', registration.id, { guestId: registration.guestId, encuentroId: registration.encuentroId });
+        if (!registration) {
+            return res.status(404).json({ error: 'Registration not found' });
+        }
+
+        // Restriction: Only SUPER_ADMIN or Coordinator
+        const hasAccess = await checkEncuentroAccess(req.user, registration.encuentroId);
+        if (!hasAccess) {
+            return res.status(403).json({ error: 'No tienes permisos para eliminar inscripciones en este encuentro.' });
+        }
+
+        await prisma.encuentroRegistration.delete({
+            where: { id: parseInt(registrationId) }
+        });
+
+        await logActivity(req.user.id, 'DELETE', 'ENCUENTRO_REGISTRATION', registration.id, {
+            participantId: registration.guestId || registration.userId,
+            encuentroId: registration.encuentroId
+        });
 
         res.json({ message: 'Deleted' });
     } catch (error) {
+        console.error(error);
         res.status(500).json({ error: 'Delete failed' });
     }
 };
@@ -233,10 +282,21 @@ const addPayment = async (req, res) => {
         const { registrationId } = req.params;
         const { amount, notes } = req.body;
 
-        // Restriction: Only SUPER_ADMIN, PASTOR, or LIDER_DOCE
-        if (req.user.role === 'LIDER_CELULA' || req.user.role === 'DISCIPULO') {
-            return res.status(403).json({ error: 'No tienes permisos para agregar pagos' });
+        const registration = await prisma.encuentroRegistration.findUnique({
+            where: { id: parseInt(registrationId) },
+            select: { encuentroId: true }
+        });
+
+        if (!registration) {
+            return res.status(404).json({ error: 'Registration not found' });
         }
+
+        // Restriction: Only SUPER_ADMIN or Coordinator
+        const hasAccess = await checkEncuentroAccess(req.user, registration.encuentroId);
+        if (!hasAccess) {
+            return res.status(403).json({ error: 'No tienes permisos para agregar pagos en este encuentro.' });
+        }
+
         const payment = await prisma.encuentroPayment.create({
             data: {
                 registrationId: parseInt(registrationId),
@@ -255,9 +315,19 @@ const updateClassAttendance = async (req, res) => {
         const { registrationId, classNumber } = req.params; // classNumber 1-10
         const { attended } = req.body;
 
-        // Restriction: Only SUPER_ADMIN, PASTOR, or LIDER_DOCE
-        if (req.user.role === 'LIDER_CELULA' || req.user.role === 'DISCIPULO') {
-            return res.status(403).json({ error: 'No tienes permisos para actualizar asistencia' });
+        const registration = await prisma.encuentroRegistration.findUnique({
+            where: { id: parseInt(registrationId) },
+            select: { encuentroId: true }
+        });
+
+        if (!registration) {
+            return res.status(404).json({ error: 'Registration not found' });
+        }
+
+        // Restriction: Only SUPER_ADMIN or Coordinator
+        const hasAccess = await checkEncuentroAccess(req.user, registration.encuentroId);
+        if (!hasAccess) {
+            return res.status(403).json({ error: 'No tienes permisos para actualizar asistencia en este encuentro.' });
         }
 
         const record = await prisma.encuentroClassAttendance.upsert({
@@ -342,6 +412,14 @@ const getEncuentroBalanceReport = async (req, res) => {
                                 }
                             }
                         },
+                        user: {
+                            include: {
+                                leader: { select: { fullName: true } },
+                                liderDoce: { select: { fullName: true } },
+                                liderCelula: { select: { fullName: true } },
+                                pastor: { select: { fullName: true } }
+                            }
+                        },
                         payments: true
                     }
                 }
@@ -363,16 +441,31 @@ const getEncuentroBalanceReport = async (req, res) => {
             const allowedIds = new Set([...networkIds, userId]);
 
             visibleRegistrations = encuentro.registrations.filter(reg => {
-                const assignedCheck = reg.guest.assignedToId && allowedIds.has(reg.guest.assignedToId);
-                const invitedCheck = reg.guest.invitedById && allowedIds.has(reg.guest.invitedById);
-                return assignedCheck || invitedCheck;
+                const participant = reg.guest || reg.user;
+                if (!participant) return false;
+
+                if (reg.guest) {
+                    const assignedCheck = reg.guest.assignedToId && allowedIds.has(reg.guest.assignedToId);
+                    const invitedCheck = reg.guest.invitedById && allowedIds.has(reg.guest.invitedById);
+                    return assignedCheck || invitedCheck;
+                } else {
+                    // For user registrations, check if the user itself or its leaders are in the allowed list
+                    return allowedIds.has(reg.user.id) ||
+                        (reg.user.liderCelulaId && allowedIds.has(reg.user.liderCelulaId)) ||
+                        (reg.user.liderDoceId && allowedIds.has(reg.user.liderDoceId)) ||
+                        (reg.user.pastorId && allowedIds.has(reg.user.pastorId));
+                }
             });
         } else {
             // Member sees guests assigned to them OR invited by them
             const userId = parseInt(user.id);
-            visibleRegistrations = encuentro.registrations.filter(reg =>
-                reg.guest.assignedToId === userId || reg.guest.invitedById === userId
-            );
+            visibleRegistrations = encuentro.registrations.filter(reg => {
+                if (reg.guest) {
+                    return reg.guest.assignedToId === userId || reg.guest.invitedById === userId;
+                } else {
+                    return reg.userId === userId;
+                }
+            });
         }
 
         // Transform Data for Report
@@ -381,13 +474,16 @@ const getEncuentroBalanceReport = async (req, res) => {
             const finalCost = encuentro.cost * (1 - (reg.discountPercentage / 100));
             const balance = finalCost - totalPaid;
 
-            // Use assignedTo for hierarchy, fallback to invitedBy
-            const responsibleUser = reg.guest.assignedTo || reg.guest.invitedBy;
+            // Use assignedTo for hierarchy, fallback to invitedBy (for guests)
+            // Or the user's direct hierarchy (for users)
+            const responsibleUser = reg.guest ? (reg.guest.assignedTo || reg.guest.invitedBy) : reg.user;
 
             return {
                 id: reg.id,
-                guestName: reg.guest.name,
-                status: reg.guest.status,
+                userName: reg.user?.fullName,
+                guestName: reg.guest?.name,
+                userRole: reg.user?.role,
+                status: reg.guest?.status,
                 responsibleName: responsibleUser?.fullName || 'Sin Asignar',
                 pastorName: responsibleUser?.pastor?.fullName || 'N/A',
                 liderDoceName: responsibleUser?.liderDoce?.fullName || 'N/A',
@@ -413,7 +509,7 @@ module.exports = {
     createEncuentro,
     updateEncuentro,
     deleteEncuentro,
-    registerGuest,
+    registerParticipant,
     deleteRegistration,
     addPayment,
     updateClassAttendance,

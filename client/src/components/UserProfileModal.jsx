@@ -9,6 +9,9 @@ const UserProfileModal = ({ isOpen, onClose }) => {
     const [formData, setFormData] = useState({
         fullName: '',
         email: '',
+        documentType: '',
+        documentNumber: '',
+        birthDate: '',
         phone: '',
         address: '',
         city: '',
@@ -36,6 +39,9 @@ const UserProfileModal = ({ isOpen, onClose }) => {
             setFormData({
                 fullName: userData.fullName || '',
                 email: userData.email || '',
+                documentType: userData.documentType || '',
+                documentNumber: userData.documentNumber || '',
+                birthDate: userData.birthDate ? userData.birthDate.split('T')[0] : '',
                 phone: userData.phone || '',
                 address: userData.address || '',
                 city: userData.city || '',
@@ -57,6 +63,9 @@ const UserProfileModal = ({ isOpen, onClose }) => {
                     ...prev,
                     fullName: user.fullName || '',
                     email: user.email || '',
+                    documentType: user.documentType || '',
+                    documentNumber: user.documentNumber || '',
+                    birthDate: user.birthDate ? user.birthDate.split('T')[0] : '',
                     phone: user.phone || '',
                     address: user.address || '',
                     city: user.city || '',
@@ -88,6 +97,9 @@ const UserProfileModal = ({ isOpen, onClose }) => {
                 {
                     fullName: formData.fullName,
                     email: formData.email,
+                    documentType: formData.documentType,
+                    documentNumber: formData.documentNumber,
+                    birthDate: formData.birthDate,
                     phone: formData.phone,
                     address: formData.address,
                     city: formData.city,
@@ -153,7 +165,7 @@ const UserProfileModal = ({ isOpen, onClose }) => {
 
     return (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-2xl border border-gray-200 dark:border-gray-700 max-h-[90vh] overflow-y-auto">
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-2xl md:max-w-4xl border border-gray-200 dark:border-gray-700 max-h-[90vh] overflow-y-auto">
                 <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
                     <h2 className="text-xl font-bold text-gray-900 dark:text-white">Mi Perfil</h2>
                     <button
@@ -180,6 +192,35 @@ const UserProfileModal = ({ isOpen, onClose }) => {
                     <form onSubmit={handleUpdateProfile} className="space-y-4">
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
+                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Tipo de Documento</label>
+                                <select
+                                    name="documentType"
+                                    value={formData.documentType}
+                                    onChange={handleChange}
+                                    className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:border-blue-500"
+                                >
+                                    <option value="">Seleccionar...</option>
+                                    <option value="RC">RC</option>
+                                    <option value="TI">TI</option>
+                                    <option value="CC">CC</option>
+                                    <option value="CE">CE</option>
+                                    <option value="PP">PP</option>
+                                    <option value="PEP">PEP</option>
+                                </select>
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Número de Documento</label>
+                                <input
+                                    type="text"
+                                    name="documentNumber"
+                                    value={formData.documentNumber || ''}
+                                    onChange={handleChange}
+                                    className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:border-blue-500"
+                                />
+                            </div>
+
+                            <div>
                                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                                     Nombre Completo
                                 </label>
@@ -190,6 +231,17 @@ const UserProfileModal = ({ isOpen, onClose }) => {
                                     onChange={handleChange}
                                     className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:border-blue-500"
                                     required
+                                />
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Fecha de Nacimiento</label>
+                                <input
+                                    type="date"
+                                    name="birthDate"
+                                    value={formData.birthDate || ''}
+                                    onChange={handleChange}
+                                    className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:border-blue-500"
                                 />
                             </div>
 
@@ -324,8 +376,8 @@ const UserProfileModal = ({ isOpen, onClose }) => {
                                                     <div
                                                         key={i}
                                                         className={`h-1 flex-1 rounded-full transition-colors ${i < getPasswordStrength(formData.newPassword)
-                                                                ? ['bg-red-500', 'bg-orange-500', 'bg-yellow-500', 'bg-green-500'][getPasswordStrength(formData.newPassword) - 1]
-                                                                : 'bg-gray-700'
+                                                            ? ['bg-red-500', 'bg-orange-500', 'bg-yellow-500', 'bg-green-500'][getPasswordStrength(formData.newPassword) - 1]
+                                                            : 'bg-gray-700'
                                                             }`}
                                                     />
                                                 ))}

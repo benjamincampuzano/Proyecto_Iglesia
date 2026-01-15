@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
 import api from '../utils/api';
-import { Plus, Calendar, Users, DollarSign, ChevronRight, Trash2 } from 'lucide-react';
+import { Plus, Calendar, Users, DollarSign, ChevronRight, Trash2, UserCheck } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import EncuentroDetails from '../components/EncuentroDetails';
 import MultiUserSelect from '../components/MultiUserSelect';
+import UserSearchSelect from '../components/UserSearchSelect';
 
 const Encuentros = () => {
     const { user } = useAuth();
@@ -20,7 +21,8 @@ const Encuentros = () => {
         cost: '',
         startDate: '',
         endDate: '',
-        liderDoceIds: []
+        liderDoceIds: [],
+        coordinatorId: null
     });
 
     useEffect(() => {
@@ -65,7 +67,8 @@ const Encuentros = () => {
                 cost: '',
                 startDate: '',
                 endDate: '',
-                liderDoceIds: []
+                liderDoceIds: [],
+                coordinatorId: null
             });
         } catch (error) {
             console.error('Error creating:', error);
@@ -161,6 +164,10 @@ const Encuentros = () => {
                                         <Users size={16} className="mr-2 text-blue-500" />
                                         {enc._count?.registrations || 0} Inscritos
                                     </div>
+                                    <div className="flex items-center text-gray-500 dark:text-gray-400 text-sm">
+                                        <UserCheck size={16} className="mr-2 text-green-500" />
+                                        Coord: {enc.coordinator?.fullName || 'Sin Asignar'}
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -239,11 +246,19 @@ const Encuentros = () => {
                                 </div>
                             </div>
                             <div>
+                                <UserSearchSelect
+                                    value={formData.coordinatorId}
+                                    onChange={(id) => setFormData({ ...formData, coordinatorId: id })}
+                                    label="Coordinador del Encuentro"
+                                    placeholder="Seleccionar coordinador..."
+                                />
+                            </div>
+                            <div>
                                 <MultiUserSelect
                                     value={formData.liderDoceIds}
                                     onChange={(ids) => setFormData({ ...formData, liderDoceIds: ids })}
-                                    label="Líderes de 12 Coordinadores"
-                                    placeholder="Seleccionar coordinadores..."
+                                    label="Líderes de 12 Invitados"
+                                    placeholder="Seleccionar líderes..."
                                     roleFilter="LIDER_DOCE"
                                 />
                             </div>

@@ -8,7 +8,7 @@ const prisma = new PrismaClient();
 
 const register = async (req, res) => {
     try {
-        const { email, password, fullName, role, sex, phone, address, city, liderDoceId } = req.body;
+        const { email, password, fullName, role, sex, phone, address, city, liderDoceId, documentType, documentNumber, birthDate } = req.body;
 
         const validation = validatePassword(password, { email, fullName });
         if (!validation.isValid) {
@@ -25,7 +25,10 @@ const register = async (req, res) => {
             sex,
             phone,
             address,
-            city
+            city,
+            documentType,
+            documentNumber,
+            birthDate: birthDate ? new Date(birthDate) : null
         };
 
         if (liderDoceId) {
@@ -156,7 +159,7 @@ const registerSetup = async (req, res) => {
             return res.status(403).json({ message: 'System is already initialized' });
         }
 
-        const { email, password, fullName, sex, phone, address, city } = req.body;
+        const { email, password, fullName, sex, phone, address, city, documentType, documentNumber, birthDate } = req.body;
 
         const validation = validatePassword(password, { email, fullName });
         if (!validation.isValid) {
@@ -174,7 +177,10 @@ const registerSetup = async (req, res) => {
                 sex,
                 phone,
                 address,
-                city
+                city,
+                documentType,
+                documentNumber,
+                birthDate: birthDate ? new Date(birthDate) : null
             },
         });
 

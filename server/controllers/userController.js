@@ -81,6 +81,9 @@ const getProfile = async (req, res) => {
                 fullName: true,
                 role: true,
                 sex: true,
+                documentType: true,
+                documentNumber: true,
+                birthDate: true,
                 phone: true,
                 address: true,
                 city: true,
@@ -107,7 +110,7 @@ const getProfile = async (req, res) => {
 const updateProfile = async (req, res) => {
     try {
         const userId = req.user.id;
-        const { fullName, email, sex, phone, address, city } = req.body;
+        const { fullName, email, sex, phone, address, city, documentType, documentNumber, birthDate } = req.body;
 
         // Verificar si el correo ya está siendo usado por otro usuario
         if (email) {
@@ -139,6 +142,9 @@ const updateProfile = async (req, res) => {
                 ...(city && { city }),
                 ...(latitude !== undefined && { latitude }),
                 ...(longitude !== undefined && { longitude }),
+                ...(documentType !== undefined && { documentType }),
+                ...(documentNumber !== undefined && { documentNumber }),
+                ...(birthDate !== undefined && { birthDate: birthDate ? new Date(birthDate) : null }),
             },
         });
 
@@ -353,7 +359,7 @@ const getUserById = async (req, res) => {
 const updateUser = async (req, res) => {
     try {
         const { id } = req.params;
-        const { fullName, email, role, sex, phone, address, city, pastorId, liderDoceId, liderCelulaId } = req.body;
+        const { fullName, email, role, sex, phone, address, city, pastorId, liderDoceId, liderCelulaId, documentType, documentNumber, birthDate } = req.body;
 
         // Geocode address if provided
         let latitude = undefined;
@@ -409,6 +415,9 @@ const updateUser = async (req, res) => {
             ...(city && { city }),
             ...(latitude !== undefined && { latitude }),
             ...(longitude !== undefined && { longitude }),
+            ...(documentType !== undefined && { documentType }),
+            ...(documentNumber !== undefined && { documentNumber }),
+            ...(birthDate !== undefined && { birthDate: birthDate ? new Date(birthDate) : null }),
         };
 
         // Asignación jerárquica de líderes en actualización
@@ -510,7 +519,7 @@ const updateUser = async (req, res) => {
 // Admin: Crear nuevo usuario
 const createUser = async (req, res) => {
     try {
-        const { email, password, fullName, role, sex, phone, address, city, liderDoceId } = req.body;
+        const { email, password, fullName, role, sex, phone, address, city, liderDoceId, documentType, documentNumber, birthDate } = req.body;
 
         if (!email || !password || !fullName) {
             return res.status(400).json({ message: 'Email, password, and full name are required' });
@@ -541,7 +550,10 @@ const createUser = async (req, res) => {
             address,
             city,
             latitude: coords.lat,
-            longitude: coords.lng
+            longitude: coords.lng,
+            documentType,
+            documentNumber,
+            birthDate: birthDate ? new Date(birthDate) : null
         };
 
         // Asignación jerárquica de líderes con herencia

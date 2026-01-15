@@ -3,10 +3,10 @@ import { Check, X, UserPlus } from 'lucide-react';
 import api from '../utils/api';
 import { useAuth } from '../context/AuthContext';
 
-const EncuentroClassTracker = ({ registrations, onRefresh, onConvert }) => {
+const EncuentroClassTracker = ({ registrations, onRefresh, onConvert, canModify }) => {
     const { user } = useAuth();
     const [updating, setUpdating] = useState({});
-    const isRestricted = user.role === 'LIDER_CELULA' || user.role === 'DISCIPULO';
+    const isRestricted = !canModify;
 
     const handleToggle = async (registrationId, classNumber, currentStatus) => {
         const key = `${registrationId}-${classNumber}`;
@@ -36,7 +36,7 @@ const EncuentroClassTracker = ({ registrations, onRefresh, onConvert }) => {
                     <thead className="bg-gray-50 dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800">
                         <tr>
                             <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider sticky left-0 bg-gray-50 dark:bg-gray-900 z-10 w-64">
-                                Invitado
+                                Participante
                             </th>
                             {/* Pre-Encuentro Headers */}
                             {[1, 2, 3, 4, 5].map(num => (
@@ -67,9 +67,9 @@ const EncuentroClassTracker = ({ registrations, onRefresh, onConvert }) => {
                             <tr key={reg.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
                                 <td className="px-6 py-4 whitespace-nowrap sticky left-0 bg-white dark:bg-gray-800 z-10">
                                     <div className="text-sm font-medium text-gray-900 dark:text-white">
-                                        {reg.guest.name}
+                                        {reg.guest?.name || reg.user?.fullName}
                                     </div>
-                                    <div className="text-xs text-gray-500">{reg.guest.status}</div>
+                                    <div className="text-xs text-gray-500">{reg.guest?.status || 'Discípulo'}</div>
                                 </td>
 
                                 {/* Pre-Encuentro Cells */}
@@ -120,15 +120,17 @@ const EncuentroClassTracker = ({ registrations, onRefresh, onConvert }) => {
                                 })}
 
                                 {/* Actions Cell */}
-                                {!isRestricted && (
+                                {canModify && (
                                     <td className="px-6 py-4 text-center whitespace-nowrap">
-                                        <button
-                                            onClick={() => onConvert && onConvert(reg)}
-                                            className="text-purple-600 hover:text-purple-900 dark:text-purple-400 dark:hover:text-purple-300 inline-flex items-center"
-                                            title="Convertir a Discípulo"
-                                        >
-                                            <UserPlus size={18} />
-                                        </button>
+                                        {reg.guest && (
+                                            <button
+                                                onClick={() => onConvert && onConvert(reg)}
+                                                className="text-purple-600 hover:text-purple-900 dark:text-purple-400 dark:hover:text-purple-300 inline-flex items-center"
+                                                title="Convertir a Discípulo"
+                                            >
+                                                <UserPlus size={18} />
+                                            </button>
+                                        )}
                                     </td>
                                 )}
                             </tr>

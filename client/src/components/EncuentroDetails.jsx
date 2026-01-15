@@ -3,6 +3,7 @@ import { ArrowLeft, UserPlus, DollarSign, CheckCircle, XCircle, Trash2, Calendar
 import api from '../utils/api';
 import { useAuth } from '../context/AuthContext';
 import GuestSearchSelect from './GuestSearchSelect';
+import UserSearchSelect from './UserSearchSelect';
 import MultiUserSelect from './MultiUserSelect';
 import EncuentroClassTracker from './EncuentroClassTracker';
 import BalanceReport from './BalanceReport';
@@ -36,12 +37,16 @@ const EncuentroDetails = ({ encuentro, onBack, onRefresh }) => {
     });
 
     // Registration Form State
+    const [registrationType, setRegistrationType] = useState('GUEST'); // GUEST or USER
     const [selectedGuestId, setSelectedGuestId] = useState(null);
+    const [selectedUserId, setSelectedUserId] = useState(null);
     const [discount, setDiscount] = useState(0);
 
     // Payment Form State
     const [paymentAmount, setPaymentAmount] = useState('');
     const [paymentNotes, setPaymentNotes] = useState('');
+
+    const canModify = user.id === encuentro.coordinatorId || user.role === 'SUPER_ADMIN';
 
     useEffect(() => {
         if (activeTab === 'report') {
@@ -67,11 +72,13 @@ const EncuentroDetails = ({ encuentro, onBack, onRefresh }) => {
         setLoading(true);
         try {
             await api.post(`/encuentros/${encuentro.id}/register`, {
-                guestId: selectedGuestId,
+                guestId: registrationType === 'GUEST' ? selectedGuestId : null,
+                userId: registrationType === 'USER' ? selectedUserId : null,
                 discountPercentage: parseFloat(discount)
             });
             setShowRegisterModal(false);
             setSelectedGuestId(null);
+            setSelectedUserId(null);
             setDiscount(0);
             onRefresh();
             if (activeTab === 'report') fetchReport();
@@ -156,7 +163,8 @@ const EncuentroDetails = ({ encuentro, onBack, onRefresh }) => {
             startDate: new Date(encuentro.startDate).toISOString().split('T')[0],
             endDate: new Date(encuentro.endDate).toISOString().split('T')[0],
             type: encuentro.type,
-            liderDoceIds: encuentro.liderDoceIds || []
+            liderDoceIds: encuentro.liderDoceIds || [],
+            coordinatorId: encuentro.coordinatorId || null
         });
         setShowEditModal(true);
     };
@@ -214,9 +222,12 @@ const EncuentroDetails = ({ encuentro, onBack, onRefresh }) => {
                         <p className="text-gray-500 dark:text-gray-400">
                             {new Date(encuentro.startDate).toLocaleDateString()} - {new Date(encuentro.endDate).toLocaleDateString()}
                         </p>
+                        <p className="text-sm font-medium text-blue-600 dark:text-blue-400 mt-1">
+                            Coordinador: {encuentro.coordinator?.fullName || 'Sin Asignar'}
+                        </p>
                     </div>
                 </div>
-                {(user.role === 'SUPER_ADMIN' || user.role === 'LIDER_DOCE') && (
+                {canModify && (
                     <button
                         onClick={openEditModal}
                         className="flex items-center space-x-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
@@ -289,14 +300,14 @@ const EncuentroDetails = ({ encuentro, onBack, onRefresh }) => {
             {activeTab === 'general' && (
                 <>
                     {/* Actions */}
-                    {!(user.role === 'LIDER_CELULA' || user.role === 'DISCIPULO') && (
+                    {canModify && (
                         <div className="flex justify-end pt-4">
                             <button
                                 onClick={() => setShowRegisterModal(true)}
                                 className="flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
                             >
                                 <UserPlus size={20} className="mr-2" />
-                                Inscribir Invitado
+                                Inscribir Participante
                             </button>
                         </div>
                     )}
@@ -306,7 +317,7 @@ const EncuentroDetails = ({ encuentro, onBack, onRefresh }) => {
                             <table className="w-full">
                                 <thead className="bg-gray-50 dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800">
                                     <tr>
-                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Invitado</th>
+                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Participante</th>
                                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Estado</th>
                                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Costo</th>
                                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Pagado</th>
@@ -322,10 +333,10 @@ const EncuentroDetails = ({ encuentro, onBack, onRefresh }) => {
                                                     onClick={() => openHistoryModal(reg)}
                                                     className="text-left group"
                                                 >
-                                                    <div className="text-sm font-medium text-gray-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors underline decoration-dotted decoration-gray-400">
-                                                        {reg.guest.name}
+                                                    <div className="text-sm font-medium text-gray-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors border-b border-dotted border-gray-400">
+                                                        {reg.guest?.name || reg.user?.fullName}
                                                     </div>
-                                                    <div className="text-xs text-gray-500">{reg.guest.phone}</div>
+                                                    <div className="text-xs text-gray-500">{reg.guest?.phone || reg.user?.phone || 'N/A'}</div>
                                                 </button>
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap">
@@ -344,7 +355,7 @@ const EncuentroDetails = ({ encuentro, onBack, onRefresh }) => {
                                                 {formatCurrency(reg.balance)}
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium flex items-center justify-end space-x-3">
-                                                {!(user.role === 'LIDER_CELULA' || user.role === 'DISCIPULO') && (
+                                                {canModify && (
                                                     <button
                                                         onClick={() => openPaymentModal(reg)}
                                                         className="text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-300 inline-flex items-center"
@@ -355,15 +366,17 @@ const EncuentroDetails = ({ encuentro, onBack, onRefresh }) => {
                                                     </button>
                                                 )}
 
-                                                {(user.role === 'SUPER_ADMIN' || user.role === 'LIDER_DOCE' || user.role === 'PASTOR') && (
+                                                {canModify && (
                                                     <>
-                                                        <button
-                                                            onClick={() => openConvertModal(reg)}
-                                                            className="text-purple-600 hover:text-purple-900 dark:text-purple-400 dark:hover:text-purple-300 inline-flex items-center"
-                                                            title="Convertir a Discípulo"
-                                                        >
-                                                            <UserPlus size={16} />
-                                                        </button>
+                                                        {reg.guest && (
+                                                            <button
+                                                                onClick={() => openConvertModal(reg)}
+                                                                className="text-purple-600 hover:text-purple-900 dark:text-purple-400 dark:hover:text-purple-300 inline-flex items-center"
+                                                                title="Convertir a Discípulo"
+                                                            >
+                                                                <UserPlus size={16} />
+                                                            </button>
+                                                        )}
                                                         {(user.role === 'SUPER_ADMIN') && (
                                                             <button
                                                                 onClick={() => handleDelete(reg.id)}
@@ -398,6 +411,7 @@ const EncuentroDetails = ({ encuentro, onBack, onRefresh }) => {
                         registrations={encuentro.registrations || []}
                         onRefresh={onRefresh}
                         onConvert={openConvertModal}
+                        canModify={canModify}
                     />
                 </div>
             )}
@@ -420,22 +434,52 @@ const EncuentroDetails = ({ encuentro, onBack, onRefresh }) => {
                 <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
                     <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl w-full max-w-md overflow-hidden">
                         <div className="p-6 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
-                            <h3 className="text-lg font-bold text-gray-900 dark:text-white">Inscribir Invitado</h3>
+                            <h3 className="text-lg font-bold text-gray-900 dark:text-white">Inscribir Participante</h3>
                             <button onClick={() => setShowRegisterModal(false)} className="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300">
                                 <XCircle size={24} />
                             </button>
                         </div>
                         <form onSubmit={handleRegister} className="p-6 space-y-4">
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                                    Buscar Invitado (Desde 'Ganar')
-                                </label>
-                                <GuestSearchSelect
-                                    value={selectedGuestId}
-                                    onChange={setSelectedGuestId}
-                                    placeholder="Nombre del invitado..."
-                                />
+                            <div className="flex bg-gray-100 dark:bg-gray-700 p-1 rounded-lg mb-4">
+                                <button
+                                    type="button"
+                                    onClick={() => setRegistrationType('GUEST')}
+                                    className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-all ${registrationType === 'GUEST' ? 'bg-white dark:bg-gray-600 shadow-sm text-gray-900 dark:text-white' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700'}`}
+                                >
+                                    Invitado
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => setRegistrationType('USER')}
+                                    className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-all ${registrationType === 'USER' ? 'bg-white dark:bg-gray-600 shadow-sm text-gray-900 dark:text-white' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700'}`}
+                                >
+                                    Discípulo
+                                </button>
                             </div>
+
+                            {registrationType === 'GUEST' ? (
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                        Buscar Invitado (Desde 'Ganar')
+                                    </label>
+                                    <GuestSearchSelect
+                                        value={selectedGuestId}
+                                        onChange={setSelectedGuestId}
+                                        placeholder="Nombre del invitado..."
+                                    />
+                                </div>
+                            ) : (
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                        Buscar Discípulo (Usuario)
+                                    </label>
+                                    <UserSearchSelect
+                                        value={selectedUserId}
+                                        onChange={setSelectedUserId}
+                                        placeholder="Nombre del discípulo..."
+                                    />
+                                </div>
+                            )}
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                                     Descuento (%)
@@ -452,7 +496,7 @@ const EncuentroDetails = ({ encuentro, onBack, onRefresh }) => {
                             <div className="pt-4">
                                 <button
                                     type="submit"
-                                    disabled={loading || !selectedGuestId}
+                                    disabled={loading || (registrationType === 'GUEST' ? !selectedGuestId : !selectedUserId)}
                                     className="w-full py-2 px-4 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-lg font-medium transition-all shadow-lg hover:shadow-xl disabled:opacity-50"
                                 >
                                     {loading ? 'Procesando...' : 'Confirmar Inscripción'}
@@ -707,10 +751,18 @@ const EncuentroDetails = ({ encuentro, onBack, onRefresh }) => {
                                 </div>
                             </div>
                             <div>
+                                <UserSearchSelect
+                                    value={editData.coordinatorId}
+                                    onChange={(id) => setEditData({ ...editData, coordinatorId: id })}
+                                    label="Coordinador del Encuentro"
+                                    placeholder="Seleccionar coordinador..."
+                                />
+                            </div>
+                            <div>
                                 <MultiUserSelect
                                     value={editData.liderDoceIds}
                                     onChange={(ids) => setEditData({ ...editData, liderDoceIds: ids })}
-                                    label="Líderes de 12 Asignados"
+                                    label="Líderes de 12 Invitados"
                                     placeholder="Seleccionar Líderes de 12..."
                                     roleFilter="LIDER_DOCE"
                                 />

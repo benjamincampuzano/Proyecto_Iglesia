@@ -7,7 +7,7 @@ const {
     createEncuentro,
     updateEncuentro,
     deleteEncuentro,
-    registerGuest,
+    registerParticipant,
     deleteRegistration,
     addPayment,
     updateClassAttendance,
@@ -23,7 +23,7 @@ router.put('/:id', updateEncuentro);
 router.delete('/:id', deleteEncuentro);
 router.get('/:id/report/balance', getEncuentroBalanceReport);
 
-router.post('/:encuentroId/register', registerGuest);
+router.post('/:encuentroId/register', registerParticipant);
 router.delete('/registrations/:registrationId', deleteRegistration);
 
 router.post('/registrations/:registrationId/payments', addPayment);

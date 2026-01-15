@@ -5,9 +5,14 @@ import api from '../utils/api';
 
 const GuestRegistrationForm = ({ onGuestCreated }) => {
     const [formData, setFormData] = useState({
+        documentType: '',
+        documentNumber: '',
         name: '',
+        birthDate: '',
+        sex: '',
         phone: '',
         address: '',
+        city: '',
         prayerRequest: '',
         invitedById: null,
     });
@@ -72,9 +77,14 @@ const GuestRegistrationForm = ({ onGuestCreated }) => {
 
             setSuccess('Invitado registrado exitosamente');
             setFormData({
+                documentType: '',
+                documentNumber: '',
                 name: '',
+                birthDate: '',
+                sex: '',
                 phone: '',
                 address: '',
+                city: '',
                 prayerRequest: '',
                 invitedById: null,
             });
@@ -120,6 +130,39 @@ const GuestRegistrationForm = ({ onGuestCreated }) => {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            Tipo de Documento
+                        </label>
+                        <select
+                            name="documentType"
+                            value={formData.documentType}
+                            onChange={handleChange}
+                            className="w-full px-4 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:border-blue-500"
+                        >
+                            <option value="">Seleccionar...</option>
+                            <option value="RC">RC - Registro Civil</option>
+                            <option value="TI">TI - Tarjeta de Identidad</option>
+                            <option value="CC">CC - Cédula de Ciudadanía</option>
+                            <option value="CE">CE - Cédula de Extranjería</option>
+                            <option value="PP">PP - Pasaporte</option>
+                            <option value="PEP">PEP - Permiso Especial de Permanencia</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            Número de Documento
+                        </label>
+                        <input
+                            type="text"
+                            name="documentNumber"
+                            value={formData.documentNumber}
+                            onChange={handleChange}
+                            className="w-full px-4 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:border-blue-500"
+                        />
+                    </div>
+
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                             Nombre Completo <span className="text-red-400">*</span>
                         </label>
                         <input
@@ -130,6 +173,35 @@ const GuestRegistrationForm = ({ onGuestCreated }) => {
                             className="w-full px-4 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:border-blue-500"
                             required
                         />
+                    </div>
+
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            Fecha de Nacimiento
+                        </label>
+                        <input
+                            type="date"
+                            name="birthDate"
+                            value={formData.birthDate}
+                            onChange={handleChange}
+                            className="w-full px-4 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:border-blue-500"
+                        />
+                    </div>
+
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            Sexo
+                        </label>
+                        <select
+                            name="sex"
+                            value={formData.sex}
+                            onChange={handleChange}
+                            className="w-full px-4 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:border-blue-500"
+                        >
+                            <option value="">Seleccionar...</option>
+                            <option value="HOMBRE">Hombre</option>
+                            <option value="MUJER">Mujer</option>
+                        </select>
                     </div>
 
                     <div>
@@ -147,18 +219,34 @@ const GuestRegistrationForm = ({ onGuestCreated }) => {
                     </div>
                 </div>
 
-                <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                        Dirección
-                    </label>
-                    <input
-                        type="text"
-                        name="address"
-                        value={formData.address}
-                        onChange={handleChange}
-                        className="w-full px-4 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:border-blue-500"
-                    />
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            Dirección
+                        </label>
+                        <input
+                            type="text"
+                            name="address"
+                            value={formData.address}
+                            onChange={handleChange}
+                            className="w-full px-4 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:border-blue-500"
+                        />
+                    </div>
+
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            Ciudad
+                        </label>
+                        <input
+                            type="text"
+                            name="city"
+                            value={formData.city}
+                            onChange={handleChange}
+                            className="w-full px-4 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:border-blue-500"
+                        />
+                    </div>
                 </div>
+
 
                 {currentUser && ['SUPER_ADMIN', 'LIDER_DOCE'].includes(currentUser.role.toUpperCase()) && (
                     <div>
