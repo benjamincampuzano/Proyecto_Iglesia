@@ -14,7 +14,7 @@ const SCHOOL_LEVELS = [
 ];
 
 const CourseManagement = () => {
-    const { user } = useAuth();
+    const { user, hasRole, hasAnyRole, isSuperAdmin } = useAuth();
     const [courses, setCourses] = useState([]);
     const [selectedCourseId, setSelectedCourseId] = useState(null);
     const [showCreateModal, setShowCreateModal] = useState(false);
@@ -37,13 +37,12 @@ const CourseManagement = () => {
 
     useEffect(() => {
         fetchCourses();
-        const isAdmin = user.role === 'SUPER_ADMIN';
-        const isProfesor = user.role === 'PROFESOR';
+        const canFetchLeaders = isSuperAdmin() || hasRole('PROFESOR') || hasRole('LIDER_DOCE');
 
-        if (isAdmin || isProfesor || user.role === 'LIDER_DOCE') {
+        if (canFetchLeaders) {
             fetchLeaders();
         }
-    }, [user.role]);
+    }, [user.roles]);
 
     const fetchCourses = async () => {
         try {
@@ -57,7 +56,7 @@ const CourseManagement = () => {
     const fetchLeaders = async () => {
         try {
             const res = await api.get('/users');
-            setLeaders(res.data.users || []);
+            setLeaders(res.data || []);
         } catch (error) {
             console.error('Error fetching users', error);
         }
@@ -141,7 +140,7 @@ const CourseManagement = () => {
         <div className="space-y-6">
             <div className="flex justify-between items-center">
                 <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-100">Escuelas de Discipulado</h2>
-                {(user.role === 'SUPER_ADMIN' || user.role === 'PROFESOR' || user.role === 'LIDER_DOCE') && (
+                {hasAnyRole(['SUPER_ADMIN', 'PROFESOR', 'LIDER_DOCE']) && (
                     <button
                         onClick={() => { setShowCreateModal(true); setFormData({ ...formData, name: '' }); }}
                         className="flex items-center px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg"
@@ -161,7 +160,7 @@ const CourseManagement = () => {
                     >
                         <div className="flex justify-between items-start mb-4">
                             <h3 className="text-xl font-semibold text-gray-800 dark:text-white">{course.name}</h3>
-                            {(user.role === 'SUPER_ADMIN' || user.role === 'PROFESOR' || user.role === 'LIDER_DOCE') && (
+                            {hasAnyRole(['SUPER_ADMIN', 'PROFESOR', 'LIDER_DOCE']) && (
                                 <div className="flex space-x-2">
                                     <button
                                         onClick={(e) => openEditModal(e, course)}

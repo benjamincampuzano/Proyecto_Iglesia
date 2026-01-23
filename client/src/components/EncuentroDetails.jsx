@@ -9,7 +9,7 @@ import EncuentroClassTracker from './EncuentroClassTracker';
 import BalanceReport from './BalanceReport';
 
 const EncuentroDetails = ({ encuentro, onBack, onRefresh }) => {
-    const { user } = useAuth();
+    const { user, isSuperAdmin } = useAuth();
     const [activeTab, setActiveTab] = useState('general'); // general | classes | report
     const [reportData, setReportData] = useState([]);
     const [loadingReport, setLoadingReport] = useState(false);
@@ -46,7 +46,7 @@ const EncuentroDetails = ({ encuentro, onBack, onRefresh }) => {
     const [paymentAmount, setPaymentAmount] = useState('');
     const [paymentNotes, setPaymentNotes] = useState('');
 
-    const canModify = user.id === encuentro.coordinatorId || user.role === 'SUPER_ADMIN';
+    const canModify = user.id === encuentro.coordinatorId || user.roles?.includes('SUPER_ADMIN');
 
     useEffect(() => {
         if (activeTab === 'report') {
@@ -377,7 +377,7 @@ const EncuentroDetails = ({ encuentro, onBack, onRefresh }) => {
                                                                 <UserPlus size={16} />
                                                             </button>
                                                         )}
-                                                        {(user.role === 'SUPER_ADMIN') && (
+                                                        {isSuperAdmin() && (
                                                             <button
                                                                 onClick={() => handleDelete(reg.id)}
                                                                 className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300 inline-flex items-center"

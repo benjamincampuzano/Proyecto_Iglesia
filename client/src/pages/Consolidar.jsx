@@ -13,7 +13,7 @@ const Consolidar = () => {
         { id: 'stats-tracking', label: 'Estadísticas de Invitados', component: GuestTrackingStats, roles: ['SUPER_ADMIN', 'PASTOR', 'LIDER_DOCE'] },
         { id: 'attendance', label: 'Asistencia a la Iglesia', component: ChurchAttendance },
         { id: 'stats', label: 'Estadísticas de Asistencia', component: ChurchAttendanceChart, roles: ['SUPER_ADMIN', 'PASTOR', 'LIDER_DOCE', 'LIDER_CELULA'] }
-    ].filter(tab => !tab.roles || tab.roles.includes(user?.role));
+    ].filter(tab => !tab.roles || tab.roles.some(role => user?.roles?.includes(role)));
 
     // Ensure we have a default active tab if 'tracking' is not available (though it should be for most)
     const [activeTab, setActiveTab] = useState(tabs[0]?.id || 'tracking');

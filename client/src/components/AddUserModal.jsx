@@ -189,16 +189,13 @@ const AddUserModal = ({ isOpen, onClose, leaderId, leaderName, onUserAdded }) =>
                                         </div>
                                         <span className={`
                                             px-3 py-1 text-xs font-medium rounded-full
-                                            ${user.role === 'SUPER_ADMIN' ? 'bg-red-100 text-red-800' :
-                                                user.role === 'PASTOR' ? 'bg-green-100 text-green-800' :
-                                                    user.role === 'LIDER_DOCE' ? 'bg-purple-100 text-purple-800' :
-                                                        user.role === 'LIDER_CELULA' ? 'bg-blue-100 text-blue-800' :
+                                            ${user.roles?.includes('SUPER_ADMIN') ? 'bg-red-100 text-red-800' :
+                                                user.roles?.includes('PASTOR') ? 'bg-green-100 text-green-800' :
+                                                    user.roles?.includes('LIDER_DOCE') ? 'bg-purple-100 text-purple-800' :
+                                                        user.roles?.includes('LIDER_CELULA') ? 'bg-blue-100 text-blue-800' :
                                                             'bg-gray-100 text-gray-800'}
                                         `}>
-                                            {user.role === 'SUPER_ADMIN' ? 'Super Admin' :
-                                                user.role === 'PASTOR' ? 'Pastor' :
-                                                    user.role === 'LIDER_DOCE' ? 'Líder de Los Doce' :
-                                                        user.role === 'LIDER_CELULA' ? 'Líder de Célula' : 'Discípulo'}
+                                            {user.roles ? user.roles.join(', ').replace(/_/g, ' ') : 'Usuario'}
                                         </span>
                                     </div>
                                 </div>

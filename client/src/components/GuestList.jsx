@@ -129,11 +129,13 @@ const GuestList = ({ refreshTrigger }) => {
 
     // Funciones auxiliares de permisos
     const canEditAllFields = (guest) => {
-        return currentUser?.role === 'SUPER_ADMIN' || currentUser?.role === 'LIDER_DOCE' || currentUser?.role === 'PASTOR';
+        const roles = currentUser?.roles || [];
+        return roles.includes('SUPER_ADMIN') || roles.includes('LIDER_DOCE') || roles.includes('PASTOR');
     };
 
     const canDelete = (guest) => {
-        if (currentUser?.role === 'SUPER_ADMIN' || currentUser?.role === 'LIDER_DOCE' || currentUser?.role === 'PASTOR') {
+        const roles = currentUser?.roles || [];
+        if (roles.includes('SUPER_ADMIN') || roles.includes('LIDER_DOCE') || roles.includes('PASTOR')) {
             return true;
         }
         // LIDER_CELULA/DISCIPULO solo pueden eliminar invitados que invitaron
@@ -190,8 +192,8 @@ const GuestList = ({ refreshTrigger }) => {
                     <UserSearchSelect
                         value={liderDoceFilter}
                         onChange={setLiderDoceFilter}
-                        placeholder={currentUser?.role === 'PASTOR' ? "Líder de Célula..." : "Ministerio de..."}
-                        roleFilter={currentUser?.role === 'PASTOR' ? "LIDER_DOCE,PASTOR" : "LIDER_DOCE"}
+                        placeholder={currentUser?.roles?.includes('PASTOR') ? "Líder de Célula..." : "Ministerio de..."}
+                        roleFilter={currentUser?.roles?.includes('PASTOR') ? "LIDER_DOCE,PASTOR" : "LIDER_DOCE"}
                     />
                 </div>
             </div>

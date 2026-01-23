@@ -25,32 +25,12 @@ const GuestRegistrationForm = ({ onGuestCreated }) => {
         const user = JSON.parse(localStorage.getItem('user'));
         setCurrentUser(user);
 
-        // Auto-set invitedById for LIDER_CELULA and DISCIPULO (case-insensitive)
-        const role = user?.role?.toUpperCase();
-        if (user && (role === 'LIDER_CELULA' || role === 'DISCIPULO')) {
+        // Auto-set invitedById for leadership roles if applicable logic exists, 
+        // however usually LIDER_CELULA and DISCIPULO set themselves.
+        if (user && user.roles?.some(r => ['LIDER_CELULA', 'DISCIPULO'].includes(r))) {
             setFormData(prev => ({ ...prev, invitedById: user.id }));
         }
     }, []);
-
-    // PASTOR no puede crear invitados - mostrar mensaje informativo
-    if (currentUser && currentUser.role.toUpperCase() === 'PASTOR') {
-        return (
-            <div className="bg-white dark:bg-gray-800 rounded-lg p-6 border border-gray-200 dark:border-gray-700">
-                <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">Registrar Nuevo Invitado</h2>
-                <div className="bg-blue-900/20 border border-blue-500 text-blue-300 px-4 py-3 rounded">
-                    <p className="font-semibold mb-2">Información</p>
-                    <p>Los usuarios con rol PASTOR no pueden crear invitados directamente.</p>
-                    <p className="mt-2">Los invitados deben ser creados por:</p>
-                    <ul className="list-disc list-inside ml-4 mt-1">
-                        <li>LIDER_DOCE</li>
-                        <li>LIDER_CELULA</li>
-                        <li>DISCIPULO</li>
-                    </ul>
-                    <p className="mt-2 text-sm">Puede ver todos los invitados de su red en la lista de invitados.</p>
-                </div>
-            </div>
-        );
-    }
 
     const handleChange = (e) => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -64,17 +44,13 @@ const GuestRegistrationForm = ({ onGuestCreated }) => {
         setError('');
         setSuccess('');
 
-        // Validation is handled by backend for LIDER_CELULA/DISCIPULO
-        const role = currentUser?.role?.toUpperCase();
-        if (['SUPER_ADMIN', 'LIDER_DOCE'].includes(role) && !formData.invitedById) {
-            // Default to current user if none selected (handled in backend but good for UI too)
-            // But if there is a search select, we might want to remind them.
-            // For now, let's keep it consistent with requirements.
+        const roles = currentUser?.roles || [];
+        if (roles.some(r => ['SUPER_ADMIN', 'LIDER_DOCE'].includes(r)) && !formData.invitedById) {
+            // Let it pass, backend handles defaults
         }
 
         try {
             const res = await api.post('/guests', formData);
-
             setSuccess('Invitado registrado exitosamente');
             setFormData({
                 documentType: '',
@@ -101,15 +77,40 @@ const GuestRegistrationForm = ({ onGuestCreated }) => {
 
     const handleReset = () => {
         setFormData({
+            documentType: '',
+            documentNumber: '',
             name: '',
+            birthDate: '',
+            sex: '',
             phone: '',
             address: '',
+            city: '',
             prayerRequest: '',
             invitedById: null,
         });
         setError('');
         setSuccess('');
     };
+
+    // PASTOR no puede crear invitados - mostrar mensaje informativo
+    if (currentUser?.roles?.includes('PASTOR')) {
+        return (
+            <div className="bg-white dark:bg-gray-800 rounded-lg p-6 border border-gray-200 dark:border-gray-700">
+                <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">Registrar Nuevo Invitado</h2>
+                <div className="bg-blue-900/20 border border-blue-500 text-blue-300 px-4 py-3 rounded">
+                    <p className="font-semibold mb-2">Información</p>
+                    <p>Los usuarios con rol PASTOR no pueden crear invitados directamente.</p>
+                    <p className="mt-2">Los invitados deben ser creados por:</p>
+                    <ul className="list-disc list-inside ml-4 mt-1">
+                        <li>LIDER_DOCE</li>
+                        <li>LIDER_CELULA</li>
+                        <li>DISCIPULO</li>
+                    </ul>
+                    <p className="mt-2 text-sm">Puede ver todos los invitados de su red en la lista de invitados.</p>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="bg-white dark:bg-gray-800 rounded-lg p-6 border border-gray-200 dark:border-gray-700">
@@ -247,8 +248,7 @@ const GuestRegistrationForm = ({ onGuestCreated }) => {
                     </div>
                 </div>
 
-
-                {currentUser && ['SUPER_ADMIN', 'LIDER_DOCE'].includes(currentUser.role.toUpperCase()) && (
+                {currentUser?.roles?.some(r => ['SUPER_ADMIN', 'LIDER_DOCE'].includes(r)) && (
                     <div>
                         <UserSearchSelect
                             label={<>Invitado Por <span className="text-red-400">*</span></>}

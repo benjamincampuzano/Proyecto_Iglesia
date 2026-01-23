@@ -1,46 +1,44 @@
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 const { SCHOOL_LEVELS } = require('../utils/levelConstants');
+const { getUserNetwork } = require('../utils/networkUtils');
 
-// Helper to get network
-const getNetworkIds = async (leaderId) => {
-    const id = parseInt(leaderId);
-    if (isNaN(id)) return [];
+// Helper to resolve Leader name for a student (walking up hierarchy)
+// Preference: Cell Leader > Doce Leader > Pastor
+const resolveLeaderName = (userWithParents) => {
+    if (!userWithParents) return 'Sin Asignar';
 
-    // Find all users who report to this leader via ANY of the hierarchy fields
-    const directDisciples = await prisma.user.findMany({
-        where: {
-            OR: [
-                { leaderId: id },
-                { liderDoceId: id },
-                { liderCelulaId: id },
-                { pastorId: id }
-            ]
-        },
-        select: { id: true }
-    });
+    // Check parents in UserHierarchy
+    if (userWithParents.parents && userWithParents.parents.length > 0) {
+        // Find immediate parent with specific roles
+        const cellLeader = userWithParents.parents.find(p => p.parent.roles.some(r => r.role.name === 'LIDER_CELULA'));
+        if (cellLeader) return cellLeader.parent.profile?.fullName || 'Sin Nombre';
 
-    let networkIds = directDisciples.map(d => d.id);
+        const doceLeader = userWithParents.parents.find(p => p.parent.roles.some(r => r.role.name === 'LIDER_DOCE'));
+        if (doceLeader) return doceLeader.parent.profile?.fullName || 'Sin Nombre';
 
-    // Recursively find their disciples
-    for (const disciple of directDisciples) {
-        if (disciple.id !== id) {
-            const subNetwork = await getNetworkIds(disciple.id);
-            networkIds = [...networkIds, ...subNetwork];
+        const pastor = userWithParents.parents.find(p => p.parent.roles.some(r => r.role.name === 'PASTOR'));
+        if (pastor) return pastor.parent.profile?.fullName || 'Sin Nombre';
+
+        // Return first parent if no specific role match (fallback)
+        if (userWithParents.parents[0]?.parent?.profile?.fullName) {
+            return userWithParents.parents[0].parent.profile.fullName;
         }
     }
 
-    return [...new Set(networkIds)];
+    return 'Sin Asignar';
 };
+
 
 // --- Module / Class Management ---
 
 const createModule = async (req, res) => {
     try {
-        const isAdmin = req.user.role === 'SUPER_ADMIN';
-        const isProfesorRole = req.user.role === 'PROFESOR';
+        const roles = req.user.roles || [];
+        const isAdmin = roles.includes('SUPER_ADMIN');
+        const isProfesorRole = roles.includes('PROFESOR');
 
-        if (!isAdmin && !isProfesorRole && req.user.role !== 'LIDER_DOCE') {
+        if (!isAdmin && !isProfesorRole && !roles.includes('LIDER_DOCE')) {
             return res.status(403).json({ error: 'Not authorized to create classes' });
         }
 
@@ -80,12 +78,13 @@ const getModules = async (req, res) => {
         const user = req.user;
         let whereClause = { type: 'ESCUELA' };
 
+        const roles = user.roles || [];
         // Filtering based on role
-        if (user.role === 'SUPER_ADMIN' || user.role === 'PASTOR') {
+        if (roles.includes('SUPER_ADMIN') || roles.includes('PASTOR') || roles.includes('ADMIN')) {
             // See all
-        } else if (user.role === 'LIDER_DOCE' || user.role === 'LIDER_CELULA') {
+        } else if (roles.includes('LIDER_DOCE') || roles.includes('LIDER_CELULA')) {
             // See classes where they are Professor OR Auxiliar OR have disciples enrolled
-            const networkUserIds = await getNetworkIds(user.id);
+            const networkUserIds = await getUserNetwork(user.id);
             whereClause = {
                 type: 'ESCUELA',
                 OR: [
@@ -94,18 +93,14 @@ const getModules = async (req, res) => {
                     { enrollments: { some: { userId: { in: [...networkUserIds, user.id] } } } }
                 ]
             };
-        } else if (user.role === 'DISCIPULO') {
-            // Students: See classes they are enrolled in
-            // BUT prevent them from seeing classes where they might be auxiliar if they are just Discipulo role? 
-            // Requirement says: "Discípulo solo puede ver..." and "desactivar funciones...". 
-            // Existing logic was okay, but I'll ensure it's tight.
+        } else if (roles.includes('DISCIPULO')) {
+            // Students: See classes where they are enrolled
             whereClause = {
                 type: 'ESCUELA',
                 enrollments: { some: { userId: parseInt(user.id) } }
             };
         } else {
-            // Students: See classes they are enrolled in
-            // Auxiliars (who might be DISCIPULO): See classes where they are Auxiliar
+            // Mixed roles
             whereClause = {
                 type: 'ESCUELA',
                 OR: [
@@ -118,13 +113,19 @@ const getModules = async (req, res) => {
         const modules = await prisma.seminarModule.findMany({
             where: whereClause,
             include: {
-                professor: { select: { id: true, fullName: true } },
+                professor: { select: { id: true, profile: { select: { fullName: true } } } },
                 _count: { select: { enrollments: true } }
             },
             orderBy: { startDate: 'desc' }
         });
 
-        res.json(modules);
+        // Format
+        const formattedModules = modules.map(m => ({
+            ...m,
+            professor: m.professor ? { ...m.professor, fullName: m.professor.profile?.fullName || 'Sin Asignar' } : null
+        }));
+
+        res.json(formattedModules);
     } catch (error) {
         console.error('Error fetching modules:', error);
         res.status(500).json({ error: 'Error fetching modules' });
@@ -136,10 +137,11 @@ const updateModule = async (req, res) => {
         const { id } = req.params;
         const { name, description, moduleId, professorId, startDate, endDate, auxiliarIds } = req.body;
 
-        const isAdmin = req.user.role === 'SUPER_ADMIN';
-        const isProfesorRole = req.user.role === 'PROFESOR';
+        const roles = req.user.roles || [];
+        const isAdmin = roles.includes('SUPER_ADMIN') || roles.includes('ADMIN');
+        const isProfesorRole = roles.includes('PROFESOR');
 
-        if (!isAdmin && !isProfesorRole && req.user.role !== 'LIDER_DOCE') {
+        if (!isAdmin && !isProfesorRole && !roles.includes('LIDER_DOCE')) {
             return res.status(403).json({ error: 'Not authorized to update classes' });
         }
 
@@ -175,10 +177,11 @@ const deleteModule = async (req, res) => {
     try {
         const { id } = req.params;
         const moduleId = parseInt(id);
-        const isAdmin = req.user.role === 'SUPER_ADMIN';
-        const isProfesorRole = req.user.role === 'PROFESOR';
+        const roles = req.user.roles || [];
+        const isAdmin = roles.includes('SUPER_ADMIN') || roles.includes('ADMIN');
+        const isProfesorRole = roles.includes('PROFESOR');
 
-        if (!isAdmin && !isProfesorRole && req.user.role !== 'LIDER_DOCE') {
+        if (!isAdmin && !isProfesorRole && !roles.includes('LIDER_DOCE')) {
             return res.status(403).json({ error: 'Not authorized to delete classes' });
         }
 
@@ -262,7 +265,8 @@ const unenrollStudent = async (req, res) => {
     try {
         const { enrollmentId } = req.params;
 
-        if (req.user.role !== 'SUPER_ADMIN' && req.user.role !== 'LIDER_DOCE') {
+        const roles = req.user.roles || [];
+        if (!roles.includes('SUPER_ADMIN') && !roles.includes('LIDER_DOCE')) {
             return res.status(403).json({ error: 'Not authorized to remove students' });
         }
 
@@ -294,17 +298,18 @@ const getModuleMatrix = async (req, res) => {
         const moduleData = await prisma.seminarModule.findUnique({
             where: { id: moduleId },
             include: {
-                professor: { select: { id: true, fullName: true } },
-                auxiliaries: { select: { id: true, fullName: true } }
+                professor: { select: { id: true, profile: { select: { fullName: true } } } },
+                auxiliaries: { select: { id: true, profile: { select: { fullName: true } } } }
             }
         });
 
         if (!moduleData) return res.status(404).json({ error: 'Module not found' });
 
         // Access Control
-        const isProfessor = moduleData.professorId === user.id || user.role === 'SUPER_ADMIN';
+        const roles = user.roles || [];
+        const isProfessor = moduleData.professorId === user.id || roles.includes('SUPER_ADMIN');
         const isAuxiliar = moduleData.auxiliaries.some(a => a.id === user.id);
-        const isDisciple = user.role === 'DISCIPULO';
+        const isDisciple = roles.includes('DISCIPULO');
 
         // Determine which enrollments to show
         let enrollmentsQuery = { moduleId };
@@ -318,8 +323,8 @@ const getModuleMatrix = async (req, res) => {
             enrollmentsQuery.userId = user.id;
         } else if (isProfessor) {
             // See all
-        } else if (isAuxiliar || user.role === 'LIDER_CELULA' || user.role === 'LIDER_DOCE') {
-            const networkIds = await getNetworkIds(user.id);
+        } else if (isAuxiliar || roles.includes('LIDER_CELULA') || roles.includes('LIDER_DOCE')) {
+            const networkIds = await getUserNetwork(user.id);
             enrollmentsQuery.OR = [
                 { assignedAuxiliarId: user.id },
                 { userId: { in: [...networkIds, user.id] } }
@@ -334,18 +339,18 @@ const getModuleMatrix = async (req, res) => {
                 user: {
                     select: {
                         id: true,
-                        fullName: true,
-                        role: true
+                        profile: { select: { fullName: true } },
+                        roles: { include: { role: true } }
                     }
                 },
                 assignedAuxiliar: {
-                    select: { id: true, fullName: true }
+                    select: { id: true, profile: { select: { fullName: true } } }
                 },
                 classAttendances: {
                     orderBy: { classNumber: 'asc' }
                 }
             },
-            orderBy: { user: { fullName: 'asc' } }
+            orderBy: { user: { profile: { fullName: 'asc' } } }
         });
 
         // Format for Matrix
@@ -361,9 +366,9 @@ const getModuleMatrix = async (req, res) => {
             return {
                 id: enrollment.id,
                 studentId: enrollment.user.id,
-                studentName: enrollment.user.fullName,
+                studentName: enrollment.user.profile?.fullName || 'Sin Nombre',
                 auxiliarId: enrollment.assignedAuxiliarId,
-                auxiliarName: enrollment.assignedAuxiliar?.fullName || 'Sin Asignar',
+                auxiliarName: enrollment.assignedAuxiliar?.profile?.fullName || 'Sin Asignar',
                 attendances,
                 grades,
                 projectNotes: enrollment.projectNotes,
@@ -372,7 +377,11 @@ const getModuleMatrix = async (req, res) => {
         });
 
         res.json({
-            module: moduleData,
+            module: {
+                ...moduleData,
+                professor: moduleData.professor ? { ...moduleData.professor, fullName: moduleData.professor.profile?.fullName || 'Sin Nombre' } : null,
+                auxiliaries: moduleData.auxiliaries.map(a => ({ ...a, fullName: a.profile?.fullName || 'Sin Nombre' }))
+            },
             matrix,
             permissions: {
                 isProfessor: isProfessor && !isDisciple,
@@ -401,14 +410,15 @@ const updateMatrixCell = async (req, res) => {
         if (!enrollment) return res.status(404).json({ error: 'Enrollment not found' });
 
         // Permission Check
-        const isAdmin = user.role === 'SUPER_ADMIN';
-        const isProfesorRole = user.role === 'PROFESOR';
-        const isAuxiliarRole = user.role === 'AUXILIAR';
+        const roles = user.roles || [];
+        const isAdmin = roles.includes('SUPER_ADMIN') || roles.includes('ADMIN');
+        const isProfesorRole = roles.includes('PROFESOR');
+        const isAuxiliarRole = roles.includes('AUXILIAR');
 
         const isProfessorOfModule = enrollment.module.professorId === user.id || isAdmin || isProfesorRole;
         const isAssignedAuxiliar = enrollment.assignedAuxiliarId === user.id || isAuxiliarRole;
 
-        if (user.role === 'DISCIPULO') {
+        if (roles.includes('DISCIPULO')) {
             return res.status(403).json({ error: 'Estudiantes no pueden modificar notas o asistencia.' });
         }
 
@@ -493,34 +503,50 @@ const getSchoolStatsByLeader = async (req, res) => {
         let whereClause = { module: { type: 'ESCUELA' } };
 
         // Filter by network for leaders
-        if (user.role === 'LIDER_DOCE' || user.role === 'LIDER_CELULA' || user.role === 'PASTOR') {
-            const networkUserIds = await getNetworkIds(userId);
+        const roles = user.roles || [];
+        if (roles.includes('LIDER_DOCE') || roles.includes('LIDER_CELULA') || roles.includes('PASTOR')) {
+            const networkUserIds = await getUserNetwork(userId);
             whereClause.userId = { in: [...networkUserIds, userId] };
-        } else if (user.role === 'DISCIPULO') {
+        } else if (roles.includes('DISCIPULO')) {
             whereClause.userId = userId;
         }
 
+        // 1. Fetch enrollments
         const enrollments = await prisma.seminarEnrollment.findMany({
             where: whereClause,
             include: {
-                user: {
-                    include: { liderDoce: true, liderCelula: true, leader: true }
-                },
                 classAttendances: true
             }
         });
 
+        // 2. Fetch User Details for all enrolled students
+        const studentIds = [...new Set(enrollments.map(e => e.userId))];
+        const users = await prisma.user.findMany({
+            where: { id: { in: studentIds } },
+            include: {
+                profile: true,
+                roles: { include: { role: true } },
+                parents: {
+                    include: {
+                        parent: {
+                            include: {
+                                profile: true,
+                                roles: { include: { role: true } }
+                            }
+                        }
+                    }
+                }
+            }
+        });
+
+        const userMap = {};
+        users.forEach(u => userMap[u.id] = u);
+
         const statsByLeader = {};
 
-        const getLiderName = (student) => {
-            if (!student) return 'Sin Asignar';
-            // Use the most specific leader assigned
-            const leader = student.liderCelula || student.liderDoce || student.leader;
-            return leader ? leader.fullName : 'Sin Asignar';
-        };
-
         enrollments.forEach(enrol => {
-            const leaderName = getLiderName(enrol.user);
+            const student = userMap[enrol.userId];
+            const leaderName = resolveLeaderName(student);
 
             if (!statsByLeader[leaderName]) {
                 statsByLeader[leaderName] = {
@@ -593,8 +619,9 @@ const updateClassMaterial = async (req, res) => {
 
         if (!moduleData) return res.status(404).json({ error: 'Module not found' });
 
-        const isAdmin = user.role === 'SUPER_ADMIN';
-        const isProfesorRole = user.role === 'PROFESOR';
+        const roles = user.roles || [];
+        const isAdmin = roles.includes('SUPER_ADMIN') || roles.includes('ADMIN');
+        const isProfesorRole = roles.includes('PROFESOR');
         const isModuleProfessor = moduleData.professorId === user.id || isAdmin || isProfesorRole;
 
         if (!isModuleProfessor) {

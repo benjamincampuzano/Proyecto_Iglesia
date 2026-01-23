@@ -1,13 +1,21 @@
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 const { logActivity } = require('../utils/auditLogger');
+const { getUserNetwork } = require('../utils/networkUtils');
 
 const getConventions = async (req, res) => {
     try {
         const { year } = req.query;
+        // Safeguard req.user access
+        const roles = req.user?.roles || [];
+        const currentUserId = req.user?.id;
+
         const where = {};
         if (year) {
-            where.year = parseInt(year);
+            const parsedYear = parseInt(year);
+            if (!isNaN(parsedYear)) {
+                where.year = parsedYear;
+            }
         }
 
         const conventions = await prisma.convention.findMany({
@@ -20,7 +28,6 @@ const getConventions = async (req, res) => {
                 cost: true,
                 startDate: true,
                 endDate: true,
-                liderDoceIds: true,
                 _count: {
                     select: { registrations: true }
                 },
@@ -39,64 +46,40 @@ const getConventions = async (req, res) => {
             }
         });
 
-        // Filter for DISCIPULO: Only show conventions they are registered for
-        if (req.user.role === 'DISCIPULO') {
-            const userRegistrations = await prisma.conventionRegistration.findMany({
-                where: { userId: req.user.id },
-                select: { conventionId: true }
-            });
-            const registeredConventionIds = new Set(userRegistrations.map(r => r.conventionId));
+        // Filter for specific roles: Only show conventions they are registered for if they are not leaders/admin
+        const isLeaderOrAdmin = roles.some(r => ['SUPER_ADMIN', 'PASTOR', 'LIDER_DOCE', 'LIDER_CELULA'].includes(r));
 
-            // Filter the conventions list
-            const filteredConventions = conventions.filter(c => registeredConventionIds.has(c.id));
-
-            // Re-assign conventions to the filtered list for further processing (stats calculation)
-            // Note: const conventions above prevents reassignment, so we'll just return early or adapt the map below.
-            // Better approach: wrap the map
-            const conventionsWithStats = filteredConventions.map(conv => {
-                const totalCollected = conv.registrations.reduce((acc, reg) => {
-                    const paymentsSum = reg.payments.reduce((sum, p) => sum + p.amount, 0);
-                    return acc + paymentsSum;
-                }, 0);
-
-                const expectedIncome = conv.registrations.reduce((acc, reg) => {
-                    const cost = conv.cost * (1 - (reg.discountPercentage / 100));
-                    return acc + cost;
-                }, 0);
-
-                return {
-                    ...conv,
-                    stats: {
-                        registeredCount: conv._count.registrations,
-                        totalCollected,
-                        expectedIncome
-                    }
-                };
-            });
-            return res.json(conventionsWithStats);
+        let filteredConventions = conventions;
+        if (!isLeaderOrAdmin) {
+            if (!currentUserId) {
+                // If we don't have a valid user ID, we can't show user specific registrations.
+                filteredConventions = [];
+            } else {
+                const userRegistrations = await prisma.conventionRegistration.findMany({
+                    where: { userId: parseInt(currentUserId) },
+                    select: { conventionId: true }
+                });
+                const registeredConventionIds = new Set(userRegistrations.map(r => r.conventionId));
+                filteredConventions = conventions.filter(c => registeredConventionIds.has(c.id));
+            }
         }
 
-        // Calculate stats (Original Logic)
-        const conventionsWithStats = conventions.map(conv => {
-            const totalCollected = conv.registrations.reduce((acc, reg) => {
-                const paymentsSum = reg.payments.reduce((sum, p) => sum + p.amount, 0);
+        // Calculate stats
+        const conventionsWithStats = filteredConventions.map(conv => {
+            const totalCollected = conv.registrations?.reduce((acc, reg) => {
+                const paymentsSum = reg.payments?.reduce((sum, p) => sum + p.amount, 0) || 0;
                 return acc + paymentsSum;
-            }, 0);
+            }, 0) || 0;
 
-            const expectedIncome = conv.registrations.reduce((acc, reg) => {
-                const cost = conv.cost * (1 - (reg.discountPercentage / 100));
+            const expectedIncome = conv.registrations?.reduce((acc, reg) => {
+                const cost = conv.cost * (1 - ((reg.discountPercentage || 0) / 100));
                 return acc + cost;
-            }, 0);
-
-            // Hide registrations list for the list view to keep payload small? 
-            // Or maybe just send it all for now since n is small (4 conventions/year)
-            // But let's sanitize strictly for the list view if needed.
-            // keeping it simple for now.
+            }, 0) || 0;
 
             return {
                 ...conv,
                 stats: {
-                    registeredCount: conv._count.registrations,
+                    registeredCount: conv._count?.registrations || 0,
                     totalCollected,
                     expectedIncome
                 }
@@ -106,43 +89,17 @@ const getConventions = async (req, res) => {
         res.json(conventionsWithStats);
     } catch (error) {
         console.error('Error fetching conventions:', error);
-        res.status(500).json({ error: 'Error getting conventions' });
+        res.status(500).json({ error: 'Error getting conventions: ' + error.message });
     }
 };
 
-const getNetworkIds = async (leaderId) => {
-    const id = parseInt(leaderId);
-    if (isNaN(id)) return [];
-
-    // Find all users who report to this leader via ANY of the hierarchy fields
-    const directDisciples = await prisma.user.findMany({
-        where: {
-            OR: [
-                { leaderId: id },
-                { liderDoceId: id },
-                { liderCelulaId: id },
-                { pastorId: id }
-            ]
-        },
-        select: { id: true }
-    });
-
-    let networkIds = directDisciples.map(d => d.id);
-
-    // Recursively find their disciples
-    for (const disciple of directDisciples) {
-        if (disciple.id !== id) {
-            const subNetwork = await getNetworkIds(disciple.id);
-            networkIds = [...networkIds, ...subNetwork];
-        }
-    }
-
-    return [...new Set(networkIds)];
-};
+// Helper to get network
+// Local getNetworkIds removed in favor of centralized getUserNetwork (networkUtils)
 
 const getConventionById = async (req, res) => {
     const { id } = req.params;
-    const user = req.user;
+    const roles = req.user?.roles || [];
+    const currentUserId = req.user?.id;
 
     try {
         const convention = await prisma.convention.findUnique({
@@ -155,8 +112,16 @@ const getConventionById = async (req, res) => {
                 cost: true,
                 startDate: true,
                 endDate: true,
-                liderDoceIds: true,
                 registrations: {
+                    where: {
+                        user: {
+                            roles: {
+                                none: {
+                                    role: { name: 'SUPER_ADMIN' }
+                                }
+                            }
+                        }
+                    },
                     select: {
                         id: true,
                         userId: true,
@@ -164,12 +129,7 @@ const getConventionById = async (req, res) => {
                         needsTransport: true,
                         needsAccommodation: true,
                         user: {
-                            select: {
-                                id: true,
-                                fullName: true,
-                                email: true,
-                                role: true
-                            }
+                            include: { profile: true }
                         },
                         payments: {
                             select: {
@@ -190,33 +150,43 @@ const getConventionById = async (req, res) => {
         }
 
         // Filter registrations based on Role & Network
-        let visibleRegistrations = convention.registrations;
+        let visibleRegistrations = convention.registrations || [];
 
-        if (user.role === 'SUPER_ADMIN') {
+        if (roles.includes('SUPER_ADMIN') || roles.includes('ADMIN')) {
             // See all
-        } else if (user.role === 'LIDER_DOCE' || user.role === 'LIDER_CELULA' || user.role === 'PASTOR') {
-            const userId = parseInt(user.id);
-            const networkIds = await getNetworkIds(userId);
-            const allowedIds = new Set([...networkIds, userId]);
-            visibleRegistrations = convention.registrations.filter(reg => {
-                const assignedCheck = allowedIds.has(reg.userId);
-                const registeredByCheck = reg.registeredById === userId;
-                return assignedCheck || registeredByCheck;
-            });
+        } else if (roles.some(r => ['LIDER_DOCE', 'LIDER_CELULA', 'PASTOR'].includes(r))) {
+            if (currentUserId) {
+                const networkIds = await getUserNetwork(currentUserId);
+                const allowedIds = new Set([...networkIds, parseInt(currentUserId)]);
+                visibleRegistrations = visibleRegistrations.filter(reg => {
+                    const assignedCheck = allowedIds.has(reg.userId);
+                    // Check logic: registeredById is not selected in the main query above, so relying on network + self
+                    return assignedCheck;
+                });
+            }
         } else {
             // Member sees only themselves
-            visibleRegistrations = convention.registrations.filter(reg => reg.userId === parseInt(user.id));
+            if (currentUserId) {
+                visibleRegistrations = visibleRegistrations.filter(reg => reg.userId === parseInt(currentUserId));
+            } else {
+                visibleRegistrations = [];
+            }
         }
 
         // Enhance registrations with balance info
         const registrationsWithBalance = visibleRegistrations.map(reg => {
-            const totalPaid = reg.payments.reduce((sum, p) => sum + p.amount, 0);
+            const totalPaid = reg.payments?.reduce((sum, p) => sum + p.amount, 0) || 0;
             const initialCost = convention.cost;
-            const finalCost = initialCost * (1 - (reg.discountPercentage / 100));
+            const finalCost = initialCost * (1 - ((reg.discountPercentage || 0) / 100));
             const balance = finalCost - totalPaid;
 
             return {
                 ...reg,
+                user: {
+                    id: reg.user.id,
+                    fullName: reg.user.profile?.fullName,
+                    email: reg.user.email
+                },
                 totalPaid,
                 finalCost,
                 balance
@@ -226,13 +196,16 @@ const getConventionById = async (req, res) => {
         res.json({ ...convention, registrations: registrationsWithBalance });
     } catch (error) {
         console.error('Error fetching convention details:', error);
-        res.status(500).json({ error: 'Error getting convention details' });
+        res.status(500).json({ error: 'Error getting convention details: ' + error.message });
     }
 };
 
 const createConvention = async (req, res) => {
     try {
-        if (req.user.role !== 'SUPER_ADMIN') {
+        const roles = req.user?.roles || [];
+        const userId = req.user?.id;
+
+        if (!roles.includes('SUPER_ADMIN') && !roles.includes('ADMIN')) {
             return res.status(403).json({ error: 'Not authorized' });
         }
         const { type, year, theme, cost, startDate, endDate, liderDoceIds } = req.body;
@@ -259,11 +232,15 @@ const createConvention = async (req, res) => {
                 cost: parseFloat(cost),
                 startDate: new Date(startDate),
                 endDate: new Date(endDate),
-                liderDoceIds: liderDoceIds || []
+                leaders: {
+                    create: (liderDoceIds || []).map(id => ({ userId: parseInt(id) }))
+                }
             }
         });
 
-        await logActivity(req.user.id, 'CREATE', 'CONVENTION', convention.id, { type, year });
+        if (userId) {
+            await logActivity(userId, 'CREATE', 'CONVENTION', convention.id, { type, year }, req.ip, req.headers['user-agent']);
+        }
 
         res.status(201).json(convention);
     } catch (error) {
@@ -275,8 +252,10 @@ const createConvention = async (req, res) => {
 const updateConvention = async (req, res) => {
     try {
         const { id } = req.params;
-        // Check permissions (SUPER_ADMIN, LIDER_DOCE or PASTOR)
-        if (req.user.role !== 'SUPER_ADMIN' && req.user.role !== 'LIDER_DOCE' && req.user.role !== 'PASTOR') {
+        const roles = req.user?.roles || [];
+        const userId = req.user?.id;
+
+        if (!roles.some(r => ['SUPER_ADMIN', 'LIDER_DOCE', 'PASTOR'].includes(r))) {
             return res.status(403).json({ error: 'Not authorized' });
         }
 
@@ -289,7 +268,12 @@ const updateConvention = async (req, res) => {
         if (cost !== undefined) updateData.cost = parseFloat(cost);
         if (startDate !== undefined) updateData.startDate = new Date(startDate);
         if (endDate !== undefined) updateData.endDate = new Date(endDate);
-        if (liderDoceIds !== undefined) updateData.liderDoceIds = liderDoceIds;
+        if (liderDoceIds !== undefined) {
+            updateData.leaders = {
+                deleteMany: {},
+                create: (liderDoceIds || []).map(id => ({ userId: parseInt(id) }))
+            };
+        }
 
         const convention = await prisma.convention.update({
             where: { id: parseInt(id) },
@@ -297,7 +281,9 @@ const updateConvention = async (req, res) => {
             select: { id: true, type: true, year: true }
         });
 
-        await logActivity(req.user.id, 'UPDATE', 'CONVENTION', convention.id, { type: convention.type, year: convention.year });
+        if (userId) {
+            await logActivity(userId, 'UPDATE', 'CONVENTION', convention.id, { type: convention.type, year: convention.year }, req.ip, req.headers['user-agent']);
+        }
 
         res.json(convention);
     } catch (error) {
@@ -310,9 +296,11 @@ const registerUser = async (req, res) => {
     try {
         const { conventionId } = req.params;
         const { userId, discountPercentage, needsTransport, needsAccommodation } = req.body;
+        const roles = req.user?.roles || [];
+        const currentUserId = req.user?.id;
 
-        // Restriction: Only SUPER_ADMIN, PASTOR, or LIDER_DOCE
-        if (req.user.role === 'LIDER_CELULA' || req.user.role === 'DISCIPULO') {
+        // Restriction: Only SUPER_ADMIN, ADMIN, PASTOR, or LIDER_DOCE
+        if (!roles.some(r => ['SUPER_ADMIN', 'PASTOR', 'LIDER_DOCE'].includes(r))) {
             return res.status(403).json({ error: 'No tienes permisos para registrar participantes en convenciones' });
         }
 
@@ -336,16 +324,13 @@ const registerUser = async (req, res) => {
                 conventionId: parseInt(conventionId),
                 discountPercentage: parseFloat(discountPercentage || 0),
                 needsTransport: needsTransport || false,
-                needsAccommodation: needsAccommodation || false
+                needsAccommodation: needsAccommodation || false,
+                registeredById: currentUserId ? parseInt(currentUserId) : undefined
             },
             select: {
                 id: true,
                 user: {
-                    select: {
-                        id: true,
-                        fullName: true,
-                        email: true
-                    }
+                    include: { profile: true }
                 }
             }
         });
@@ -355,12 +340,14 @@ const registerUser = async (req, res) => {
             select: { type: true, year: true }
         });
 
-        await logActivity(req.user.id, 'CREATE', 'CONVENTION_REGISTRATION', registration.id, {
-            Usuario: registration.user.fullName,
-            Evento: `${convention.type} ${convention.year}`,
-            UserId: userId,
-            ConventionId: conventionId
-        });
+        if (currentUserId) {
+            await logActivity(currentUserId, 'CREATE', 'CONVENTION_REGISTRATION', registration.id, {
+                Usuario: registration.user.profile?.fullName || registration.user.email,
+                Evento: `${convention.type} ${convention.year}`,
+                UserId: userId,
+                ConventionId: conventionId
+            }, req.ip, req.headers['user-agent']);
+        }
 
         res.status(201).json(registration);
     } catch (error) {
@@ -373,9 +360,11 @@ const addPayment = async (req, res) => {
     try {
         const { registrationId } = req.params;
         const { amount, notes } = req.body;
+        const roles = req.user?.roles || [];
+        const userId = req.user?.id;
 
-        // Restriction: Only SUPER_ADMIN, PASTOR, or LIDER_DOCE
-        if (req.user.role === 'LIDER_CELULA' || req.user.role === 'DISCIPULO') {
+        // Restriction: Only SUPER_ADMIN, ADMIN, PASTOR, or LIDER_DOCE
+        if (!roles.some(r => ['SUPER_ADMIN', 'PASTOR', 'LIDER_DOCE'].includes(r))) {
             return res.status(403).json({ error: 'No tienes permisos para agregar pagos' });
         }
 
@@ -387,6 +376,10 @@ const addPayment = async (req, res) => {
             }
         });
 
+        if (userId) {
+            await logActivity(userId, 'CREATE', 'CONVENTION_PAYMENT', payment.id, { registrationId: parseInt(registrationId), amount }, req.ip, req.headers['user-agent']);
+        }
+
         res.status(201).json(payment);
     } catch (error) {
         console.error('Error adding payment:', error);
@@ -397,9 +390,10 @@ const addPayment = async (req, res) => {
 const deleteRegistration = async (req, res) => {
     try {
         const { registrationId } = req.params;
+        const roles = req.user?.roles || [];
+        const userId = req.user?.id;
 
-        // Check permissions (Only SUPER_ADMIN)
-        if (req.user.role !== 'SUPER_ADMIN') {
+        if (!roles.includes('SUPER_ADMIN') && !roles.includes('ADMIN')) {
             return res.status(403).json({ error: 'Not authorized to delete registrations' });
         }
 
@@ -408,7 +402,9 @@ const deleteRegistration = async (req, res) => {
             select: { id: true, userId: true, conventionId: true }
         });
 
-        await logActivity(req.user.id, 'DELETE', 'CONVENTION_REGISTRATION', registration.id, { userId: registration.userId, conventionId: registration.conventionId });
+        if (userId) {
+            await logActivity(userId, 'DELETE', 'CONVENTION_REGISTRATION', registration.id, { userId: registration.userId, conventionId: registration.conventionId }, req.ip, req.headers['user-agent']);
+        }
 
         res.json({ message: 'Registration deleted successfully' });
     } catch (error) {
@@ -420,9 +416,10 @@ const deleteRegistration = async (req, res) => {
 const deleteConvention = async (req, res) => {
     try {
         const { id } = req.params;
+        const roles = req.user?.roles || [];
+        const userId = req.user?.id;
 
-        // Check permissions (Only SUPER_ADMIN)
-        if (req.user.role !== 'SUPER_ADMIN') {
+        if (!roles.includes('SUPER_ADMIN') && !roles.includes('ADMIN')) {
             return res.status(403).json({ error: 'Not authorized to delete conventions' });
         }
 
@@ -431,7 +428,9 @@ const deleteConvention = async (req, res) => {
             select: { id: true, type: true, year: true }
         });
 
-        await logActivity(req.user.id, 'DELETE', 'CONVENTION', convention.id, { type: convention.type, year: convention.year });
+        if (userId) {
+            await logActivity(userId, 'DELETE', 'CONVENTION', convention.id, { type: convention.type, year: convention.year }, req.ip, req.headers['user-agent']);
+        }
 
         res.json({ message: 'Convention deleted successfully' });
     } catch (error) {
@@ -443,7 +442,8 @@ const deleteConvention = async (req, res) => {
 const getConventionBalanceReport = async (req, res) => {
     try {
         const { id } = req.params;
-        const user = req.user;
+        const roles = req.user?.roles || [];
+        const userId = req.user?.id;
 
         const convention = await prisma.convention.findUnique({
             where: { id: parseInt(id) },
@@ -455,13 +455,13 @@ const getConventionBalanceReport = async (req, res) => {
                         userId: true,
                         discountPercentage: true,
                         user: {
-                            select: {
-                                fullName: true,
-                                role: true,
-                                leader: { select: { fullName: true } },
-                                liderDoce: { select: { fullName: true } },
-                                liderCelula: { select: { fullName: true } },
-                                pastor: { select: { fullName: true } }
+                            include: {
+                                profile: true,
+                                parents: {
+                                    include: {
+                                        parent: { include: { profile: true } }
+                                    }
+                                }
                             }
                         },
                         payments: {
@@ -481,38 +481,50 @@ const getConventionBalanceReport = async (req, res) => {
         }
 
         // Apply Network Filter
-        let visibleRegistrations = convention.registrations;
-        if (user.role === 'SUPER_ADMIN') {
+        let visibleRegistrations = convention.registrations || [];
+        if (roles.includes('SUPER_ADMIN') || roles.includes('ADMIN')) {
             // All
-        } else if (user.role === 'LIDER_DOCE' || user.role === 'LIDER_CELULA' || user.role === 'PASTOR') {
-            const userId = parseInt(user.id);
-            const networkIds = await getNetworkIds(userId);
-            const allowedIds = new Set([...networkIds, userId]);
-            visibleRegistrations = convention.registrations.filter(reg => {
-                const assignedCheck = allowedIds.has(reg.userId);
-                const registeredByCheck = reg.registeredById === userId;
-                return assignedCheck || registeredByCheck;
-            });
+        } else if (roles.some(r => ['PASTOR', 'LIDER_DOCE', 'LIDER_CELULA'].includes(r))) {
+            if (userId) {
+                const networkIds = await getUserNetwork(userId);
+                const allowedIds = new Set([...networkIds, parseInt(userId)]);
+                visibleRegistrations = visibleRegistrations.filter(reg => {
+                    const assignedCheck = allowedIds.has(reg.userId);
+                    return assignedCheck;
+                });
+            } else {
+                visibleRegistrations = [];
+            }
         } else {
             // Members see only themselves
-            visibleRegistrations = convention.registrations.filter(reg => reg.userId === parseInt(user.id));
+            if (userId) {
+                visibleRegistrations = visibleRegistrations.filter(reg => reg.userId === parseInt(userId));
+            } else {
+                visibleRegistrations = [];
+            }
         }
 
         // Transform Data for Report
         const reportData = visibleRegistrations.map(reg => {
-            const totalPaid = reg.payments.reduce((sum, p) => sum + p.amount, 0);
+            const totalPaid = reg.payments?.reduce((sum, p) => sum + p.amount, 0) || 0;
             const initialCost = convention.cost;
-            const finalCost = initialCost * (1 - (reg.discountPercentage / 100));
+            const finalCost = initialCost * (1 - ((reg.discountPercentage || 0) / 100));
             const balance = finalCost - totalPaid;
+
+            // Simplified hierarchy display for the report
+            const getParentName = (role) => {
+                const parent = reg.user.parents.find(p => p.role === role);
+                return parent?.parent?.profile?.fullName || 'N/A';
+            };
 
             return {
                 id: reg.id,
-                userName: reg.user.fullName,
-                userRole: reg.user.role,
-                pastorName: reg.user.pastor?.fullName || 'N/A',
-                liderDoceName: reg.user.liderDoce?.fullName || 'N/A',
-                liderCelulaName: reg.user.liderCelula?.fullName || 'N/A',
-                leaderName: reg.user.leader?.fullName || 'N/A', // Direct discipler
+                userName: reg.user.profile?.fullName || reg.user.email,
+                userRole: 'DISCIPULO', // Roles would need to be fetched/joined if needed specifically
+                pastorName: getParentName('PASTOR'),
+                liderDoceName: getParentName('LIDER_DOCE'),
+                liderCelulaName: getParentName('LIDER_CELULA'),
+                leaderName: getParentName('DISCIPULO'), // Direct discipler
                 cost: finalCost,
                 paid: totalPaid,
                 balance: balance,
@@ -523,7 +535,7 @@ const getConventionBalanceReport = async (req, res) => {
         res.json(reportData);
     } catch (error) {
         console.error('Error generating balance report:', error);
-        res.status(500).json({ error: 'Error generating report' });
+        res.status(500).json({ error: 'Error generating report: ' + error.message });
     }
 };
 

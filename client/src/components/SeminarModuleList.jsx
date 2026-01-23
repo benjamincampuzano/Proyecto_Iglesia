@@ -4,7 +4,7 @@ import api from '../utils/api';
 import { useAuth } from '../context/AuthContext';
 
 const SeminarModuleList = () => {
-    const { user } = useAuth();
+    const { user, hasAnyRole } = useAuth();
     const [modules, setModules] = useState([]);
     const [showForm, setShowForm] = useState(false);
     const [editingModule, setEditingModule] = useState(null);
@@ -92,7 +92,7 @@ const SeminarModuleList = () => {
         }
     };
 
-    const canDelete = user && (user.role === 'SUPER_ADMIN' || user.role === 'LIDER_DOCE');
+    const canDelete = hasAnyRole(['SUPER_ADMIN', 'LIDER_DOCE']);
 
     return (
         <div className="space-y-6">

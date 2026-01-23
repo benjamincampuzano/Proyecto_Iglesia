@@ -53,7 +53,7 @@ const MultiUserSelect = ({ value = [], onChange, label, placeholder = "Seleccion
             const url = `/users${params.toString() ? '?' + params.toString() : ''}`;
             const res = await api.get(url);
 
-            let filteredUsers = res.data.users;
+            let filteredUsers = res.data;
             if (searchTerm) {
                 filteredUsers = filteredUsers.filter(user =>
                     user.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -76,7 +76,7 @@ const MultiUserSelect = ({ value = [], onChange, label, placeholder = "Seleccion
         try {
             const res = await api.get('/users');
 
-            const selected = res.data.users.filter(user => userIds.includes(user.id));
+            const selected = res.data.filter(user => userIds.includes(user.id));
             setSelectedUsers(selected);
         } catch (error) {
             console.error('Error fetching selected users:', error);
@@ -162,7 +162,9 @@ const MultiUserSelect = ({ value = [], onChange, label, placeholder = "Seleccion
                                 >
                                     <p className="text-sm font-medium text-white">{user.fullName}</p>
                                     <p className="text-xs text-gray-400">{user.email}</p>
-                                    <p className="text-xs text-blue-400 mt-1">{user.role.replace('_', ' ')}</p>
+                                    <p className="text-xs text-blue-400 mt-1">
+                                        {Array.isArray(user.roles) ? user.roles.join(', ').replace(/_/g, ' ') : (typeof user.role === 'string' ? user.role.replace(/_/g, ' ') : (Array.isArray(user.role) ? user.role.join(', ').replace(/_/g, ' ') : 'Usuario'))}
+                                    </p>
                                 </div>
                             ))
                         )}

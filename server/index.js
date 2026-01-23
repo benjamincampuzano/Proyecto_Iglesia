@@ -16,12 +16,10 @@ app.use(cors());
 app.use(express.json());
 
 // Request logger
-/*
 app.use((req, res, next) => {
     console.log(`${req.method} ${req.url}`);
     next();
 });
-*/
 
 const authRoutes = require('./routes/authRoutes');
 const userRoutes = require('./routes/userRoutes');
@@ -34,6 +32,7 @@ const conventionRoutes = require('./routes/conventionRoutes');
 const encuentroRoutes = require('./routes/encuentroRoutes');
 const schoolRoutes = require('./routes/schoolRoutes');
 const auditRoutes = require('./routes/auditRoutes');
+const goalRoutes = require('./routes/goalRoutes');
 
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
@@ -46,6 +45,7 @@ app.use('/api/convenciones', conventionRoutes);
 app.use('/api/encuentros', encuentroRoutes);
 app.use('/api/school', schoolRoutes);
 app.use('/api/audit', auditRoutes);
+app.use('/api/metas', goalRoutes);
 
 app.get('/', (req, res) => {
     res.send('API is running...');

@@ -1,10 +1,11 @@
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 const { logActivity } = require('../utils/auditLogger');
+const { getUserNetwork } = require('../utils/networkUtils');
 
 // Helper to check if user has modification access to an encuentro
 const checkEncuentroAccess = async (user, encuentroId) => {
-    if (user.role === 'SUPER_ADMIN') return true;
+    if (user.roles.includes('SUPER_ADMIN')) return true;
 
     const encuentro = await prisma.encuentro.findUnique({
         where: { id: parseInt(encuentroId) },
@@ -20,7 +21,7 @@ const getEncuentros = async (req, res) => {
         const encuentros = await prisma.encuentro.findMany({
             include: {
                 coordinator: {
-                    select: { id: true, fullName: true }
+                    include: { profile: true }
                 },
                 _count: {
                     select: { registrations: true }
@@ -28,7 +29,14 @@ const getEncuentros = async (req, res) => {
             },
             orderBy: { startDate: 'asc' }
         });
-        res.json(encuentros);
+
+        // Format for frontend
+        const formattedEncuentros = encuentros.map(e => ({
+            ...e,
+            coordinator: e.coordinator ? { id: e.coordinator.id, fullName: e.coordinator.profile?.fullName } : null
+        }));
+
+        res.json(formattedEncuentros);
     } catch (error) {
         console.error(error);
         res.status(500).json({ error: 'Error fetching encuentros' });
@@ -38,20 +46,27 @@ const getEncuentros = async (req, res) => {
 const getEncuentroById = async (req, res) => {
     try {
         const { id } = req.params;
+        const { roles, id: currentUserId } = req.user;
+
         const encuentro = await prisma.encuentro.findUnique({
             where: { id: parseInt(id) },
             include: {
                 coordinator: {
-                    select: { id: true, fullName: true }
+                    include: { profile: true }
                 },
                 registrations: {
                     include: {
-                        guest: true, // Includes Guest info
+                        guest: {
+                            include: {
+                                invitedBy: { include: { profile: true } },
+                                assignedTo: { include: { profile: true } }
+                            }
+                        },
                         user: {
-                            select: { id: true, fullName: true, phone: true }
+                            include: { profile: true }
                         },
                         payments: true,
-                        classAttendances: true // Includes Class Attendance
+                        classAttendances: true
                     }
                 }
             }
@@ -59,19 +74,27 @@ const getEncuentroById = async (req, res) => {
 
         if (!encuentro) return res.status(404).json({ error: 'Not found' });
 
-        // Calculate metadata for each registration
+        // Visibility Filtering
         let filteredRegistrations = encuentro.registrations;
 
-        // Restriction for non-admin roles: Only see guests in their network
-        if (req.user.role !== 'SUPER_ADMIN') {
-            const userId = parseInt(req.user.id);
-            const networkIds = await getNetworkIds(userId);
-            const allowedIds = new Set([...networkIds, userId]);
+        const isAdmin = roles.includes('SUPER_ADMIN');
+        const isCoordinator = encuentro.coordinatorId === parseInt(currentUserId);
+
+        if (!isAdmin && !isCoordinator) {
+            const networkIds = await getUserNetwork(currentUserId);
+            const allowedIds = new Set([...networkIds, parseInt(currentUserId)]);
 
             filteredRegistrations = encuentro.registrations.filter(reg => {
-                const assignedCheck = reg.guest.assignedToId && allowedIds.has(reg.guest.assignedToId);
-                const invitedCheck = reg.guest.invitedById && allowedIds.has(reg.guest.invitedById);
-                return assignedCheck || invitedCheck;
+                const participant = reg.guest || reg.user;
+                if (!participant) return false;
+
+                if (reg.guest) {
+                    const assignedCheck = reg.guest.assignedToId && allowedIds.has(reg.guest.assignedToId);
+                    const invitedCheck = reg.guest.invitedById && allowedIds.has(reg.guest.invitedById);
+                    return assignedCheck || invitedCheck;
+                } else {
+                    return allowedIds.has(reg.userId);
+                }
             });
         }
 
@@ -80,13 +103,13 @@ const getEncuentroById = async (req, res) => {
             const finalCost = encuentro.cost * (1 - reg.discountPercentage / 100);
             const balance = finalCost - totalPaid;
 
-            // Calculate class progress
             const classesAttended = reg.classAttendances.filter(c => c.attended).length;
             const preEncuentroProgress = reg.classAttendances.filter(c => c.attended && c.classNumber <= 5).length;
             const postEncuentroProgress = reg.classAttendances.filter(c => c.attended && c.classNumber > 5).length;
 
             return {
                 ...reg,
+                user: reg.user ? { id: reg.user.id, fullName: reg.user.profile?.fullName, phone: reg.user.phone } : null,
                 totalPaid,
                 finalCost,
                 balance,
@@ -96,7 +119,13 @@ const getEncuentroById = async (req, res) => {
             };
         });
 
-        res.json({ ...encuentro, registrations: registrationsWithStats });
+        const formattedEncuentro = {
+            ...encuentro,
+            coordinator: encuentro.coordinator ? { id: encuentro.coordinator.id, fullName: encuentro.coordinator.profile?.fullName } : null,
+            registrations: registrationsWithStats
+        };
+
+        res.json(formattedEncuentro);
     } catch (error) {
         console.error(error);
         res.status(500).json({ error: 'Error fetching detail' });
@@ -105,7 +134,8 @@ const getEncuentroById = async (req, res) => {
 
 const createEncuentro = async (req, res) => {
     try {
-        if (req.user.role !== 'SUPER_ADMIN') {
+        const { roles, id: userId } = req.user;
+        if (!roles.includes('SUPER_ADMIN') && !roles.includes('ADMIN')) {
             return res.status(403).json({ error: 'Not authorized' });
         }
         const { type, name, description, cost, startDate, endDate, liderDoceIds, coordinatorId } = req.body;
@@ -117,12 +147,14 @@ const createEncuentro = async (req, res) => {
                 cost: parseFloat(cost),
                 startDate: new Date(startDate),
                 endDate: new Date(endDate),
-                liderDoceIds: liderDoceIds || [],
+                leaders: {
+                    create: (liderDoceIds || []).map(id => ({ userId: parseInt(id) }))
+                },
                 coordinatorId: coordinatorId ? parseInt(coordinatorId) : null
             }
         });
 
-        await logActivity(req.user.id, 'CREATE', 'ENCUENTRO', encuentro.id, { name: encuentro.name, type: encuentro.type });
+        await logActivity(userId, 'CREATE', 'ENCUENTRO', encuentro.id, { name: encuentro.name, type: encuentro.type }, req.ip, req.headers['user-agent']);
 
         res.status(201).json(encuentro);
     } catch (error) {
@@ -134,8 +166,9 @@ const createEncuentro = async (req, res) => {
 const deleteEncuentro = async (req, res) => {
     try {
         const { id } = req.params;
-        // Check permissions (Only SUPER_ADMIN)
-        if (req.user.role !== 'SUPER_ADMIN') {
+        const { roles, id: userId } = req.user;
+
+        if (!roles.includes('SUPER_ADMIN') && !roles.includes('ADMIN')) {
             return res.status(403).json({ error: 'Not authorized' });
         }
         const encuentro = await prisma.encuentro.delete({
@@ -143,7 +176,7 @@ const deleteEncuentro = async (req, res) => {
             select: { id: true, name: true }
         });
 
-        await logActivity(req.user.id, 'DELETE', 'ENCUENTRO', encuentro.id, { name: encuentro.name });
+        await logActivity(userId, 'DELETE', 'ENCUENTRO', encuentro.id, { name: encuentro.name }, req.ip, req.headers['user-agent']);
 
         res.json({ message: 'Deleted' });
     } catch (error) {
@@ -154,6 +187,7 @@ const deleteEncuentro = async (req, res) => {
 const updateEncuentro = async (req, res) => {
     try {
         const { id } = req.params;
+        const { roles, id: userId } = req.user;
 
         // Restriction: Only SUPER_ADMIN or Coordinator
         const hasAccess = await checkEncuentroAccess(req.user, id);
@@ -170,7 +204,12 @@ const updateEncuentro = async (req, res) => {
         if (cost !== undefined) updateData.cost = parseFloat(cost);
         if (startDate !== undefined) updateData.startDate = new Date(startDate);
         if (endDate !== undefined) updateData.endDate = new Date(endDate);
-        if (liderDoceIds !== undefined) updateData.liderDoceIds = liderDoceIds;
+        if (liderDoceIds !== undefined) {
+            updateData.leaders = {
+                deleteMany: {},
+                create: (liderDoceIds || []).map(id => ({ userId: parseInt(id) }))
+            };
+        }
         if (coordinatorId !== undefined) updateData.coordinatorId = coordinatorId ? parseInt(coordinatorId) : null;
 
         const encuentro = await prisma.encuentro.update({
@@ -179,7 +218,7 @@ const updateEncuentro = async (req, res) => {
             select: { id: true, name: true }
         });
 
-        await logActivity(req.user.id, 'UPDATE', 'ENCUENTRO', encuentro.id, { name: encuentro.name });
+        await logActivity(userId, 'UPDATE', 'ENCUENTRO', encuentro.id, { name: encuentro.name }, req.ip, req.headers['user-agent']);
 
         res.json(encuentro);
     } catch (error) {
@@ -192,11 +231,32 @@ const registerParticipant = async (req, res) => {
     try {
         const { encuentroId } = req.params;
         const { guestId, userId, discountPercentage } = req.body;
+        const { roles, id: currentUserId } = req.user;
 
         // Restriction: Only SUPER_ADMIN or Coordinator
         const hasAccess = await checkEncuentroAccess(req.user, encuentroId);
         if (!hasAccess) {
             return res.status(403).json({ error: 'No tienes permisos para registrar participantes en este encuentro.' });
+        }
+
+        // Validation: Must be User XOR Guest
+        if ((!guestId && !userId) || (guestId && userId)) {
+            return res.status(400).json({ error: 'Must provide either guestId OR userId, not both.' });
+        }
+
+        // Integrity Check: Already registered?
+        const existing = await prisma.encuentroRegistration.findFirst({
+            where: {
+                encuentroId: parseInt(encuentroId),
+                OR: [
+                    guestId ? { guestId: parseInt(guestId) } : {},
+                    userId ? { userId: parseInt(userId) } : {}
+                ]
+            }
+        });
+
+        if (existing) {
+            return res.status(400).json({ error: 'El participante ya está registrado en este encuentro.' });
         }
 
         const registration = await prisma.encuentroRegistration.create({
@@ -208,7 +268,7 @@ const registerParticipant = async (req, res) => {
             },
             include: {
                 guest: true,
-                user: { select: { fullName: true } }
+                user: { include: { profile: true } }
             }
         });
 
@@ -225,26 +285,28 @@ const registerParticipant = async (req, res) => {
             select: { name: true }
         });
 
-        await logActivity(req.user.id, 'CREATE', 'ENCUENTRO_REGISTRATION', registration.id, {
-            Invitado: registration.guest.name,
+        await logActivity(currentUserId, 'CREATE', 'ENCUENTRO_REGISTRATION', registration.id, {
+            Invitado: registration.guest?.name || registration.user?.profile?.fullName || registration.user?.email,
             Encuentro: encuentro.name,
             GuestId: guestId,
+            UserId: userId,
             EncuentroId: encuentroId
-        });
+        }, req.ip, req.headers['user-agent']);
 
         res.status(201).json(registration);
     } catch (error) {
         console.error(error);
         if (error.code === 'P2002') {
-            return res.status(400).json({ error: 'El invitado ya está registrado en este encuentro' });
+            return res.status(400).json({ error: 'El participante ya está registrado en este encuentro' });
         }
-        res.status(500).json({ error: 'Error registering guest' });
+        res.status(500).json({ error: 'Error registering participant' });
     }
 };
 
 const deleteRegistration = async (req, res) => {
     try {
         const { registrationId } = req.params;
+        const { roles, id: userId } = req.user;
 
         const registration = await prisma.encuentroRegistration.findUnique({
             where: { id: parseInt(registrationId) },
@@ -265,10 +327,10 @@ const deleteRegistration = async (req, res) => {
             where: { id: parseInt(registrationId) }
         });
 
-        await logActivity(req.user.id, 'DELETE', 'ENCUENTRO_REGISTRATION', registration.id, {
+        await logActivity(userId, 'DELETE', 'ENCUENTRO_REGISTRATION', registration.id, {
             participantId: registration.guestId || registration.userId,
             encuentroId: registration.encuentroId
-        });
+        }, req.ip, req.headers['user-agent']);
 
         res.json({ message: 'Deleted' });
     } catch (error) {
@@ -281,6 +343,7 @@ const addPayment = async (req, res) => {
     try {
         const { registrationId } = req.params;
         const { amount, notes } = req.body;
+        const { roles, id: userId } = req.user;
 
         const registration = await prisma.encuentroRegistration.findUnique({
             where: { id: parseInt(registrationId) },
@@ -304,6 +367,9 @@ const addPayment = async (req, res) => {
                 notes
             }
         });
+
+        await logActivity(userId, 'CREATE', 'ENCUENTRO_PAYMENT', payment.id, { registrationId: parseInt(registrationId), amount }, req.ip, req.headers['user-agent']);
+
         res.status(201).json(payment);
     } catch (error) {
         res.status(500).json({ error: 'Payment failed' });
@@ -314,6 +380,7 @@ const updateClassAttendance = async (req, res) => {
     try {
         const { registrationId, classNumber } = req.params; // classNumber 1-10
         const { attended } = req.body;
+        const { id: userId } = req.user;
 
         const registration = await prisma.encuentroRegistration.findUnique({
             where: { id: parseInt(registrationId) },
@@ -344,6 +411,9 @@ const updateClassAttendance = async (req, res) => {
                 attended
             }
         });
+
+        await logActivity(userId, 'UPDATE', 'ENCUENTRO_ATTENDANCE', record.id, { registrationId: parseInt(registrationId), classNumber, attended }, req.ip, req.headers['user-agent']);
+
         res.json(record);
     } catch (error) {
         console.error(error);
@@ -352,72 +422,50 @@ const updateClassAttendance = async (req, res) => {
 };
 
 // Helper to get network
-const getNetworkIds = async (leaderId) => {
-    const id = parseInt(leaderId);
-    if (isNaN(id)) return [];
-
-    // Find all users who report to this leader via ANY of the hierarchy fields
-    const directDisciples = await prisma.user.findMany({
-        where: {
-            OR: [
-                { leaderId: id },
-                { liderDoceId: id },
-                { liderCelulaId: id },
-                { pastorId: id }
-            ]
-        },
-        select: { id: true }
-    });
-
-    let networkIds = directDisciples.map(d => d.id);
-
-    // Recursively find their disciples
-    for (const disciple of directDisciples) {
-        if (disciple.id !== id) {
-            const subNetwork = await getNetworkIds(disciple.id);
-            networkIds = [...networkIds, ...subNetwork];
-        }
-    }
-
-    return [...new Set(networkIds)];
-};
+// Local getNetworkIds removed in favor of centralized getUserNetwork
 
 const getEncuentroBalanceReport = async (req, res) => {
     try {
         const { id } = req.params;
-        const user = req.user;
+        const { roles, id: userId } = req.user;
 
         const encuentro = await prisma.encuentro.findUnique({
             where: { id: parseInt(id) },
             include: {
                 registrations: {
+                    where: {
+                        OR: [
+                            { guest: { isNot: null } }, // Guests are fine
+                            { user: { roles: { none: { role: { name: 'SUPER_ADMIN' } } } } }
+                        ]
+                    },
                     include: {
                         guest: {
                             include: {
                                 assignedTo: {
                                     include: {
-                                        leader: { select: { fullName: true } },
-                                        liderDoce: { select: { fullName: true } },
-                                        liderCelula: { select: { fullName: true } },
-                                        pastor: { select: { fullName: true } }
+                                        profile: true,
+                                        parents: {
+                                            include: { parent: { include: { profile: true } } }
+                                        }
                                     }
                                 },
                                 invitedBy: {
                                     include: {
-                                        leader: { select: { fullName: true } },
-                                        liderDoce: { select: { fullName: true } },
-                                        liderCelula: { select: { fullName: true } },
-                                        pastor: { select: { fullName: true } }
+                                        profile: true,
+                                        parents: {
+                                            include: { parent: { include: { profile: true } } }
+                                        }
                                     }
                                 }
                             }
                         },
                         user: {
                             include: {
-                                leader: { select: { fullName: true } },
-                                liderDoce: { select: { fullName: true } },
-                                liderCelula: { select: { fullName: true } },
-                                pastor: { select: { fullName: true } }
+                                profile: true,
+                                parents: {
+                                    include: { parent: { include: { profile: true } } }
+                                }
                             }
                         },
                         payments: true
@@ -433,37 +481,20 @@ const getEncuentroBalanceReport = async (req, res) => {
         // Apply Network Filter
         let visibleRegistrations = encuentro.registrations;
 
-        if (user.role === 'SUPER_ADMIN') {
-            // All
-        } else if (user.role === 'LIDER_DOCE' || user.role === 'LIDER_CELULA' || user.role === 'PASTOR') {
-            const userId = parseInt(user.id);
-            const networkIds = await getNetworkIds(userId);
-            const allowedIds = new Set([...networkIds, userId]);
+        const isAdmin = roles.includes('SUPER_ADMIN');
+        const isCoordinator = encuentro.coordinatorId === parseInt(userId);
+
+        if (!isAdmin && !isCoordinator) {
+            const networkIds = await getUserNetwork(userId);
+            const allowedIds = new Set([...networkIds, parseInt(userId)]);
 
             visibleRegistrations = encuentro.registrations.filter(reg => {
-                const participant = reg.guest || reg.user;
-                if (!participant) return false;
-
                 if (reg.guest) {
                     const assignedCheck = reg.guest.assignedToId && allowedIds.has(reg.guest.assignedToId);
                     const invitedCheck = reg.guest.invitedById && allowedIds.has(reg.guest.invitedById);
                     return assignedCheck || invitedCheck;
                 } else {
-                    // For user registrations, check if the user itself or its leaders are in the allowed list
-                    return allowedIds.has(reg.user.id) ||
-                        (reg.user.liderCelulaId && allowedIds.has(reg.user.liderCelulaId)) ||
-                        (reg.user.liderDoceId && allowedIds.has(reg.user.liderDoceId)) ||
-                        (reg.user.pastorId && allowedIds.has(reg.user.pastorId));
-                }
-            });
-        } else {
-            // Member sees guests assigned to them OR invited by them
-            const userId = parseInt(user.id);
-            visibleRegistrations = encuentro.registrations.filter(reg => {
-                if (reg.guest) {
-                    return reg.guest.assignedToId === userId || reg.guest.invitedById === userId;
-                } else {
-                    return reg.userId === userId;
+                    return allowedIds.has(reg.userId);
                 }
             });
         }
@@ -475,20 +506,25 @@ const getEncuentroBalanceReport = async (req, res) => {
             const balance = finalCost - totalPaid;
 
             // Use assignedTo for hierarchy, fallback to invitedBy (for guests)
-            // Or the user's direct hierarchy (for users)
             const responsibleUser = reg.guest ? (reg.guest.assignedTo || reg.guest.invitedBy) : reg.user;
+
+            const getParentName = (role) => {
+                if (!responsibleUser) return 'N/A';
+                const parent = responsibleUser.parents?.find(p => p.role === role);
+                return parent?.parent?.profile?.fullName || 'N/A';
+            };
 
             return {
                 id: reg.id,
-                userName: reg.user?.fullName,
+                userName: reg.user?.profile?.fullName || reg.user?.email,
                 guestName: reg.guest?.name,
-                userRole: reg.user?.role,
+                userRole: 'PARTICIPANTE',
                 status: reg.guest?.status,
-                responsibleName: responsibleUser?.fullName || 'Sin Asignar',
-                pastorName: responsibleUser?.pastor?.fullName || 'N/A',
-                liderDoceName: responsibleUser?.liderDoce?.fullName || 'N/A',
-                liderCelulaName: responsibleUser?.liderCelula?.fullName || 'N/A',
-                leaderName: responsibleUser?.leader?.fullName || 'N/A',
+                responsibleName: responsibleUser?.profile?.fullName || 'Sin Asignar',
+                pastorName: getParentName('PASTOR'),
+                liderDoceName: getParentName('LIDER_DOCE'),
+                liderCelulaName: getParentName('LIDER_CELULA'),
+                leaderName: getParentName('DISCIPULO'),
                 cost: finalCost,
                 paid: totalPaid,
                 balance: balance,

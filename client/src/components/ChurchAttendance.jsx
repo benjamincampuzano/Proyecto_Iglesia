@@ -142,7 +142,7 @@ const ChurchAttendance = () => {
                                         {member.email}
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                                        {member.role}
+                                        {member.roles?.join(', ') || member.role}
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap text-center">
                                         <div className="flex justify-center gap-2">

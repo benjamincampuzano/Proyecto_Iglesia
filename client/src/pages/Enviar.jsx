@@ -12,7 +12,7 @@ const Enviar = () => {
         { id: 'attendance', label: 'Asistencia a la Célula', component: CellAttendance },
         { id: 'stats', label: 'Estadísticas', component: AttendanceChart, roles: ['SUPER_ADMIN', 'PASTOR', 'LIDER_DOCE', 'LIDER_CELULA'] },
         { id: 'gestion', label: 'Gestión de Células', component: CellManagement, roles: ['SUPER_ADMIN', 'PASTOR', 'LIDER_DOCE'] }
-    ].filter(tab => !tab.roles || tab.roles.includes(user?.role));
+    ].filter(tab => !tab.roles || tab.roles.some(role => user?.roles?.includes(role)));
 
     const ActiveComponent = tabs.find(tab => tab.id === activeTab)?.component;
 

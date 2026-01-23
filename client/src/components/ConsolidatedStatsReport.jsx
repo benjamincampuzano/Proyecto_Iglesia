@@ -5,7 +5,7 @@ import api from '../utils/api';
 import { useAuth } from '../context/AuthContext';
 
 const ConsolidatedStatsReport = ({ simpleMode = false }) => {
-    const { user } = useAuth();
+    const { user, hasAnyRole } = useAuth();
     const [stats, setStats] = useState(null);
     // Default to last 5 years for a complete general history
     const [startDate, setStartDate] = useState(() => {
@@ -18,7 +18,7 @@ const ConsolidatedStatsReport = ({ simpleMode = false }) => {
 
     // Access Control
     const ALLOWED_ROLES = ['PASTOR', 'LIDER_DOCE', 'SUPER_ADMIN'];
-    const hasAccess = user && ALLOWED_ROLES.includes(user.role);
+    const hasAccess = hasAnyRole(ALLOWED_ROLES);
 
     useEffect(() => {
         if (hasAccess) {
@@ -62,9 +62,9 @@ const ConsolidatedStatsReport = ({ simpleMode = false }) => {
                 <div className="bg-red-100 dark:bg-red-900/30 p-4 rounded-full mb-4">
                     <Lock className="w-12 h-12 text-red-600" />
                 </div>
-                <h2 className="text-xl font-bold text-gray-800 mb-2">Acceso Restringido</h2>
-                <p className="text-gray-600 max-w-md">
-                    Este informe solo está disponible para usuarios con perfil de <strong>Pastor</strong> o <strong>Líder de 12</strong>.
+                <h2 className="text-xl font-bold text-gray-800 dark:text-white mb-2">Acceso Restringido</h2>
+                <p className="text-gray-600 dark:text-gray-400 max-w-md">
+                    Este informe solo está disponible para usuarios con perfil de <strong>Pastor</strong>, <strong>Líder de 12</strong> o <strong>Admin</strong>.
                 </p>
             </div>
         );

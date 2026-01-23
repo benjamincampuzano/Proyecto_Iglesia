@@ -235,8 +235,8 @@ describe('Módulo de Células - Frontend', () => {
         });
     });
 
-    describe('Gestión de Miembros', () => {
-        test('debería agregar miembro a célula exitosamente', async () => {
+    describe('Gestión de DISCIPULOs', () => {
+        test('debería agregar DISCIPULO a célula exitosamente', async () => {
             const memberData = {
                 userId: 2
             };
@@ -244,7 +244,7 @@ describe('Módulo de Células - Frontend', () => {
             const mockResponse = {
                 ok: true,
                 json: async () => ({ 
-                    message: 'Miembro agregado exitosamente',
+                    message: 'DISCIPULO agregado exitosamente',
                     user: { id: 2, cellId: 1 }
                 })
             };
@@ -265,11 +265,11 @@ describe('Módulo de Células - Frontend', () => {
             expect(result.success).toBe(true);
         });
 
-        test('debería remover miembro de célula exitosamente', async () => {
+        test('debería remover DISCIPULO de célula exitosamente', async () => {
             const mockResponse = {
                 ok: true,
                 json: async () => ({ 
-                    message: 'Miembro removido exitosamente',
+                    message: 'DISCIPULO removido exitosamente',
                     user: { id: 2, cellId: null }
                 })
             };
@@ -289,7 +289,7 @@ describe('Módulo de Células - Frontend', () => {
             expect(result.success).toBe(true);
         });
 
-        test('debería validar que el miembro no esté ya en otra célula', async () => {
+        test('debería validar que el DISCIPULO no esté ya en otra célula', async () => {
             const mockResponse = {
                 ok: false,
                 status: 400,
@@ -329,12 +329,12 @@ describe('Módulo de Células - Frontend', () => {
             expect(result.success).toBe(true);
         });
 
-        test('debería prevenir eliminación de célula con miembros activos', async () => {
+        test('debería prevenir eliminación de célula con DISCIPULOs activos', async () => {
             const mockResponse = {
                 ok: false,
                 status: 400,
                 json: async () => ({ 
-                    message: 'No se puede eliminar: La célula tiene miembros activos' 
+                    message: 'No se puede eliminar: La célula tiene DISCIPULOs activos' 
                 })
             };
             
@@ -343,7 +343,7 @@ describe('Módulo de Células - Frontend', () => {
             const result = await deleteCell(1);
 
             expect(result.success).toBe(false);
-            expect(result.error).toContain('miembros activos');
+            expect(result.error).toContain('DISCIPULOs activos');
         });
     });
 
@@ -530,20 +530,20 @@ describe('Integración con UI - Gestión de Células', () => {
         expect(mapMarkers[0].getAttribute('data-lng')).toBe('-74.0060');
     });
 
-    test('debería mostrar diálogo de gestión de miembros', () => {
+    test('debería mostrar diálogo de gestión de DISCIPULOs', () => {
         document.body.innerHTML = `
             <div id="cellsList">
                 <div class="cell-card" data-cell-id="1">
                     <h3>Célula Test</h3>
-                    <button class="manage-members" data-cell-id="1">Gestionar Miembros</button>
+                    <button class="manage-members" data-cell-id="1">Gestionar DISCIPULOs</button>
                 </div>
             </div>
             <div id="membersDialog" style="display: none;">
-                <h3>Miembros de la Célula</h3>
+                <h3>DISCIPULOs de la Célula</h3>
                 <div id="membersList">
-                    <!-- Lista de miembros -->
+                    <!-- Lista de DISCIPULOs -->
                 </div>
-                <button id="addMember">Agregar Miembro</button>
+                <button id="addMember">Agregar DISCIPULO</button>
                 <button id="closeDialog">Cerrar</button>
             </div>
         `;
@@ -551,7 +551,7 @@ describe('Integración con UI - Gestión de Células', () => {
         const manageButton = document.querySelector('.manage-members');
         const membersDialog = document.getElementById('membersDialog');
 
-        // Simular clic en gestionar miembros
+        // Simular clic en gestionar DISCIPULOs
         manageButton.click();
 
         // Verificar que se muestre el diálogo
@@ -642,7 +642,7 @@ describe('Integración con UI - Gestión de Células', () => {
             </div>
             <div id="confirmDialog" style="display: none;">
                 <p>¿Está seguro de eliminar esta célula?</p>
-                <p>Esta acción también removerá todos los miembros de la célula.</p>
+                <p>Esta acción también removerá todos los DISCIPULOs de la célula.</p>
                 <button id="confirmDelete">Sí, Eliminar</button>
                 <button id="cancelDelete">Cancelar</button>
             </div>

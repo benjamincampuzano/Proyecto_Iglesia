@@ -49,7 +49,7 @@ const UserSearchSelect = ({ value, onChange, label, placeholder = "Buscar usuari
                 params: params
             });
 
-            let filteredUsers = response.data.users;
+            let filteredUsers = response.data;
             if (searchTerm) {
                 filteredUsers = filteredUsers.filter(user =>
                     user.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -151,7 +151,9 @@ const UserSearchSelect = ({ value, onChange, label, placeholder = "Buscar usuari
                                 >
                                     <p className="text-sm font-medium text-gray-900 dark:text-white">{user.fullName}</p>
                                     <p className="text-xs text-gray-500 dark:text-gray-400">{user.email}</p>
-                                    <p className="text-xs text-blue-400 mt-1">{user.role.replace('_', ' ')}</p>
+                                    <p className="text-xs text-blue-400 mt-1">
+                                        {Array.isArray(user.roles) ? user.roles.join(', ').replace(/_/g, ' ') : (typeof user.role === 'string' ? user.role.replace(/_/g, ' ') : (Array.isArray(user.role) ? user.role.join(', ').replace(/_/g, ' ') : 'Usuario'))}
+                                    </p>
                                 </div>
                             ))
                         )}

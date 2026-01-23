@@ -10,10 +10,10 @@ const authenticate = (req, res, next) => {
         }
 
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
-        // Normalizar: asegurar que tenemos el campo 'id' (el token podría tener 'userId')
+        // Normalizar: asegurar que tenemos el campo 'id' y 'roles' (array)
         req.user = {
             id: decoded.id || decoded.userId,
-            role: decoded.role
+            roles: decoded.roles || (decoded.role ? [decoded.role] : [])
         };
         next();
     } catch (error) {
@@ -21,13 +21,16 @@ const authenticate = (req, res, next) => {
     }
 };
 
-// Middleware para verificar si el usuario es administrador (SUPER_ADMIN o LIDER_DOCE)
+// Middleware para verificar si el usuario es administrador
 const isAdmin = (req, res, next) => {
     if (!req.user) {
         return res.status(401).json({ message: 'Authentication required' });
     }
 
-    if (req.user.role !== 'SUPER_ADMIN' && req.user.role !== 'LIDER_DOCE') {
+    const adminRoles = ['SUPER_ADMIN', 'LIDER_DOCE', 'ADMIN'];
+    const hasAdminRole = req.user.roles.some(role => adminRoles.includes(role));
+
+    if (!hasAdminRole) {
         return res.status(403).json({ message: 'Access denied. Admin privileges required.' });
     }
 
@@ -35,13 +38,15 @@ const isAdmin = (req, res, next) => {
 };
 
 // Middleware para verificar roles específicos
-const authorize = (roles = []) => {
+const authorize = (allowedRoles = []) => {
     return (req, res, next) => {
         if (!req.user) {
             return res.status(401).json({ message: 'Authentication required' });
         }
 
-        if (roles.length && !roles.includes(req.user.role)) {
+        const hasAuthorizedRole = allowedRoles.length === 0 || req.user.roles.some(role => allowedRoles.includes(role));
+
+        if (!hasAuthorizedRole) {
             return res.status(403).json({ message: 'Access denied. You do not have the required permissions.' });
         }
 

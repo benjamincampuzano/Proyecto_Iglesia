@@ -23,8 +23,16 @@ const getAuditLogs = async (req, res) => {
                     user: {
                         select: {
                             id: true,
-                            fullName: true,
-                            role: true,
+                            profile: {
+                                select: { fullName: true }
+                            },
+                            roles: {
+                                select: {
+                                    role: {
+                                        select: { name: true }
+                                    }
+                                }
+                            },
                             email: true
                         }
                     }
@@ -36,8 +44,18 @@ const getAuditLogs = async (req, res) => {
             prisma.auditLog.count({ where })
         ]);
 
+        const formattedLogs = logs.map(log => ({
+            ...log,
+            details: log.details ? JSON.stringify(log.details) : null,
+            user: log.user ? {
+                ...log.user,
+                fullName: log.user.profile?.fullName,
+                roles: log.user.roles.map(r => r.role.name)
+            } : null
+        }));
+
         res.json({
-            logs,
+            logs: formattedLogs,
             pagination: {
                 total,
                 pages: Math.ceil(total / limit),

@@ -150,7 +150,7 @@ const BalanceReport = ({ data, title }) => {
                     <Users size={20} />
                     Detalle de Inscritos ({filteredData.length})
                 </h3>
-                {['SUPER_ADMIN', 'LIDER_DOCE'].includes(user?.role) && (
+                {user?.roles?.some(role => ['SUPER_ADMIN', 'LIDER_DOCE'].includes(role)) && (
                     <button
                         onClick={handleExport}
                         className="flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors text-sm font-medium"

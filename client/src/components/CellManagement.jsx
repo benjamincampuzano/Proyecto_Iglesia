@@ -57,14 +57,14 @@ const CellManagement = () => {
     // Handle default values for PASTOR and LIDER_DOCE roles when opening create form
     useEffect(() => {
         if (showCreateForm && currentUser) {
-            const role = currentUser.role?.toUpperCase();
-            if (role === 'PASTOR') {
+            const roles = currentUser.roles || [];
+            if (roles.includes('PASTOR')) {
                 setFormData(prev => ({
                     ...prev,
                     leaderId: currentUser.id.toString(),
                     liderDoceId: '' // Pastor might need to select a specific leader 12 or leave empty if supervising directly
                 }));
-            } else if (role === 'LIDER_DOCE') {
+            } else if (roles.includes('LIDER_DOCE')) {
                 setFormData(prev => ({
                     ...prev,
                     liderDoceId: currentUser.id.toString()
@@ -431,7 +431,7 @@ const CellManagement = () => {
 
                         <div>
                             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                                {currentUser?.role?.toUpperCase() === 'PASTOR' ? 'Pastor' : 'Líder G12 Supervisor (Opcional)'}
+                                {currentUser?.roles?.includes('PASTOR') ? 'Pastor' : 'Líder G12 Supervisor (Opcional)'}
                             </label>
                             <select
                                 value={formData.liderDoceId}
@@ -439,7 +439,7 @@ const CellManagement = () => {
                                 className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                             >
                                 <option value="">
-                                    {currentUser?.role?.toUpperCase() === 'PASTOR' ? 'Seleccionar Pastor...' : 'Seleccionar Líder 12...'}
+                                    {currentUser?.roles?.includes('PASTOR') ? 'Seleccionar Pastor...' : 'Seleccionar Líder 12...'}
                                 </option>
                                 {eligibleDoceLeaders.map(l => (
                                     <option key={l.id} value={l.id}>{l.fullName}</option>
@@ -546,7 +546,7 @@ const CellManagement = () => {
                         onChange={(e) => setFilterDoce(e.target.value)}
                         className="w-full pl-9 pr-4 py-2 border border-blue-100 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 appearance-none bg-white dark:bg-gray-700 dark:text-white text-sm"
                     >
-                        <option value="">{currentUser?.role?.toUpperCase() === 'PASTOR' ? 'Todos los Pastores' : 'Todos los Líderes 12'}</option>
+                        <option value="">{currentUser?.roles?.includes('PASTOR') ? 'Todos los Pastores' : 'Todos los Líderes 12'}</option>
                         {eligibleDoceLeaders.map(l => (
                             <option key={l.id} value={l.id}>{l.fullName}</option>
                         ))}

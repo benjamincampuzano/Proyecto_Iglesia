@@ -41,8 +41,8 @@ describe('Módulo de Red - Frontend', () => {
                             disciples: [
                                 {
                                     id: 3,
-                                    fullName: 'Miembro 1',
-                                    role: 'MIEMBRO',
+                                    fullName: 'DISCIPULO 1',
+                                    role: 'DISCIPULO',
                                     level: 2,
                                     disciples: []
                                 }
@@ -250,13 +250,13 @@ describe('Módulo de Red - Frontend', () => {
                     'SUPER_ADMIN': 1,
                     'LIDER_DOCE': 5,
                     'LIDER_CELULA': 15,
-                    'MIEMBRO': 29
+                    'DISCIPULO': 29
                 },
                 byLevel: {
                     0: 1,  // Líder principal
                     1: 5,  // Líderes secundarios
                     2: 15, // Líderes de célula
-                    3: 29  // Miembros
+                    3: 29  // DISCIPULOs
                 },
                 averageDisciplesPerLeader: 8.5
             };
@@ -314,8 +314,8 @@ describe('Módulo de Red - Frontend', () => {
                         children: [
                             {
                                 id: 3,
-                                name: 'Miembro 1',
-                                role: 'MIEMBRO',
+                                name: 'DISCIPULO 1',
+                                role: 'DISCIPULO',
                                 children: []
                             }
                         ]
@@ -369,7 +369,7 @@ describe('Módulo de Red - Frontend', () => {
     describe('Validación de Jerarquía', () => {
         test('debería validar asignación válida', async () => {
             const validHierarchy = {
-                userId: 3, // MIEMBRO
+                userId: 3, // DISCIPULO
                 leaderId: 2  // LIDER_CELULA
             };
 
@@ -472,8 +472,8 @@ describe('Integración con UI - Gestión de Red', () => {
                     children: [
                         {
                             id: 3,
-                            name: 'Miembro',
-                            role: 'MIEMBRO',
+                            name: 'DISCIPULO',
+                            role: 'DISCIPULO',
                             children: []
                         }
                     ]
@@ -562,7 +562,7 @@ describe('Integración con UI - Gestión de Red', () => {
             byRole: {
                 'LIDER_DOCE': 3,
                 'LIDER_CELULA': 12,
-                'MIEMBRO': 30
+                'DISCIPULO': 30
             }
         };
 
@@ -597,7 +597,7 @@ describe('Integración con UI - Gestión de Red', () => {
             role: 'LIDER_DOCE',
             children: [
                 { id: 2, name: 'Líder Celula', role: 'LIDER_CELULA', children: [] },
-                { id: 3, name: 'Miembro', role: 'MIEMBRO', children: [] }
+                { id: 3, name: 'DISCIPULO', role: 'DISCIPULO', children: [] }
             ]
         };
 
@@ -616,7 +616,7 @@ describe('Integración con UI - Gestión de Red', () => {
                 'SUPER_ADMIN': '#DC2626',    // Rojo
                 'LIDER_DOCE': '#7C3AED',   // Púrpura
                 'LIDER_CELULA': '#2563EB', // Azul
-                'MIEMBRO': '#16A34A'       // Verde
+                'DISCIPULO': '#16A34A'       // Verde
             };
             return colors[role] || '#6B7280';
         };
@@ -626,7 +626,7 @@ describe('Integración con UI - Gestión de Red', () => {
 
         expect(roleElements[0].style.backgroundColor).toBe(getRoleColor('LIDER_DOCE'));
         expect(roleElements[1].style.backgroundColor).toBe(getRoleColor('LIDER_CELULA'));
-        expect(roleElements[2].style.backgroundColor).toBe(getRoleColor('MIEMBRO'));
+        expect(roleElements[2].style.backgroundColor).toBe(getRoleColor('DISCIPULO'));
     });
 
     test('debería mostrar diálogo de confirmación para remover de red', () => {
@@ -708,7 +708,7 @@ describe('Integración con UI - Gestión de Red', () => {
                     <option value="">Todos los roles</option>
                     <option value="LIDER_DOCE">Líder de Doce</option>
                     <option value="LIDER_CELULA">Líder de Célula</option>
-                    <option value="MIEMBRO">Miembro</option>
+                    <option value="DISCIPULO">DISCIPULO</option>
                 </select>
                 <select id="levelFilter">
                     <option value="">Todos los niveles</option>

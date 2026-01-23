@@ -1,7 +1,7 @@
 import { Outlet, Link, useLocation } from 'react-router-dom';
 import { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { Home, Users, UserPlus, Heart, Send, Calendar, BookOpen, LogOut, Network, Activity, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Home, Users, UserPlus, Heart, Send, Calendar, BookOpen, LogOut, Network, Activity, ChevronLeft, ChevronRight, Target } from 'lucide-react';
 import UserMenu from '../components/UserMenu';
 import UserProfileModal from '../components/UserProfileModal';
 import UserManagementModal from '../components/UserManagementModal';
@@ -21,7 +21,7 @@ const SidebarItem = ({ to, icon: Icon, label, active }) => (
 );
 
 const Layout = () => {
-    const { user, logout } = useAuth();
+    const { user, logout, hasAnyRole, isAdmin } = useAuth();
     const location = useLocation();
     const [isCollapsed, setIsCollapsed] = useState(true);
     const [showProfileModal, setShowProfileModal] = useState(false);
@@ -31,13 +31,14 @@ const Layout = () => {
 
     const navItems = [
         { to: '/', icon: Home, label: 'Home' },
+        ...(hasAnyRole(['SUPER_ADMIN', 'PASTOR', 'LIDER_DOCE']) ? [{ to: '/metas', icon: Target, label: 'Metas' }] : []),
         { to: '/ganar', icon: UserPlus, label: 'Ganar' },
         { to: '/consolidar', icon: Heart, label: 'Consolidar' },
         { to: '/discipular', icon: BookOpen, label: 'Discipular' },
         { to: '/enviar', icon: Send, label: 'Enviar' },
         { to: '/encuentros', icon: Users, label: 'Encuentros' },
         { to: '/convenciones', icon: Calendar, label: 'Convenciones' },
-        ...(user.role === 'SUPER_ADMIN' || user.role === 'PASTOR'
+        ...(isAdmin()
             ? [
                 { to: '/usuarios', icon: Users, label: 'Usuarios' },
                 { to: '/auditoria', icon: Activity, label: 'Auditoría' }

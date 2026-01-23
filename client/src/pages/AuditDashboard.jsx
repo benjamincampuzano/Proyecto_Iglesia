@@ -90,7 +90,13 @@ const AuditDashboard = () => {
             'CONVENTION': 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300',
             'ENCUENTRO': 'bg-pink-100 text-pink-800 dark:bg-pink-900/30 dark:text-pink-300',
             'USER': 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300',
-            'SESSION': 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'
+            'SESSION': 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300',
+            'GOAL': 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300',
+            'ENCUENTRO_REGISTRATION': 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-300',
+            'CONVENTION_REGISTRATION': 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-300',
+            'ENCUENTRO_PAYMENT': 'bg-teal-100 text-teal-800 dark:bg-teal-900/30 dark:text-teal-300',
+            'CONVENTION_PAYMENT': 'bg-teal-100 text-teal-800 dark:bg-teal-900/30 dark:text-teal-300',
+            'ENCUENTRO_ATTENDANCE': 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300'
         };
         return colors[type] || 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300';
     };
@@ -123,13 +129,23 @@ const AuditDashboard = () => {
         'Usuario': 'Participante',
         'Evento': 'Evento',
         'Invitado': 'Nombre del Invitado',
-        'Encuentro': 'Nombre del Encuentro'
+        'Encuentro': 'Nombre del Encuentro',
+        'type': 'Tipo',
+        'targetValue': 'Objetivo',
+        'userId': 'ID Usuario',
+        'responsable': 'Responsable',
+        'amount': 'Monto',
+        'registrationId': 'ID Registro',
+        'classNumber': 'Clase Nº',
+        'attended': 'Asistió'
     };
 
     const renderDetails = (detailsStr) => {
         if (!detailsStr) return '-';
         try {
-            const details = JSON.parse(detailsStr);
+            // Check if detailsStr is already an object (sometimes API might return parsed JSON)
+            const details = typeof detailsStr === 'object' ? detailsStr : JSON.parse(detailsStr);
+
             if (details.targetUser) {
                 return (
                     <span className="flex flex-col">
@@ -153,9 +169,21 @@ const AuditDashboard = () => {
                     </span>
                 );
             }
-            return detailsStr;
+
+            // Fallback for other objects: render a simple key-value summary or string
+            return (
+                <span className="flex flex-col gap-1">
+                    {Object.entries(details).slice(0, 3).map(([key, val]) => (
+                        <span key={key} className="text-xs text-gray-600 dark:text-gray-300">
+                            <strong>{propertyMap[key] || key}:</strong> {typeof val === 'object' ? JSON.stringify(val) : String(val)}
+                        </span>
+                    ))}
+                </span>
+            );
+
         } catch (e) {
-            return detailsStr;
+            // If parsing fails or it's just a string, return as string
+            return typeof detailsStr === 'string' ? detailsStr : JSON.stringify(detailsStr);
         }
     };
 
@@ -178,7 +206,7 @@ const AuditDashboard = () => {
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                     <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700">
                         <h3 className="text-lg font-semibold mb-4 text-gray-800 dark:text-white">Inicios de Sesión (Últimos 30 días)</h3>
-                        <div className="h-64">
+                        <div className="h-64 w-full min-h-[250px]">
                             <ResponsiveContainer width="100%" height="100%">
                                 <AreaChart data={stats.loginsPerDay}>
                                     <defs>
@@ -199,7 +227,7 @@ const AuditDashboard = () => {
 
                     <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700">
                         <h3 className="text-lg font-semibold mb-4 text-gray-800 dark:text-white">Distribución de Acciones</h3>
-                        <div className="h-64">
+                        <div className="h-64 w-full min-h-[250px]">
                             <ResponsiveContainer width="100%" height="100%">
                                 <BarChart data={stats.actionDistribution}>
                                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" />
@@ -248,6 +276,7 @@ const AuditDashboard = () => {
                         <option value="CONVENTION">Convenciones</option>
                         <option value="ENCUENTRO">Encuentros</option>
                         <option value="USER">Usuarios</option>
+                        <option value="GOAL">Metas</option>
                         <option value="SESSION">Sesiones</option>
                     </select>
                 </div>
@@ -313,7 +342,9 @@ const AuditDashboard = () => {
                                                     <p className="text-sm font-medium text-gray-900 dark:text-white leading-none">
                                                         {log.user?.fullName || 'Sistema'}
                                                     </p>
-                                                    <p className="text-xs text-gray-500 mt-1">{log.user?.role}</p>
+                                                    <p className="text-xs text-gray-500 mt-1">
+                                                        {Array.isArray(log.user?.roles) ? log.user.roles.join(', ').replace(/_/g, ' ') : log.user?.role}
+                                                    </p>
                                                 </div>
                                             </div>
                                         </td>

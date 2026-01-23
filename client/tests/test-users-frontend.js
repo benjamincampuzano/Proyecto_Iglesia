@@ -27,7 +27,7 @@ describe('Módulo de Usuarios - Frontend', () => {
     describe('Obtención de Usuarios', () => {
         test('debería obtener lista de usuarios exitosamente', async () => {
             const mockUsers = [
-                { id: 1, fullName: 'Usuario 1', email: 'user1@example.com', role: 'MIEMBRO' },
+                { id: 1, fullName: 'Usuario 1', email: 'user1@example.com', role: 'DISCIPULO' },
                 { id: 2, fullName: 'Usuario 2', email: 'user2@example.com', role: 'LIDER_CELULA' }
             ];
 
@@ -94,7 +94,7 @@ describe('Módulo de Usuarios - Frontend', () => {
                 fullName: 'Nuevo Usuario',
                 email: 'nuevo@example.com',
                 password: 'password123',
-                role: 'MIEMBRO'
+                role: 'DISCIPULO'
             };
 
             const mockResponse = {
@@ -140,7 +140,7 @@ describe('Módulo de Usuarios - Frontend', () => {
                 fullName: 'Usuario Test',
                 email: 'email-invalido',
                 password: 'password123',
-                role: 'MIEMBRO'
+                role: 'DISCIPULO'
             };
 
             const result = await createUser(userWithInvalidEmail);
@@ -162,7 +162,7 @@ describe('Módulo de Usuarios - Frontend', () => {
                 fullName: 'Usuario Existente',
                 email: 'existente@example.com',
                 password: 'password123',
-                role: 'MIEMBRO'
+                role: 'DISCIPULO'
             };
 
             const result = await createUser(existingUser);
@@ -320,7 +320,7 @@ describe('Módulo de Usuarios - Frontend', () => {
                 id: 1,
                 fullName: 'Usuario Test',
                 email: 'test@example.com',
-                role: 'MIEMBRO',
+                role: 'DISCIPULO',
                 phone: '555-1234',
                 address: 'Dirección de prueba'
             };
@@ -353,7 +353,7 @@ describe('Módulo de Usuarios - Frontend', () => {
                 fullName: 'AB',
                 email: 'test@example.com',
                 password: 'password123',
-                role: 'MIEMBRO'
+                role: 'DISCIPULO'
             };
 
             const result = createUser(userWithShortName);
@@ -367,7 +367,7 @@ describe('Módulo de Usuarios - Frontend', () => {
                 fullName: 'Usuario Test',
                 email: 'test@example.com',
                 password: '123',
-                role: 'MIEMBRO'
+                role: 'DISCIPULO'
             };
 
             const result = createUser(userWithWeakPassword);
@@ -418,7 +418,7 @@ describe('Integración con UI - Gestión de Usuarios', () => {
         `;
 
         const mockUsers = [
-            { id: 1, fullName: 'Usuario 1', email: 'user1@example.com', role: 'MIEMBRO' },
+            { id: 1, fullName: 'Usuario 1', email: 'user1@example.com', role: 'DISCIPULO' },
             { id: 2, fullName: 'Usuario 2', email: 'user2@example.com', role: 'LIDER_CELULA' }
         ];
 
@@ -451,7 +451,7 @@ describe('Integración con UI - Gestión de Usuarios', () => {
                     <input type="password" id="password" placeholder="Contraseña" />
                     <select id="role">
                         <option value="">Seleccionar rol</option>
-                        <option value="MIEMBRO">Miembro</option>
+                        <option value="DISCIPULO">DISCIPULO</option>
                         <option value="LIDER_CELULA">Líder de Célula</option>
                         <option value="LIDER_DOCE">Líder de Doce</option>
                     </select>
@@ -531,7 +531,7 @@ describe('Integración con UI - Gestión de Usuarios', () => {
             ok: true,
             json: async () => ({
                 users: [
-                    { id: 1, fullName: 'Usuario 1', email: 'user1@example.com', role: 'MIEMBRO' }
+                    { id: 1, fullName: 'Usuario 1', email: 'user1@example.com', role: 'DISCIPULO' }
                 ],
                 pagination: {
                     currentPage: 1,

@@ -31,11 +31,11 @@ export const AuthProvider = ({ children }) => {
                     }
                 } catch (error) {
                     console.error('Error fetching user profile:', error);
-                    // If error is 401, token might be invalid, logout
-                    if (error.response?.status === 401) {
+                    // If error is 401 or 404 (user not found/stale token), logout
+                    if (error.response?.status === 401 || error.response?.status === 404) {
                         logout();
                     } else {
-                        // Fallback to stored user if server fails but not 401
+                        // Fallback to stored user if server fails but not 401/404
                         const storedUser = JSON.parse(localStorage.getItem('user'));
                         if (storedUser) setUser(storedUser);
                     }
@@ -92,10 +92,33 @@ export const AuthProvider = ({ children }) => {
 
     const updateProfile = (updatedUser) => {
         setUser(updatedUser);
+        localStorage.setItem('user', JSON.stringify(updatedUser));
+    };
+
+    const hasRole = (roleName) => {
+        if (!user || !user.roles) return false;
+        return user.roles.includes(roleName);
+    };
+
+    const hasAnyRole = (roleNames = []) => {
+        if (!user || !user.roles) return false;
+        return roleNames.some(role => user.roles.includes(role));
+    };
+
+    const isAdmin = () => {
+        return hasAnyRole(['SUPER_ADMIN', 'PASTOR', 'LIDER_DOCE']);
+    };
+
+    const isSuperAdmin = () => {
+        return hasRole('SUPER_ADMIN');
     };
 
     return (
-        <AuthContext.Provider value={{ user, login, register, setup, logout, updateProfile, loading, isInitialized }}>
+        <AuthContext.Provider value={{
+            user, login, register, setup, logout, updateProfile,
+            loading, isInitialized,
+            hasRole, hasAnyRole, isAdmin, isSuperAdmin
+        }}>
             {children}
         </AuthContext.Provider>
     );

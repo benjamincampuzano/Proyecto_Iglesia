@@ -1,5 +1,6 @@
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
+const { getUserNetwork } = require('../utils/networkUtils');
 
 // Create or update church attendance for a specific date
 const recordAttendance = async (req, res) => {
@@ -55,81 +56,61 @@ const getAttendanceByDate = async (req, res) => {
                 user: {
                     select: {
                         id: true,
-                        fullName: true,
+                        profile: { select: { fullName: true } },
                         email: true,
-                        role: true
+                        roles: {
+                            include: { role: true }
+                        }
                     }
                 }
             },
             orderBy: {
                 user: {
-                    fullName: 'asc'
+                    profile: { fullName: 'asc' }
                 }
             }
         });
 
-        res.json(attendances);
+        // Format response to flatten structure for frontend if needed, 
+        // or frontend can handle it. Let's keep it close to previous but safe.
+        // Frontend likely expects `user.fullName` and `user.role`.
+        // We can map it.
+        const formattedAttendances = attendances.map(a => ({
+            ...a,
+            user: {
+                ...a.user,
+                fullName: a.user.profile?.fullName || 'Sin Nombre',
+                role: a.user.roles.map(r => r.role.name).join(', ') // Simple join for display
+            }
+        }));
+
+        res.json(formattedAttendances);
     } catch (error) {
         console.error('Error fetching church attendance:', error);
         res.status(500).json({ error: 'Error fetching attendance' });
     }
 };
 
-// Helper to get network IDs (recursive)
-const getNetworkIds = async (leaderId) => {
-    const id = parseInt(leaderId);
-    if (isNaN(id)) return [];
-
-    // Find all users who report to this leader via ANY of the hierarchy fields
-    const directDisciples = await prisma.user.findMany({
-        where: {
-            OR: [
-                { leaderId: id },
-                { liderDoceId: id },
-                { liderCelulaId: id },
-                { pastorId: id }
-            ]
-        },
-        select: { id: true }
-    });
-
-    let networkIds = directDisciples.map(d => d.id);
-
-    // Recursively find their disciples
-    // Note: We use the same loose criteria recursively, which is correct because
-    // a user under Concepcion might have leaderId=Concepcion OR liderCelulaId=Concepcion.
-    for (const disciple of directDisciples) {
-        // Optimization: Avoid infinite loops if circular ref exists (though valid tree shouldn't have them)
-        // We can pass a 'visited' set if needed, but for now simple recursion.
-        // To be safe, let's not recurse if the disciple ID is the same as leaderId (impossible but safe).
-        if (disciple.id !== id) {
-            const subNetwork = await getNetworkIds(disciple.id);
-            networkIds = [...networkIds, ...subNetwork];
-        }
-    }
-
-    // Deduplicate just in case
-    return [...new Set(networkIds)];
-};
-
 // Get members for attendance marking (filtered by role)
 const getAllMembers = async (req, res) => {
     try {
-        const { role, id } = req.user;
+        const { id, roles } = req.user;
         const userId = parseInt(id);
+        const userRoles = roles || [];
         let where = {};
 
-        if (role === 'LIDER_DOCE' || role === 'PASTOR') {
-            const networkIds = await getNetworkIds(userId);
+        if (userRoles.includes('LIDER_DOCE') || userRoles.includes('PASTOR')) {
+            const networkIds = await getUserNetwork(userId);
             // Include both the network and the leader themselves
             where = {
                 id: { in: [...networkIds, userId] }
             };
-        } else if (role === 'LIDER_CELULA') {
+        } else if (userRoles.includes('LIDER_CELULA')) {
             // LIDER_CELULA should see their disciples (network) AND their cell members
-            const networkIds = await getNetworkIds(userId);
+            const networkIds = await getUserNetwork(userId);
 
             // Find members of cells led by this user
+            // Note: 'cell' with 'leaderId' IS valid in schema (User -> Cell via CellLeader relation)
             const cellMembers = await prisma.user.findMany({
                 where: { cell: { leaderId: userId } },
                 select: { id: true }
@@ -142,7 +123,7 @@ const getAllMembers = async (req, res) => {
             where = {
                 id: { in: allIds }
             };
-        } else if (role !== 'SUPER_ADMIN') {
+        } else if (!userRoles.includes('SUPER_ADMIN') && !userRoles.includes('ADMIN')) {
             // Regular members only see themselves
             where = { id: userId };
         }
@@ -151,27 +132,39 @@ const getAllMembers = async (req, res) => {
             where,
             select: {
                 id: true,
-                fullName: true,
+                profile: { select: { fullName: true } },
                 email: true,
-                role: true
+                roles: {
+                    include: { role: true }
+                }
             },
             orderBy: {
-                fullName: 'asc'
+                profile: { fullName: 'asc' }
             }
         });
 
-        res.json(members);
+        // Format for frontend
+        const formattedMembers = members.map(m => ({
+            id: m.id,
+            fullName: m.profile?.fullName || 'Sin Nombre',
+            email: m.email,
+            role: m.roles.map(r => r.role.name).join(', ')
+        }));
+
+        res.json(formattedMembers);
     } catch (error) {
         console.error('Error fetching members:', error);
         res.status(500).json({ error: 'Error fetching members' });
     }
 };
 
+
 // Get attendance statistics
 const getAttendanceStats = async (req, res) => {
     try {
         const { startDate, endDate } = req.query;
-        const { role, id } = req.user;
+        const { id, roles } = req.user;
+        const userRoles = roles || [];
 
         const where = {};
         if (startDate && endDate) {
@@ -181,12 +174,22 @@ const getAttendanceStats = async (req, res) => {
             };
         }
 
-        if (role === 'LIDER_DOCE' || role === 'PASTOR' || role === 'LIDER_CELULA') {
-            const networkIds = await getNetworkIds(id);
+        if (userRoles.includes('LIDER_DOCE') || userRoles.includes('PASTOR') || userRoles.includes('LIDER_CELULA')) {
+            const networkIds = await getUserNetwork(id);
+            networkIds.push(id);
             where.userId = { in: networkIds };
-        } else if (role !== 'SUPER_ADMIN') {
+        } else if (!userRoles.includes('SUPER_ADMIN')) {
             where.userId = id;
         }
+
+        // Always exclude SUPER_ADMIN from reports
+        where.user = {
+            roles: {
+                none: {
+                    role: { name: 'SUPER_ADMIN' }
+                }
+            }
+        };
 
         const total = await prisma.churchAttendance.count({ where });
         const present = await prisma.churchAttendance.count({
@@ -221,13 +224,24 @@ const getDailyStats = async (req, res) => {
             }
         };
 
-        const { role, id } = req.user;
-        if (role === 'LIDER_DOCE' || role === 'PASTOR' || role === 'LIDER_CELULA') {
-            const networkIds = await getNetworkIds(id);
+        const { id, roles } = req.user;
+        const userRoles = roles || [];
+        if (userRoles.includes('LIDER_DOCE') || userRoles.includes('PASTOR') || userRoles.includes('LIDER_CELULA')) {
+            const networkIds = await getUserNetwork(id);
+            networkIds.push(id);
             where.userId = { in: networkIds };
-        } else if (role !== 'SUPER_ADMIN') {
+        } else if (!userRoles.includes('SUPER_ADMIN')) {
             where.userId = id;
         }
+
+        // Always exclude SUPER_ADMIN from reports
+        where.user = {
+            roles: {
+                none: {
+                    role: { name: 'SUPER_ADMIN' }
+                }
+            }
+        };
 
         // Fetch attendance records within date range
         const attendances = await prisma.churchAttendance.findMany({

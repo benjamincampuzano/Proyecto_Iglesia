@@ -6,7 +6,7 @@ import * as XLSX from 'xlsx';
 import { Download, Users, BookOpen, UserCheck, TrendingUp } from 'lucide-react';
 
 const SchoolLeaderStats = () => {
-    const { user } = useAuth();
+    const { user, hasAnyRole } = useAuth();
     const [data, setData] = useState([]);
     const [loading, setLoading] = useState(true);
 
@@ -48,7 +48,7 @@ const SchoolLeaderStats = () => {
                     <h2 className="text-2xl font-bold text-gray-800 dark:text-white">Reporte Estadístico por Líder</h2>
                     <p className="text-gray-500 dark:text-gray-400">Desempeño de estudiantes agrupado por Líder de 12</p>
                 </div>
-                {['SUPER_ADMIN', 'LIDER_DOCE'].includes(user?.role) && (
+                {hasAnyRole(['SUPER_ADMIN', 'LIDER_DOCE']) && (
                     <button
                         onClick={downloadExcel}
                         className="flex items-center px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg shadow transition-all"

@@ -8,7 +8,7 @@ const prisma = new PrismaClient();
 
 const register = async (req, res) => {
     try {
-        const { email, password, fullName, role, sex, phone, address, city, liderDoceId, documentType, documentNumber, birthDate } = req.body;
+        const { email, password, fullName, sex, phone, address, city, parentId, roleInHierarchy, documentType, documentNumber, birthDate } = req.body;
 
         const validation = validatePassword(password, { email, fullName });
         if (!validation.isValid) {
@@ -17,44 +17,65 @@ const register = async (req, res) => {
 
         const hashedPassword = await bcrypt.hash(password, 10);
 
-        const userData = {
-            email,
-            password: hashedPassword,
-            fullName,
-            role: role || 'DISCIPULO',
-            sex,
-            phone,
-            address,
-            city,
-            documentType,
-            documentNumber,
-            birthDate: birthDate ? new Date(birthDate) : null
-        };
-
-        if (liderDoceId) {
-            const numericLdoceId = parseInt(liderDoceId);
-            userData.liderDoceId = numericLdoceId;
-
-            // Inherit pastor from the 12 leader
-            const leader12 = await prisma.user.findUnique({
-                where: { id: numericLdoceId },
-                select: { pastorId: true }
+        // Transaction to ensure atomicity
+        const user = await prisma.$transaction(async (tx) => {
+            // 1. Create User
+            const newUser = await tx.user.create({
+                data: {
+                    email,
+                    password: hashedPassword,
+                    phone,
+                    profile: {
+                        create: {
+                            fullName,
+                            sex,
+                            address,
+                            city,
+                            documentType,
+                            documentNumber,
+                            birthDate: birthDate ? new Date(birthDate) : null
+                        }
+                    }
+                }
             });
-            if (leader12 && leader12.pastorId) {
-                userData.pastorId = leader12.pastorId;
-            }
-        }
 
-        const user = await prisma.user.create({
-            data: userData,
-            include: {
-                pastor: true,
-                liderDoce: true,
-                liderCelula: true
+            // 2. Assign default role (DISCIPULO/MIEMBRO)
+            const discipleRole = await tx.role.upsert({
+                where: { name: 'DISCIPULO' },
+                update: {},
+                create: { name: 'DISCIPULO' }
+            });
+
+            await tx.userRole.create({
+                data: {
+                    userId: newUser.id,
+                    roleId: discipleRole.id
+                }
+            });
+
+            // 3. Handle Hierarchy if parent provided
+            if (parentId) {
+                await tx.userHierarchy.create({
+                    data: {
+                        parentId: parseInt(parentId),
+                        childId: newUser.id,
+                        role: roleInHierarchy || 'DISCIPULO'
+                    }
+                });
             }
+
+            return tx.user.findUnique({
+                where: { id: newUser.id },
+                include: {
+                    profile: true,
+                    roles: { include: { role: true } },
+                    parents: { include: { parent: { include: { profile: true } } } }
+                }
+            });
         });
 
-        const token = jwt.sign({ userId: user.id, role: user.role }, process.env.JWT_SECRET, {
+        const roles = user.roles.map(r => r.role.name);
+        const token = jwt.sign({ userId: user.id, roles }, process.env.JWT_SECRET, {
             expiresIn: '1d',
         });
 
@@ -63,15 +84,12 @@ const register = async (req, res) => {
             user: {
                 id: user.id,
                 email: user.email,
-                fullName: user.fullName,
-                role: user.role,
+                fullName: user.profile.fullName,
+                roles,
                 phone: user.phone,
-                address: user.address,
-                city: user.city,
-                sex: user.sex,
-                pastorId: user.pastorId,
-                liderDoceId: user.liderDoceId,
-                liderCelulaId: user.liderCelulaId
+                address: user.profile.address,
+                city: user.profile.city,
+                sex: user.profile.sex
             }
         });
     } catch (error) {
@@ -84,7 +102,14 @@ const login = async (req, res) => {
     try {
         const { email, password } = req.body;
 
-        const user = await prisma.user.findUnique({ where: { email } });
+        const user = await prisma.user.findUnique({
+            where: { email },
+            include: {
+                profile: true,
+                roles: { include: { role: true } }
+            }
+        });
+
         if (!user) {
             return res.status(401).json({ message: 'Invalid credentials' });
         }
@@ -94,33 +119,28 @@ const login = async (req, res) => {
             return res.status(401).json({ message: 'Invalid credentials' });
         }
 
-        const token = jwt.sign({ userId: user.id, role: user.role }, process.env.JWT_SECRET, {
+        const roles = user.roles.map(r => r.role.name);
+        const token = jwt.sign({ userId: user.id, roles }, process.env.JWT_SECRET, {
             expiresIn: '1d',
         });
 
         // Log the login activity
-        await logActivity(user.id, 'LOGIN', 'SESSION');
+        await logActivity(user.id, 'LOGIN', 'USER', user.id, null, req.ip, req.headers['user-agent']);
 
-        // Update last login
-        await prisma.user.update({
-            where: { id: user.id },
-            data: { lastLogin: new Date() }
-        });
+        // Update last login (we don't have lastLogin field in User anymore, choosing to ignore or add to profile if needed)
+        // For now, removing it as it's not in the new schema
 
         res.status(200).json({
             token,
             user: {
                 id: user.id,
                 email: user.email,
-                fullName: user.fullName,
-                role: user.role,
+                fullName: user.profile.fullName,
+                roles,
                 phone: user.phone,
-                address: user.address,
-                city: user.city,
-                sex: user.sex,
-                pastorId: user.pastorId,
-                liderDoceId: user.liderDoceId,
-                liderCelulaId: user.liderCelulaId
+                address: user.profile.address,
+                city: user.profile.city,
+                sex: user.profile.sex
             }
         });
     } catch (error) {
@@ -131,11 +151,31 @@ const login = async (req, res) => {
 
 const getPublicLeaders = async (req, res) => {
     try {
+        // Fetch users who have specific hierarchy roles or system roles
         const leaders = await prisma.user.findMany({
-            where: { role: 'LIDER_DOCE' },
-            select: { id: true, fullName: true, role: true }
+            where: {
+                roles: {
+                    some: {
+                        role: {
+                            name: { in: ['PASTOR', 'LIDER_DOCE', 'SUPER_ADMIN'] }
+                        }
+                    }
+                }
+            },
+            select: {
+                id: true,
+                profile: { select: { fullName: true } },
+                roles: { include: { role: { select: { name: true } } } }
+            }
         });
-        res.json(leaders);
+
+        const formattedLeaders = leaders.map(l => ({
+            id: l.id,
+            fullName: l.profile.fullName,
+            roles: l.roles.map(r => r.role.name)
+        }));
+
+        res.json(formattedLeaders);
     } catch (error) {
         console.error('Error fetching public leaders:', error);
         res.status(500).json({ message: 'Error fetching leaders' });
@@ -168,38 +208,57 @@ const registerSetup = async (req, res) => {
 
         const hashedPassword = await bcrypt.hash(password, 10);
 
-        const user = await prisma.user.create({
-            data: {
-                email,
-                password: hashedPassword,
-                fullName,
-                role: 'SUPER_ADMIN',
-                sex,
-                phone,
-                address,
-                city,
-                documentType,
-                documentNumber,
-                birthDate: birthDate ? new Date(birthDate) : null
-            },
+        const user = await prisma.$transaction(async (tx) => {
+            const adminRole = await tx.role.upsert({
+                where: { name: 'SUPER_ADMIN' },
+                update: {},
+                create: { name: 'SUPER_ADMIN' }
+            });
+
+            const newUser = await tx.user.create({
+                data: {
+                    email,
+                    password: hashedPassword,
+                    phone,
+                    profile: {
+                        create: {
+                            fullName,
+                            sex: sex || undefined,
+                            address,
+                            city,
+                            documentType: documentType || undefined,
+                            documentNumber,
+                            birthDate: birthDate ? new Date(birthDate) : null
+                        }
+                    }
+                },
+                include: { profile: true }
+            });
+
+            await tx.userRole.create({
+                data: {
+                    userId: newUser.id,
+                    roleId: adminRole.id
+                }
+            });
+
+            return newUser;
         });
 
-        const token = jwt.sign({ userId: user.id, role: user.role }, process.env.JWT_SECRET, {
+        const roles = ['SUPER_ADMIN'];
+        const token = jwt.sign({ userId: user.id, roles }, process.env.JWT_SECRET, {
             expiresIn: '1d',
         });
 
-        await logActivity(user.id, 'CREATE', 'USER', user.id, 'Inicialización del sistema: Primer Usuario (SUPER_ADMIN)');
+        await logActivity(user.id, 'CREATE', 'USER', user.id, { message: 'Inicialización del sistema: Primer Usuario (SUPER_ADMIN)' }, req.ip, req.headers['user-agent']);
 
         res.status(201).json({
             token,
             user: {
                 id: user.id,
                 email: user.email,
-                fullName: user.fullName,
-                role: user.role,
-                pastorId: user.pastorId,
-                liderDoceId: user.liderDoceId,
-                liderCelulaId: user.liderCelulaId
+                fullName: user.profile.fullName,
+                roles
             },
         });
     } catch (err) {

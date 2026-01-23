@@ -23,6 +23,7 @@ const Encuentros = lazy(() => import('./pages/Encuentros'));
 const AuditDashboard = lazy(() => import('./pages/AuditDashboard'));
 const UserManagement = lazy(() => import('./pages/UserManagement'));
 const SetupWizard = lazy(() => import('./pages/SetupWizard'));
+const Metas = lazy(() => import('./pages/Metas'));
 
 // Placeholder components for now
 
@@ -34,9 +35,10 @@ const PrivateRoute = ({ children }) => {
 };
 
 const AdminRoute = ({ children }) => {
-  const { user, loading } = useAuth();
+  const { user, loading, isAdmin } = useAuth();
   if (loading) return <div>Loading...</div>;
-  return user && (user.role === 'SUPER_ADMIN' || user.role === 'PASTOR') ? children : <Navigate to="/" />;
+  const authorized = isAdmin();
+  return user && authorized ? children : <Navigate to="/" />;
 };
 
 const PageLoader = () => (
@@ -103,6 +105,7 @@ function App() {
 
                 <Route path="/" element={<PrivateRoute><Layout /></PrivateRoute>}>
                   <Route index element={<Home />} />
+                  <Route path="metas" element={<Metas />} />
                   <Route path="ganar" element={<Ganar />} />
                   <Route path="consolidar" element={<Consolidar />} />
                   <Route path="discipular" element={<Discipular />} />

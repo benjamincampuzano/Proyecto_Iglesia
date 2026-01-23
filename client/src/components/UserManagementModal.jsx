@@ -29,16 +29,16 @@ const UserManagementModal = ({ isOpen, onClose }) => {
         liderCelulaId: ''
     });
 
-    const lideresDoce = users.filter(u => u.role === 'LIDER_DOCE');
-    const pastores = users.filter(u => u.role === 'PASTOR');
-    const lideresCelula = users.filter(u => u.role === 'LIDER_CELULA');
+    const lideresDoce = users.filter(u => u.roles?.includes('LIDER_DOCE'));
+    const pastores = users.filter(u => u.roles?.includes('PASTOR'));
+    const lideresCelula = users.filter(u => u.roles?.includes('LIDER_CELULA'));
 
     const getAssignableRoles = () => {
-        if (!currentUser) return [];
-        if (currentUser.role === 'SUPER_ADMIN') return ['DISCIPULO', 'LIDER_CELULA', 'LIDER_DOCE', 'PASTOR', 'SUPER_ADMIN'];
-        if (currentUser.role === 'PASTOR') return ['DISCIPULO', 'LIDER_CELULA', 'LIDER_DOCE', 'PASTOR'];
-        if (currentUser.role === 'LIDER_DOCE') return ['DISCIPULO', 'LIDER_CELULA'];
-        if (currentUser.role === 'LIDER_CELULA') return ['DISCIPULO'];
+        if (!currentUser || !currentUser.roles) return [];
+        if (currentUser.roles.includes('SUPER_ADMIN')) return ['DISCIPULO', 'LIDER_CELULA', 'LIDER_DOCE', 'PASTOR', 'SUPER_ADMIN'];
+        if (currentUser.roles.includes('PASTOR')) return ['DISCIPULO', 'LIDER_CELULA', 'LIDER_DOCE', 'PASTOR'];
+        if (currentUser.roles.includes('LIDER_DOCE')) return ['DISCIPULO', 'LIDER_CELULA'];
+        if (currentUser.roles.includes('LIDER_CELULA')) return ['DISCIPULO'];
         return [];
     };
 
@@ -57,7 +57,7 @@ const UserManagementModal = ({ isOpen, onClose }) => {
         setLoading(true);
         try {
             const res = await api.get('/users');
-            setUsers(res.data.users);
+            setUsers(res.data);
         } catch (err) {
             setError(err.response?.data?.message || 'Error al cargar usuarios');
         } finally {
@@ -182,8 +182,8 @@ const UserManagementModal = ({ isOpen, onClose }) => {
     // We rely on the API response to be correct.
 
     // Optional: Client-side enforcing for Pastor just in case
-    if (currentUser?.role === 'PASTOR') {
-        displayUsers = users.filter(u => u.role === 'LIDER_DOCE' || u.id === currentUser.id);
+    if (currentUser?.roles?.includes('PASTOR')) {
+        displayUsers = users.filter(u => u.roles?.includes('LIDER_DOCE') || u.id === currentUser.id);
     }
 
     const filteredUsers = displayUsers.filter(
@@ -223,7 +223,7 @@ const UserManagementModal = ({ isOpen, onClose }) => {
 
 
                     {/* Create User Button - Hidden for Members */}
-                    {currentUser?.role !== 'DISCIPULO' && (
+                    {currentUser?.roles?.every(r => r !== 'DISCIPULO') && (
                         <div className="flex flex-col sm:flex-row gap-4 mb-6">
                             <div className="flex-1 relative">
                                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
@@ -655,9 +655,13 @@ const UserManagementModal = ({ isOpen, onClose }) => {
                                                         ))}
                                                     </select>
                                                 ) : (
-                                                    <span className="inline-block px-2 py-1 bg-blue-900/30 text-blue-400 rounded text-xs">
-                                                        {user.role.replace('_', ' ')}
-                                                    </span>
+                                                    <div className="flex flex-wrap gap-1">
+                                                        {user.roles?.map(role => (
+                                                            <span key={role} className="inline-block px-2 py-1 bg-blue-900/30 text-blue-400 rounded text-xs">
+                                                                {role.replace('_', ' ')}
+                                                            </span>
+                                                        ))}
+                                                    </div>
                                                 )}
                                             </td>
                                             <td className="px-4 py-3">
@@ -774,7 +778,7 @@ const UserManagementModal = ({ isOpen, onClose }) => {
                                                             >
                                                                 <Edit2 size={18} />
                                                             </button>
-                                                            {currentUser?.role !== 'LIDER_DOCE' && (
+                                                            {(!currentUser?.roles?.includes('LIDER_CELULA') && !currentUser?.roles?.includes('LIDER_DOCE')) && (
                                                                 <button
                                                                     onClick={() => handleDeleteUser(user.id)}
                                                                     className="p-1 text-red-400 hover:text-red-300"

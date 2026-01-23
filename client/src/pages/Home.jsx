@@ -8,7 +8,7 @@ import NetworkTree from '../components/NetworkTree';
 const ConsolidatedStatsReport = lazy(() => import('../components/ConsolidatedStatsReport'));
 
 const Home = () => {
-    const { user } = useAuth();
+    const { user, hasRole, hasAnyRole, isSuperAdmin } = useAuth();
     const [pastores, setPastores] = useState([]);
     const [selectedLeader, setSelectedLeader] = useState(null);
     const [network, setNetwork] = useState(null);
@@ -17,16 +17,16 @@ const Home = () => {
     const [error, setError] = useState(null);
 
     useEffect(() => {
-        if (user?.role === 'SUPER_ADMIN') {
+        if (isSuperAdmin()) {
             fetchPastores();
-        } else if (['PASTOR', 'LIDER_DOCE', 'LIDER_CELULA', 'DISCIPULO'].includes(user?.role)) {
+        } else if (hasAnyRole(['PASTOR', 'LIDER_DOCE', 'LIDER_CELULA', 'DISCIPULO'])) {
             // Automatically load their network context
             // If disciple, show their hierarchy: Cell Leader -> Doce Leader -> Pastor
             let leaderId = user.id;
-            if (user.role === 'DISCIPULO') {
+            if (hasRole('DISCIPULO')) {
                 leaderId = user.liderCelulaId || user.liderDoceId || user.pastorId || user.id;
             }
-            handleSelectLeader({ id: leaderId, fullName: user.fullName, role: user.role });
+            handleSelectLeader({ id: leaderId, fullName: user.fullName, roles: user.roles });
             setLoading(false);
         } else {
             setLoading(false);
@@ -74,8 +74,8 @@ const Home = () => {
         );
     }
 
-    const canViewNetwork = ['SUPER_ADMIN', 'PASTOR', 'LIDER_DOCE', 'LIDER_CELULA', 'DISCIPULO'].includes(user?.role);
-    const canViewReport = ['SUPER_ADMIN', 'PASTOR', 'LIDER_DOCE'].includes(user?.role);
+    const canViewNetwork = hasAnyRole(['SUPER_ADMIN', 'PASTOR', 'LIDER_DOCE', 'LIDER_CELULA', 'DISCIPULO']);
+    const canViewReport = hasAnyRole(['SUPER_ADMIN', 'PASTOR', 'LIDER_DOCE']);
 
     return (
         <div className="space-y-8">
@@ -93,7 +93,7 @@ const Home = () => {
                 <div className="space-y-8">
                     {canViewNetwork ? (
                         <>
-                            {user?.role === 'SUPER_ADMIN' && (
+                            {isSuperAdmin() && (
                                 <div className="min-h-[200px]">
                                     <h2 className="text-2xl font-semibold text-gray-900 dark:text-white mb-4">
                                         Pastores
@@ -111,7 +111,7 @@ const Home = () => {
                                     {network && (
                                         <div>
                                             <h2 className="text-2xl font-semibold text-gray-900 dark:text-white mb-4">
-                                                {user?.role === 'SUPER_ADMIN'
+                                                {isSuperAdmin()
                                                     ? `Red de ${selectedLeader?.fullName}`
                                                     : 'Mi Red'
                                                 }

@@ -46,7 +46,7 @@ const UserManagement = () => {
         try {
             setLoading(true);
             const response = await api.get('/users');
-            setUsers(response.data.users);
+            setUsers(response.data);
         } catch (err) {
             setError('Error al cargar usuarios');
         } finally {
@@ -129,24 +129,24 @@ const UserManagement = () => {
         }
     };
 
-    const pastores = users.filter(u => u.role === 'PASTOR');
-    const lideresDoce = users.filter(u => u.role === 'LIDER_DOCE');
-    const lideresCelula = users.filter(u => u.role === 'LIDER_CELULA');
+    const pastores = users.filter(u => u.roles?.includes('PASTOR'));
+    const lideresDoce = users.filter(u => u.roles?.includes('LIDER_DOCE'));
+    const lideresCelula = users.filter(u => u.roles?.includes('LIDER_CELULA'));
 
     const filteredUsers = users.filter(u => {
         const matchesSearch = u.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
             u.email.toLowerCase().includes(searchTerm.toLowerCase());
-        const matchesRole = roleFilter === '' || u.role === roleFilter;
+        const matchesRole = roleFilter === '' || u.roles?.includes(roleFilter);
         const matchesSex = sexFilter === '' || u.sex === sexFilter;
         const matchesLiderDoce = liderDoceFilter === '' || u.liderDoceId === parseInt(liderDoceFilter);
         return matchesSearch && matchesRole && matchesSex && matchesLiderDoce;
     });
 
     const getAssignableRoles = () => {
-        if (!currentUser) return [];
-        if (currentUser.role === 'SUPER_ADMIN') return ['INVITADO', 'DISCIPULO', 'LIDER_CELULA', 'LIDER_DOCE', 'PASTOR', 'SUPER_ADMIN', 'PROFESOR', 'AUXILIAR'];
-        if (currentUser.role === 'PASTOR') return ['INVITADO', 'DISCIPULO', 'LIDER_CELULA', 'LIDER_DOCE', 'PASTOR'];
-        return ['INVITADO', 'DISCIPULO', 'LIDER_CELULA'];
+        if (!currentUser || !currentUser.roles) return [];
+        if (currentUser.roles.includes('SUPER_ADMIN')) return ['DISCIPULO', 'LIDER_CELULA', 'LIDER_DOCE', 'PASTOR', 'SUPER_ADMIN'];
+        if (currentUser.roles.includes('PASTOR')) return ['DISCIPULO', 'LIDER_CELULA', 'LIDER_DOCE', 'PASTOR'];
+        return ['DISCIPULO', 'LIDER_CELULA'];
     };
 
     return (
@@ -190,7 +190,7 @@ const UserManagement = () => {
                         onChange={(e) => setRoleFilter(e.target.value)}
                     >
                         <option value="">Todos los roles</option>
-                        {['SUPER_ADMIN', 'PASTOR', 'LIDER_DOCE', 'LIDER_CELULA', 'DISCIPULO', 'INVITADO', 'PROFESOR', 'AUXILIAR'].map(r => (
+                        {['SUPER_ADMIN', 'PASTOR', 'LIDER_DOCE', 'LIDER_CELULA', 'DISCIPULO'].map(r => (
                             <option key={r} value={r}>{r.replace('_', ' ')}</option>
                         ))}
                     </select>
@@ -278,9 +278,13 @@ const UserManagement = () => {
                                         </div>
                                     </td>
                                     <td className="px-6 py-4">
-                                        <span className={`inline-flex px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300`}>
-                                            {user.role.replace('_', ' ')}
-                                        </span>
+                                        <div className="flex flex-wrap gap-1">
+                                            {user.roles?.map(role => (
+                                                <span key={role} className="inline-flex px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300">
+                                                    {role.replace('_', ' ')}
+                                                </span>
+                                            ))}
+                                        </div>
                                     </td>
                                     <td className="px-6 py-4 text-right">
                                         <div className="flex justify-end gap-2">
@@ -289,7 +293,8 @@ const UserManagement = () => {
                                                     ...user,
                                                     pastorId: user.pastorId || '',
                                                     liderDoceId: user.liderDoceId || '',
-                                                    liderCelulaId: user.liderCelulaId || ''
+                                                    liderCelulaId: user.liderCelulaId || '',
+                                                    role: user.roles?.[0] || 'DISCIPULO'
                                                 })}
                                                 className="p-2 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors"
                                             >

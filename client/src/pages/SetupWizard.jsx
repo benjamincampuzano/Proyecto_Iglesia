@@ -12,7 +12,7 @@ const SetupWizard = () => {
         birthDate: '',
         email: '',
         password: '',
-        sex: 'HOMBRE',
+        sex: '',
         phone: '',
         address: '',
         city: ''

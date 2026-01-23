@@ -1,36 +1,31 @@
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
+const { logActivity } = require('../utils/auditLogger');
+const { getUserNetwork } = require('../utils/networkUtils');
 
 // Crear nuevo invitado
 const createGuest = async (req, res) => {
     try {
         let { name, phone, address, city, prayerRequest, invitedById, called, callObservation, visited, visitObservation, documentType, documentNumber, birthDate, sex } = req.body;
-        const user = req.user;
+        const { roles, id: currentUserId } = req.user;
 
         if (!name || !phone) {
             return res.status(400).json({ message: 'Name and phone are required' });
         }
 
-        // Case-insensitive role check
-        const userRole = user.role.toUpperCase();
-
-        // PASTOR no puede crear invitados directamente
-        // Solo puede ver invitados creados por su red (LIDER_DOCE, LIDER_CELULA, MIEMBRO)
-        if (userRole === 'PASTOR') {
+        // Security: PASTOR only consumes network data, doesn't create guests directly (optional historical rule)
+        // Allow SUPER_ADMIN and ADMIN to bypass this
+        const isAdmin = roles.includes('SUPER_ADMIN');
+        if (roles.includes('PASTOR') && !isAdmin) {
             return res.status(403).json({
                 message: 'Los usuarios con rol PASTOR no pueden crear invitados directamente. Los invitados deben ser creados por LIDER_DOCE, LIDER_CELULA o DISCIPULO.'
             });
         }
 
-        if (userRole === 'LIDER_CELULA' || userRole === 'DISCIPULO') {
-            // LIDER_CELULA y DISCIPULO solo pueden crear invitados para sí mismos
-            invitedById = user.id;
-        } else {
-            // SUPER_ADMIN y LIDER_DOCE pueden especificar invitedById
-            // Si no se especifica, por defecto es el usuario actual
-            if (!invitedById) {
-                invitedById = user.id;
-            }
+        if (roles.some(r => ['LIDER_CELULA', 'DISCIPULO', 'DISCIPULO'].includes(r))) {
+            invitedById = currentUserId;
+        } else if (!invitedById) {
+            invitedById = currentUserId;
         }
 
         const guest = await prisma.guest.create({
@@ -52,13 +47,15 @@ const createGuest = async (req, res) => {
             },
             include: {
                 invitedBy: {
-                    select: { id: true, fullName: true, email: true },
+                    include: { profile: true }
                 },
                 assignedTo: {
-                    select: { id: true, fullName: true, email: true },
+                    include: { profile: true }
                 },
             },
         });
+
+        await logActivity(currentUserId, 'CREATE', 'GUEST', guest.id, { name: guest.name }, req.ip, req.headers['user-agent']);
 
         res.status(201).json({ guest });
     } catch (error) {
@@ -67,78 +64,41 @@ const createGuest = async (req, res) => {
     }
 };
 
-// Función auxiliar para obtener todos los usuarios en la red de un líder (discípulos y sub-discípulos)
-const getUserNetwork = async (userId) => {
-    const id = parseInt(userId);
-    if (isNaN(id)) return [];
-
-    // Find all users who report to this leader via ANY of the hierarchy fields
-    const directDisciples = await prisma.user.findMany({
-        where: {
-            OR: [
-                { leaderId: id },
-                { liderDoceId: id },
-                { liderCelulaId: id },
-                { pastorId: id }
-            ]
-        },
-        select: { id: true }
-    });
-
-    let networkIds = directDisciples.map(d => d.id);
-
-    // Recursively find their disciples
-    for (const disciple of directDisciples) {
-        if (disciple.id !== id) {
-            const subNetwork = await getUserNetwork(disciple.id);
-            networkIds = [...networkIds, ...subNetwork];
-        }
-    }
-
-    // Filter out any undefined/null values as safety measure and deduplicate
-    return [...new Set(networkIds.filter(id => id != null))];
-};
-
 // Obtener todos los invitados con filtros opcionales
 const getAllGuests = async (req, res) => {
     try {
         const { status, invitedById, assignedToId, search, liderDoceId } = req.query;
-        const user = req.user; // Obtener usuario autenticado de la petición
+        const { roles, id: currentUserId } = req.user;
 
         let securityFilter = {};
 
         // Aplicar visibilidad basada en roles
-        if (user.role === 'SUPER_ADMIN') {
-            // Super admin puede ver todos los invitados
+        // Allow ADMIN to see everything like SUPER_ADMIN
+        if (roles.includes('SUPER_ADMIN')) {
             securityFilter = {};
-        } else if (user.role === 'LIDER_DOCE' || user.role === 'LIDER_CELULA' || user.role === 'PASTOR') {
-            // LIDER_DOCE, LIDER_CELULA y PASTOR pueden ver invitados invitados/asignados a cualquiera en su red
-            const userId = parseInt(user.id);
-            const networkUserIds = await getUserNetwork(userId);
+        } else if (roles.some(r => ['PASTOR', 'LIDER_DOCE', 'LIDER_CELULA'].includes(r))) {
+            const networkUserIds = await getUserNetwork(currentUserId);
             securityFilter = {
                 OR: [
-                    { invitedById: { in: [...networkUserIds, userId] } },
-                    { assignedToId: { in: [...networkUserIds, userId] } }
+                    { invitedById: { in: [...networkUserIds, currentUserId] } },
+                    { assignedToId: { in: [...networkUserIds, currentUserId] } }
                 ]
             };
         } else {
-            // LIDER_CELULA y DISCIPULO solo pueden ver:
-            // 1. Invitados que ellos invitaron Y no están asignados a alguien más
-            // 2. Invitados asignados a ellos
             securityFilter = {
                 OR: [
                     {
                         AND: [
-                            { invitedById: user.id },
+                            { invitedById: currentUserId },
                             {
                                 OR: [
                                     { assignedToId: null },
-                                    { assignedToId: user.id }
+                                    { assignedToId: currentUserId }
                                 ]
                             }
                         ]
                     },
-                    { assignedToId: user.id }
+                    { assignedToId: currentUserId }
                 ]
             };
         }
@@ -160,9 +120,8 @@ const getAllGuests = async (req, res) => {
             const idsToCheck = [...networkIds, parseInt(liderDoceId)];
 
             if (invitedById) {
-                // If filtering by specific inviter AND Lider Doce, prevent conflict or check intersection
                 if (!idsToCheck.includes(parseInt(invitedById))) {
-                    queryFilters.invitedById = -1; // Force empty result, intersection is empty
+                    queryFilters.invitedById = -1;
                 } else {
                     queryFilters.invitedById = parseInt(invitedById);
                 }
@@ -173,7 +132,6 @@ const getAllGuests = async (req, res) => {
             queryFilters.invitedById = parseInt(invitedById);
         }
 
-        // Combinar filtro de seguridad y filtros de consulta
         const finalWhere = Object.keys(securityFilter).length > 0
             ? { AND: [securityFilter, queryFilters] }
             : queryFilters;
@@ -182,20 +140,20 @@ const getAllGuests = async (req, res) => {
             where: finalWhere,
             include: {
                 invitedBy: {
-                    select: { id: true, fullName: true, email: true },
+                    include: { profile: true }
                 },
                 assignedTo: {
-                    select: { id: true, fullName: true, email: true },
+                    include: { profile: true }
                 },
                 calls: {
                     include: {
-                        caller: { select: { fullName: true } }
+                        caller: { include: { profile: true } }
                     },
                     orderBy: { date: 'desc' }
                 },
                 visits: {
                     include: {
-                        visitor: { select: { fullName: true } }
+                        visitor: { include: { profile: true } }
                     },
                     orderBy: { date: 'desc' }
                 }
@@ -203,7 +161,16 @@ const getAllGuests = async (req, res) => {
             orderBy: { createdAt: 'desc' },
         });
 
-        res.status(200).json({ guests });
+        // Format for frontend
+        const formattedGuests = guests.map(g => ({
+            ...g,
+            invitedBy: g.invitedBy ? { id: g.invitedBy.id, fullName: g.invitedBy.profile?.fullName, email: g.invitedBy.email } : null,
+            assignedTo: g.assignedTo ? { id: g.assignedTo.id, fullName: g.assignedTo.profile?.fullName, email: g.assignedTo.email } : null,
+            calls: g.calls.map(c => ({ ...c, caller: c.caller ? { fullName: c.caller.profile?.fullName } : null })),
+            visits: g.visits.map(v => ({ ...v, visitor: v.visitor ? { fullName: v.visitor.profile?.fullName } : null }))
+        }));
+
+        res.status(200).json({ guests: formattedGuests });
     } catch (error) {
         console.error(error);
         res.status(500).json({ message: 'Server error' });
@@ -219,20 +186,20 @@ const getGuestById = async (req, res) => {
             where: { id: parseInt(id) },
             include: {
                 invitedBy: {
-                    select: { id: true, fullName: true, email: true },
+                    include: { profile: true }
                 },
                 assignedTo: {
-                    select: { id: true, fullName: true, email: true },
+                    include: { profile: true }
                 },
                 calls: {
                     include: {
-                        caller: { select: { fullName: true } }
+                        caller: { include: { profile: true } }
                     },
                     orderBy: { date: 'desc' }
                 },
                 visits: {
                     include: {
-                        visitor: { select: { fullName: true } }
+                        visitor: { include: { profile: true } }
                     },
                     orderBy: { date: 'desc' }
                 }
@@ -243,7 +210,15 @@ const getGuestById = async (req, res) => {
             return res.status(404).json({ message: 'Guest not found' });
         }
 
-        res.status(200).json({ guest });
+        const formattedGuest = {
+            ...guest,
+            invitedBy: guest.invitedBy ? { id: guest.invitedBy.id, fullName: guest.invitedBy.profile?.fullName, email: guest.invitedBy.email } : null,
+            assignedTo: guest.assignedTo ? { id: guest.assignedTo.id, fullName: guest.assignedTo.profile?.fullName, email: guest.assignedTo.email } : null,
+            calls: guest.calls.map(c => ({ ...c, caller: c.caller ? { fullName: c.caller.profile?.fullName } : null })),
+            visits: guest.visits.map(v => ({ ...v, visitor: v.visitor ? { fullName: v.visitor.profile?.fullName } : null }))
+        };
+
+        res.status(200).json({ guest: formattedGuest });
     } catch (error) {
         console.error(error);
         res.status(500).json({ message: 'Server error' });
@@ -255,9 +230,8 @@ const updateGuest = async (req, res) => {
     try {
         const { id } = req.params;
         const { name, phone, address, city, prayerRequest, status, invitedById, assignedToId, called, callObservation, visited, visitObservation, documentType, documentNumber, birthDate, sex } = req.body;
-        const user = req.user;
+        const { roles, id: currentUserId } = req.user;
 
-        // Obtener el invitado primero para verificar permisos
         const existingGuest = await prisma.guest.findUnique({
             where: { id: parseInt(id) }
         });
@@ -266,39 +240,21 @@ const updateGuest = async (req, res) => {
             return res.status(404).json({ message: 'Guest not found' });
         }
 
-        // Preparar datos de actualización basados en rol
         let updateData = {};
+        const isAdminValue = roles.includes('SUPER_ADMIN');
+        const isNetworkLeader = roles.some(r => ['PASTOR', 'LIDER_DOCE', 'LIDER_CELULA'].includes(r));
 
-        if (user.role === 'SUPER_ADMIN') {
-            // Super admin puede actualizar todos los campos
-            updateData = {
-                ...(name && { name }),
-                ...(phone && { phone }),
-                ...(address !== undefined && { address }),
-                ...(prayerRequest !== undefined && { prayerRequest }),
-                ...(status && { status }),
-                ...(invitedById && { invitedById: parseInt(invitedById) }),
-                ...(assignedToId !== undefined && { assignedToId: assignedToId ? parseInt(assignedToId) : null }),
-                ...(called !== undefined && { called: Boolean(called) }),
-                ...(callObservation !== undefined && { callObservation }),
-                ...(visited !== undefined && { visited: Boolean(visited) }),
-                ...(visitObservation !== undefined && { visitObservation }),
-                ...(documentType !== undefined && { documentType }),
-                ...(documentNumber !== undefined && { documentNumber }),
-                ...(birthDate !== undefined && { birthDate: birthDate ? new Date(birthDate) : null }),
-                ...(sex !== undefined && { sex }),
-                ...(city !== undefined && { city }),
-            };
-        } else if (user.role === 'LIDER_DOCE' || user.role === 'LIDER_CELULA' || user.role === 'PASTOR') {
-            // LIDER_DOCE, LIDER_CELULA y PASTOR pueden actualizar todos los campos para invitados en su red
-            const networkUserIds = await getUserNetwork(user.id);
-            const isInNetwork = networkUserIds.includes(existingGuest.invitedById) ||
-                (existingGuest.assignedToId && networkUserIds.includes(existingGuest.assignedToId)) ||
-                existingGuest.invitedById === user.id ||
-                existingGuest.assignedToId === user.id;
+        if (isAdminValue || isNetworkLeader) {
+            if (!isAdminValue) {
+                const networkUserIds = await getUserNetwork(currentUserId);
+                const isInNetwork = networkUserIds.includes(existingGuest.invitedById) ||
+                    (existingGuest.assignedToId && networkUserIds.includes(existingGuest.assignedToId)) ||
+                    existingGuest.invitedById === currentUserId ||
+                    existingGuest.assignedToId === currentUserId;
 
-            if (!isInNetwork) {
-                return res.status(403).json({ message: 'You can only update guests in your network' });
+                if (!isInNetwork) {
+                    return res.status(403).json({ message: 'You can only update guests in your network' });
+                }
             }
 
             updateData = {
@@ -320,14 +276,12 @@ const updateGuest = async (req, res) => {
                 ...(city !== undefined && { city }),
             };
         } else {
-            // LIDER_CELULA y DISCIPULO solo pueden actualizar campo de estado y seguimiento
-            const canEdit = existingGuest.invitedById === user.id || existingGuest.assignedToId === user.id;
+            const canEdit = existingGuest.invitedById === currentUserId || existingGuest.assignedToId === currentUserId;
 
             if (!canEdit) {
                 return res.status(403).json({ message: 'You can only update guests you invited or assigned to you' });
             }
 
-            // Permitir actualizaciones de estado y seguimiento
             updateData = {
                 ...(status && { status }),
                 ...(called !== undefined && { called: Boolean(called) }),
@@ -335,26 +289,26 @@ const updateGuest = async (req, res) => {
                 ...(visited !== undefined && { visited: Boolean(visited) }),
                 ...(visitObservation !== undefined && { visitObservation }),
             };
-
-            if (Object.keys(updateData).length === 0) {
-                return res.status(400).json({ message: 'You can only update status or tracking fields' });
-            }
         }
 
         const guest = await prisma.guest.update({
             where: { id: parseInt(id) },
             data: updateData,
             include: {
-                invitedBy: {
-                    select: { id: true, fullName: true, email: true },
-                },
-                assignedTo: {
-                    select: { id: true, fullName: true, email: true },
-                },
+                invitedBy: { include: { profile: true } },
+                assignedTo: { include: { profile: true } },
             },
         });
 
-        res.status(200).json({ guest });
+        await logActivity(currentUserId, 'UPDATE', 'GUEST', guest.id, { name: guest.name }, req.ip, req.headers['user-agent']);
+
+        const formattedGuest = {
+            ...guest,
+            invitedBy: guest.invitedBy ? { id: guest.invitedBy.id, fullName: guest.invitedBy.profile?.fullName, email: guest.invitedBy.email } : null,
+            assignedTo: guest.assignedTo ? { id: guest.assignedTo.id, fullName: guest.assignedTo.profile?.fullName, email: guest.assignedTo.email } : null
+        };
+
+        res.status(200).json({ guest: formattedGuest });
     } catch (error) {
         console.error(error);
         res.status(500).json({ message: 'Server error' });
@@ -365,9 +319,8 @@ const updateGuest = async (req, res) => {
 const deleteGuest = async (req, res) => {
     try {
         const { id } = req.params;
-        const user = req.user;
+        const { roles, id: currentUserId } = req.user;
 
-        // Obtener el invitado primero para verificar permisos
         const existingGuest = await prisma.guest.findUnique({
             where: { id: parseInt(id) }
         });
@@ -376,30 +329,27 @@ const deleteGuest = async (req, res) => {
             return res.status(404).json({ message: 'Guest not found' });
         }
 
-        // Verificar permisos de eliminación basados en rol
-        if (user.role === 'SUPER_ADMIN') {
-            // Super admin puede eliminar cualquier invitado
-        } else if (user.role === 'LIDER_DOCE' || user.role === 'LIDER_CELULA' || user.role === 'PASTOR') {
-            // LIDER_DOCE, LIDER_CELULA y PASTOR pueden eliminar invitados en su red
-            const networkUserIds = await getUserNetwork(user.id);
-            const isInNetwork = networkUserIds.includes(existingGuest.invitedById) ||
-                (existingGuest.assignedToId && networkUserIds.includes(existingGuest.assignedToId)) ||
-                existingGuest.invitedById === user.id ||
-                existingGuest.assignedToId === user.id;
+        const isAdminValue = roles.includes('SUPER_ADMIN');
+        const isNetworkLeader = roles.some(r => ['PASTOR', 'LIDER_DOCE', 'LIDER_CELULA'].includes(r));
 
-            if (!isInNetwork) {
-                return res.status(403).json({ message: 'You can only delete guests in your network' });
-            }
-        } else {
-            // LIDER_CELULA y DISCIPULO solo pueden eliminar invitados que ellos invitaron (no asignados)
-            if (existingGuest.invitedById !== user.id) {
-                return res.status(403).json({ message: 'You can only delete guests you invited' });
+        if (!isAdminValue) {
+            const networkUserIds = isNetworkLeader ? await getUserNetwork(currentUserId) : [];
+            const canDelete = isAdminValue ||
+                networkUserIds.includes(existingGuest.invitedById) ||
+                (existingGuest.assignedToId && networkUserIds.includes(existingGuest.assignedToId)) ||
+                existingGuest.invitedById === currentUserId ||
+                existingGuest.assignedToId === currentUserId;
+
+            if (!canDelete) {
+                return res.status(403).json({ message: 'You can only delete guests in your network or that you invited' });
             }
         }
 
         await prisma.guest.delete({
             where: { id: parseInt(id) },
         });
+
+        await logActivity(currentUserId, 'DELETE', 'GUEST', parseInt(id), { name: existingGuest.name }, req.ip, req.headers['user-agent']);
 
         res.status(200).json({ message: 'Guest deleted successfully' });
     } catch (error) {
@@ -413,6 +363,7 @@ const assignGuest = async (req, res) => {
     try {
         const { id } = req.params;
         const { assignedToId } = req.body;
+        const { id: currentUserId } = req.user;
 
         if (!assignedToId) {
             return res.status(400).json({ message: 'assignedToId is required' });
@@ -424,16 +375,20 @@ const assignGuest = async (req, res) => {
                 assignedToId: parseInt(assignedToId),
             },
             include: {
-                invitedBy: {
-                    select: { id: true, fullName: true, email: true },
-                },
-                assignedTo: {
-                    select: { id: true, fullName: true, email: true },
-                },
+                invitedBy: { include: { profile: true } },
+                assignedTo: { include: { profile: true } },
             },
         });
 
-        res.status(200).json({ guest });
+        await logActivity(currentUserId, 'UPDATE', 'GUEST', guest.id, { action: 'ASSIGN', assignedToId }, req.ip, req.headers['user-agent']);
+
+        const formattedGuest = {
+            ...guest,
+            invitedBy: guest.invitedBy ? { id: guest.invitedBy.id, fullName: guest.invitedBy.profile?.fullName, email: guest.invitedBy.email } : null,
+            assignedTo: guest.assignedTo ? { id: guest.assignedTo.id, fullName: guest.assignedTo.profile?.fullName, email: guest.assignedTo.email } : null
+        };
+
+        res.status(200).json({ guest: formattedGuest });
     } catch (error) {
         console.error(error);
         res.status(500).json({ message: 'Server error' });
@@ -444,13 +399,13 @@ const assignGuest = async (req, res) => {
 const convertGuestToMember = async (req, res) => {
     try {
         const { id } = req.params;
-        const { email, password } = req.body;
+        const { email, password, phone } = req.body;
+        const { id: currentUserId } = req.user;
 
         if (!email || !password) {
             return res.status(400).json({ message: 'Email and password are required' });
         }
 
-        // Obtener el invitado
         const guest = await prisma.guest.findUnique({
             where: { id: parseInt(id) }
         });
@@ -459,7 +414,6 @@ const convertGuestToMember = async (req, res) => {
             return res.status(404).json({ message: 'Guest not found' });
         }
 
-        // Verificar si el correo ya existe
         const existingUser = await prisma.user.findUnique({
             where: { email }
         });
@@ -468,34 +422,72 @@ const convertGuestToMember = async (req, res) => {
             return res.status(400).json({ message: 'Email already in use' });
         }
 
-        // Hashear contraseña
         const bcrypt = require('bcryptjs');
         const hashedPassword = await bcrypt.hash(password, 10);
 
-        // Crear usuario con datos del invitado
-        const newUser = await prisma.user.create({
-            data: {
-                email,
-                password: hashedPassword,
-                fullName: guest.name,
-                role: 'DISCIPULO',
-                // Asignar a la persona que los invitó
-                leaderId: guest.invitedById
-            }
+        // Atomic transaction to create user and clean up guest
+        const newUser = await prisma.$transaction(async (tx) => {
+            // 1. Create User and Profile
+            const user = await tx.user.create({
+                data: {
+                    email,
+                    password: hashedPassword,
+                    phone: phone || guest.phone,
+                    profile: {
+                        create: {
+                            fullName: guest.name,
+                            address: guest.address,
+                            city: guest.city,
+                            sex: guest.sex,
+                            documentType: guest.documentType,
+                            documentNumber: guest.documentNumber,
+                            birthDate: guest.birthDate
+                        }
+                    }
+                },
+                include: { profile: true }
+            });
+
+            // 2. Assign default DISCIPULO role
+            const discipleRole = await tx.role.upsert({
+                where: { name: 'DISCIPULO' },
+                update: {},
+                create: { name: 'DISCIPULO' }
+            });
+
+            await tx.userRole.create({
+                data: {
+                    userId: user.id,
+                    roleId: discipleRole.id
+                }
+            });
+
+            // 3. Establish Discipleship Hierarchy (InvitedBy becomes Parent)
+            await tx.userHierarchy.create({
+                data: {
+                    parentId: guest.invitedById,
+                    childId: user.id,
+                    role: 'DISCIPULO'
+                }
+            });
+
+            // 4. Delete the guest record
+            await tx.guest.delete({
+                where: { id: parseInt(id) }
+            });
+
+            return user;
         });
 
-        // Eliminar el registro del invitado
-        await prisma.guest.delete({
-            where: { id: parseInt(id) }
-        });
+        await logActivity(currentUserId, 'CONSOLIDATE', 'GUEST', parseInt(id), { newUserId: newUser.id }, req.ip, req.headers['user-agent']);
 
         res.status(201).json({
             message: 'Guest consolidated to member successfully',
             user: {
                 id: newUser.id,
                 email: newUser.email,
-                fullName: newUser.fullName,
-                role: newUser.role
+                fullName: newUser.profile.fullName,
+                roles: ['DISCIPULO']
             }
         });
     } catch (error) {
@@ -509,7 +501,7 @@ const addCall = async (req, res) => {
     try {
         const { id } = req.params;
         const { date, observation } = req.body;
-        const user = req.user;
+        const { id: userId } = req.user;
 
         if (!observation) {
             return res.status(400).json({ message: 'Observation is required' });
@@ -520,15 +512,16 @@ const addCall = async (req, res) => {
                 guestId: parseInt(id),
                 date: date ? new Date(date) : new Date(),
                 observation,
-                callerId: user.id
+                callerId: userId
             }
         });
 
-        // Update guest status to CONTACTADO (Llamado)
         await prisma.guest.update({
             where: { id: parseInt(id) },
-            data: { status: 'CONTACTADO' }
+            data: { status: 'CONTACTADO', called: true }
         });
+
+        await logActivity(userId, 'CREATE', 'GUEST_CALL', call.id, { guestId: parseInt(id) }, req.ip, req.headers['user-agent']);
 
         res.status(201).json({ call });
     } catch (error) {
@@ -542,7 +535,7 @@ const addVisit = async (req, res) => {
     try {
         const { id } = req.params;
         const { date, observation } = req.body;
-        const user = req.user;
+        const { id: userId } = req.user;
 
         if (!observation) {
             return res.status(400).json({ message: 'Observation is required' });
@@ -553,15 +546,16 @@ const addVisit = async (req, res) => {
                 guestId: parseInt(id),
                 date: date ? new Date(date) : new Date(),
                 observation,
-                visitorId: user.id
+                visitorId: userId
             }
         });
 
-        // Update guest status to CONSOLIDADO (Visitado)
         await prisma.guest.update({
             where: { id: parseInt(id) },
-            data: { status: 'CONSOLIDADO' }
+            data: { status: 'CONSOLIDADO', visited: true }
         });
+
+        await logActivity(userId, 'CREATE', 'GUEST_VISIT', visit.id, { guestId: parseInt(id) }, req.ip, req.headers['user-agent']);
 
         res.status(201).json({ visit });
     } catch (error) {

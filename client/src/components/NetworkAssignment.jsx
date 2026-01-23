@@ -24,15 +24,15 @@ const NetworkAssignment = () => {
         try {
             const res = await api.get('/users');
 
-            const allUsers = res.data.users;
+            const allUsers = res.data;
             const user = JSON.parse(localStorage.getItem('user'));
 
             // Filtrar basado en rol
             let filteredUsers = allUsers;
             // Incluir tanto LIDER_DOCE como LIDER_CELULA como líderes potenciales
-            let filteredLeaders = allUsers.filter(u => u.role === 'LIDER_DOCE' || u.role === 'LIDER_CELULA');
+            let filteredLeaders = allUsers.filter(u => u.roles?.includes('LIDER_DOCE') || u.roles?.includes('LIDER_CELULA'));
 
-            if (user.role === 'LIDER_DOCE') {
+            if (user.roles?.includes('LIDER_DOCE')) {
                 // Para LIDER_DOCE, mostrar solo su red
                 const getUserNetworkIds = (userId) => {
                     const network = new Set([userId]);
@@ -55,7 +55,7 @@ const NetworkAssignment = () => {
                 filteredUsers = allUsers.filter(u => networkIds.includes(u.id));
                 // Para LIDER_DOCE, mostrarse a sí mismos y sus discípulos LIDER_CELULA como líderes potenciales
                 filteredLeaders = allUsers.filter(u =>
-                    networkIds.includes(u.id) && (u.role === 'LIDER_DOCE' || u.role === 'LIDER_CELULA')
+                    networkIds.includes(u.id) && (u.roles?.includes('LIDER_DOCE') || u.roles?.includes('LIDER_CELULA'))
                 );
             }
 
@@ -87,27 +87,30 @@ const NetworkAssignment = () => {
         }
     };
 
-    const getRoleLabel = (role) => {
+    const getRoleLabel = (roles, singleRole) => {
+        if (roles && Array.isArray(roles)) {
+            return roles.join(', ').replace(/_/g, ' ');
+        }
         const labels = {
             SUPER_ADMIN: 'Super Admin',
             LIDER_DOCE: 'Líder de 12',
             LIDER_CELULA: 'Líder de Célula',
             DISCIPULO: 'Discípulo',
         };
-        return labels[role] || role;
+        return labels[singleRole] || singleRole || '';
     };
 
     const usersWithoutLeader = users.filter(u =>
-        !u.leaderId && (u.role === 'LIDER_CELULA' || u.role === 'DISCIPULO')
+        !u.leaderId && (u.roles?.includes('LIDER_CELULA') || u.roles?.includes('DISCIPULO'))
     );
 
     const renderNetworkTree = () => {
-        return leaders.filter(l => l.role === 'LIDER_DOCE').map(leader => (
+        return leaders.filter(l => l.roles?.includes('LIDER_DOCE')).map(leader => (
             <div key={leader.id} className="mb-6 bg-gray-700 rounded-lg p-4">
                 <div className="flex items-center space-x-2 mb-3">
                     <Users className="text-blue-400" size={20} />
                     <span className="text-white font-semibold">{leader.fullName}</span>
-                    <span className="text-xs text-gray-400">({getRoleLabel(leader.role)})</span>
+                    <span className="text-xs text-gray-400">({getRoleLabel(leader.roles, leader.role)})</span>
                     {leader._count?.invitedGuests > 0 && (
                         <span className="text-xs bg-green-900/30 text-green-400 px-2 py-1 rounded">
                             {leader._count.invitedGuests} invitado{leader._count.invitedGuests !== 1 ? 's' : ''}
@@ -123,14 +126,14 @@ const NetworkAssignment = () => {
                                     <div className="flex items-center space-x-2">
                                         <span className="text-gray-400">└─</span>
                                         <span className="text-white">{disciple.fullName}</span>
-                                        <span className="text-xs text-gray-400">({getRoleLabel(disciple.role)})</span>
+                                        <span className="text-xs text-gray-400">({getRoleLabel(disciple.roles, disciple.role)})</span>
                                         {disciple._count?.invitedGuests > 0 && (
                                             <span className="text-xs bg-green-900/30 text-green-400 px-2 py-1 rounded">
                                                 {disciple._count.invitedGuests} invitado{disciple._count.invitedGuests !== 1 ? 's' : ''}
                                             </span>
                                         )}
                                     </div>
-                                    {currentUser?.role === 'SUPER_ADMIN' && (
+                                    {currentUser?.roles?.includes('SUPER_ADMIN') && (
                                         <button
                                             onClick={() => handleAssignLeader(disciple.id, null)}
                                             className="text-red-400 hover:text-red-300 text-sm"
@@ -141,21 +144,21 @@ const NetworkAssignment = () => {
                                 </div>
 
                                 {/* Mostrar sub-discípulos si LIDER_CELULA tiene discípulos */}
-                                {disciple.role === 'LIDER_CELULA' && disciple.disciples && disciple.disciples.length > 0 && (
+                                {disciple.roles?.includes('LIDER_CELULA') && disciple.disciples && disciple.disciples.length > 0 && (
                                     <div className="ml-12 mt-2 space-y-2">
                                         {disciple.disciples.map(subDisciple => (
                                             <div key={subDisciple.id} className="flex items-center justify-between bg-gray-500 p-2 rounded">
                                                 <div className="flex items-center space-x-2">
                                                     <span className="text-gray-400 text-sm">└─</span>
                                                     <span className="text-white text-sm">{subDisciple.fullName}</span>
-                                                    <span className="text-xs text-gray-400">({getRoleLabel(subDisciple.role)})</span>
+                                                    <span className="text-xs text-gray-400">({getRoleLabel(subDisciple.roles, subDisciple.role)})</span>
                                                     {subDisciple._count?.invitedGuests > 0 && (
                                                         <span className="text-xs bg-green-900/30 text-green-400 px-2 py-1 rounded">
                                                             {subDisciple._count.invitedGuests} invitado{subDisciple._count.invitedGuests !== 1 ? 's' : ''}
                                                         </span>
                                                     )}
                                                 </div>
-                                                {currentUser?.role === 'SUPER_ADMIN' && (
+                                                {currentUser?.roles?.includes('SUPER_ADMIN') && (
                                                     <button
                                                         onClick={() => handleAssignLeader(subDisciple.id, null)}
                                                         className="text-red-400 hover:text-red-300 text-xs"
@@ -199,7 +202,7 @@ const NetworkAssignment = () => {
             )}
 
             {/* Usuarios sin líder - para SUPER_ADMIN y LIDER_DOCE */}
-            {(currentUser?.role === 'SUPER_ADMIN' || currentUser?.role === 'LIDER_DOCE') && (
+            {(currentUser?.roles?.includes('SUPER_ADMIN') || currentUser?.roles?.includes('LIDER_DOCE')) && (
                 <div className="bg-gray-800 rounded-lg p-6 border border-gray-700">
                     <h2 className="text-xl font-bold text-white mb-4">Usuarios sin Líder Asignado</h2>
 
@@ -213,7 +216,7 @@ const NetworkAssignment = () => {
                                 <div key={user.id} className="flex items-center justify-between bg-gray-700 p-4 rounded-lg">
                                     <div>
                                         <p className="text-white font-medium">{user.fullName}</p>
-                                        <p className="text-sm text-gray-400">{getRoleLabel(user.role)}</p>
+                                        <p className="text-sm text-gray-400">{getRoleLabel(user.roles, user.role)}</p>
                                     </div>
 
                                     {assigningUser?.id === user.id ? (

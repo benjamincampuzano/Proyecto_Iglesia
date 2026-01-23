@@ -132,24 +132,24 @@ const NetworkNode = ({ node, level, currentUser, onAddUser, onRemoveUser }) => {
     const canAddToNode = () => {
         if (!currentUser) return false;
 
-        const userRole = currentUser.role;
+        const userRoles = currentUser.roles || [];
 
         // SUPER_ADMIN can manage all nodes
-        if (userRole === 'SUPER_ADMIN') return true;
+        if (userRoles.includes('SUPER_ADMIN')) return true;
 
         // LIDER_DOCE can add to their own node or to LIDER_CELULA in their network
-        if (userRole === 'LIDER_DOCE') {
+        if (userRoles.includes('LIDER_DOCE')) {
             // Can add to themselves
             if (node.id === currentUser.id) return true;
 
             // Can add to LIDER_CELULA who are their direct disciples
-            if (node.role === 'LIDER_CELULA' && level === 1) {
+            if (node.roles?.includes('LIDER_CELULA') && level === 1) {
                 return true;
             }
         }
 
         // LIDER_CELULA can only add to their own node
-        if (userRole === 'LIDER_CELULA' && node.id === currentUser.id) {
+        if (userRoles.includes('LIDER_CELULA') && node.id === currentUser.id) {
             return true;
         }
 
@@ -166,18 +166,18 @@ const NetworkNode = ({ node, level, currentUser, onAddUser, onRemoveUser }) => {
     const canRemoveNode = () => {
         if (!currentUser || level === 0) return false; // Cannot remove root node
 
-        const userRole = currentUser.role;
+        const userRoles = currentUser.roles || [];
 
         // SUPER_ADMIN can remove any node (except root)
-        if (userRole === 'SUPER_ADMIN') return true;
+        if (userRoles.includes('SUPER_ADMIN')) return true;
 
         // LIDER_DOCE can remove anyone in their network (any level >= 1)
-        if (userRole === 'LIDER_DOCE' && level >= 1) {
+        if (userRoles.includes('LIDER_DOCE') && level >= 1) {
             return true;
         }
 
         // LIDER_CELULA can remove anyone in their network (any level >= 1)
-        if (userRole === 'LIDER_CELULA' && level >= 1) {
+        if (userRoles.includes('LIDER_CELULA') && level >= 1) {
             return true;
         }
 
@@ -217,16 +217,16 @@ const NetworkNode = ({ node, level, currentUser, onAddUser, onRemoveUser }) => {
                             <div className="flex items-center gap-2">
                                 <span className={`
                                     inline-block px-1.5 py-0.5 text-[10px] font-bold uppercase rounded-full tracking-wide
-                                    ${node.role === 'SUPER_ADMIN' ? 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300' :
-                                        node.role === 'PASTOR' ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' :
-                                            node.role === 'LIDER_DOCE' ? 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300' :
-                                                node.role === 'LIDER_CELULA' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300' :
+                                    ${node.roles?.includes('SUPER_ADMIN') ? 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300' :
+                                        node.roles?.includes('PASTOR') ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' :
+                                            node.roles?.includes('LIDER_DOCE') ? 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300' :
+                                                node.roles?.includes('LIDER_CELULA') ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300' :
                                                     'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'}
                                 `}>
-                                    {node.role === 'SUPER_ADMIN' ? 'Super Admin' :
-                                        node.role === 'PASTOR' ? 'Pastor' :
-                                            node.role === 'LIDER_DOCE' ? 'Doce' :
-                                                node.role === 'LIDER_CELULA' ? 'Célula' : 'Discípulo'}
+                                    {node.roles?.includes('SUPER_ADMIN') ? 'Super Admin' :
+                                        node.roles?.includes('PASTOR') ? 'Pastor' :
+                                            node.roles?.includes('LIDER_DOCE') ? 'Doce' :
+                                                node.roles?.includes('LIDER_CELULA') ? 'Célula' : 'Discípulo'}
                                 </span>
                             </div>
                         </div>

@@ -48,7 +48,7 @@ const ClassMatrix = ({ courseId }) => {
     const fetchUsers = async () => {
         try {
             const res = await api.get('/users');
-            setPotentialStudents(res.data.users || []);
+            setPotentialStudents(res.data || []);
         } catch (err) {
             console.error(err);
         }

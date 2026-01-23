@@ -8,7 +8,7 @@ import MultiUserSelect from './MultiUserSelect';
 import BalanceReport from './BalanceReport';
 
 const ConventionDetails = ({ convention, onBack, onRefresh }) => {
-    const { user } = useAuth();
+    const { user, hasAnyRole, isSuperAdmin } = useAuth();
     const [activeTab, setActiveTab] = useState('attendees'); // attendees, report
     const [reportData, setReportData] = useState([]);
     const [loadingReport, setLoadingReport] = useState(false);
@@ -29,6 +29,8 @@ const ConventionDetails = ({ convention, onBack, onRefresh }) => {
         year: '',
         theme: '',
         cost: '',
+        transportCost: '',
+        accommodationCost: '',
         startDate: '',
         endDate: '',
         liderDoceIds: []
@@ -95,6 +97,8 @@ const ConventionDetails = ({ convention, onBack, onRefresh }) => {
             year: convention.year,
             theme: convention.theme || '',
             cost: convention.cost,
+            transportCost: convention.transportCost || 0,
+            accommodationCost: convention.accommodationCost || 0,
             startDate: new Date(convention.startDate).toISOString().split('T')[0],
             endDate: new Date(convention.endDate).toISOString().split('T')[0],
             liderDoceIds: convention.liderDoceIds || []
@@ -132,7 +136,7 @@ const ConventionDetails = ({ convention, onBack, onRefresh }) => {
             '#': index + 1,
             'Nombre': reg.user.fullName,
             'Email': reg.user.email,
-            'Rol': reg.user.role,
+            'Rol': reg.user.roles?.join(', '),
             'Costo Base': convention.cost,
             'Descuento %': reg.discountPercentage,
             'Total a Pagar': reg.finalCost,
@@ -280,7 +284,7 @@ const ConventionDetails = ({ convention, onBack, onRefresh }) => {
                 <>
                     {/* Actions */}
                     <div className="flex justify-end gap-3">
-                        {['SUPER_ADMIN', 'LIDER_DOCE'].includes(user?.role) && (
+                        {hasAnyRole(['SUPER_ADMIN', 'LIDER_DOCE']) && (
                             <button
                                 onClick={handleExportToExcel}
                                 className="flex items-center px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors"
@@ -289,7 +293,7 @@ const ConventionDetails = ({ convention, onBack, onRefresh }) => {
                                 Exportar Excel
                             </button>
                         )}
-                        {!(user.role === 'LIDER_CELULA' || user.role === 'DISCIPULO') && (
+                        {hasAnyRole(['SUPER_ADMIN', 'PASTOR', 'LIDER_DOCE']) && (
                             <button
                                 onClick={() => setShowRegisterModal(true)}
                                 className="flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
@@ -345,7 +349,7 @@ const ConventionDetails = ({ convention, onBack, onRefresh }) => {
                                                 {formatCurrency(reg.balance)}
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium flex items-center justify-end space-x-3">
-                                                {!(user.role === 'LIDER_CELULA' || user.role === 'DISCIPULO') && (
+                                                {hasAnyRole(['SUPER_ADMIN', 'PASTOR', 'LIDER_DOCE']) && (
                                                     <button
                                                         onClick={() => openPaymentModal(reg)}
                                                         className="text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-300 inline-flex items-center"
@@ -355,7 +359,7 @@ const ConventionDetails = ({ convention, onBack, onRefresh }) => {
                                                         Abonar
                                                     </button>
                                                 )}
-                                                {(user.role === 'SUPER_ADMIN' || user.role === 'LIDER_DOCE' || user.role === 'PASTOR') && (
+                                                {hasAnyRole(['SUPER_ADMIN', 'PASTOR', 'LIDER_DOCE']) && (
                                                     <button
                                                         onClick={() => handleDelete(reg.id)}
                                                         className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300 inline-flex items-center"
@@ -425,6 +429,30 @@ const ConventionDetails = ({ convention, onBack, onRefresh }) => {
                                     onChange={(e) => setDiscount(e.target.value)}
                                     className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500"
                                 />
+                            </div>
+                            <div className="flex items-center space-x-2 pt-2">
+                                <input
+                                    type="checkbox"
+                                    id="needsTransport"
+                                    checked={needsTransport}
+                                    onChange={(e) => setNeedsTransport(e.target.checked)}
+                                    className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
+                                />
+                                <label htmlFor="needsTransport" className="text-sm text-gray-700 dark:text-gray-300">
+                                    Necesita Transporte {convention.transportCost > 0 && `(+${formatCurrency(convention.transportCost)})`}
+                                </label>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                                <input
+                                    type="checkbox"
+                                    id="needsAccommodation"
+                                    checked={needsAccommodation}
+                                    onChange={(e) => setNeedsAccommodation(e.target.checked)}
+                                    className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
+                                />
+                                <label htmlFor="needsAccommodation" className="text-sm text-gray-700 dark:text-gray-300">
+                                    Necesita Hotel {convention.accommodationCost > 0 && `(+${formatCurrency(convention.accommodationCost)})`}
+                                </label>
                             </div>
                             <div className="pt-4">
                                 <button

@@ -6,10 +6,10 @@ import ThemeToggle from './ThemeToggle';
 
 const UserMenu = ({ onOpenProfile, onOpenUserManagement }) => {
     const [isOpen, setIsOpen] = useState(false);
-    const { user, logout } = useAuth();
+    const { user, logout, hasAnyRole, isAdmin: contextIsAdmin } = useAuth();
     const menuRef = useRef(null);
 
-    const isAdmin = user?.role === 'SUPER_ADMIN' || user?.role === 'PASTOR' || user?.role === 'LIDER_DOCE';
+    const isAdmin = contextIsAdmin();
 
     // Close dropdown when clicking outside
     useEffect(() => {
@@ -44,7 +44,9 @@ const UserMenu = ({ onOpenProfile, onOpenUserManagement }) => {
                 </div>
                 <div className="text-left hidden md:block">
                     <p className="text-sm font-medium text-gray-900 dark:text-white">{user?.fullName}</p>
-                    <p className="text-xs text-gray-500 dark:text-gray-400">{user?.role?.replace('_', ' ')}</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">
+                        {Array.isArray(user?.roles) ? user.roles.join(', ').replace(/_/g, ' ') : (typeof user?.role === 'string' ? user.role.replace(/_/g, ' ') : (Array.isArray(user?.role) ? user.role.join(', ').replace(/_/g, ' ') : 'Usuario'))}
+                    </p>
                 </div>
             </button>
 

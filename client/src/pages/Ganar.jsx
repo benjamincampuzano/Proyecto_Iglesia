@@ -6,7 +6,7 @@ import GuestList from '../components/GuestList';
 import GuestStats from '../components/GuestStats';
 
 const Ganar = () => {
-    const { user } = useAuth();
+    const { user, hasRole, hasAnyRole } = useAuth();
     const [refreshTrigger, setRefreshTrigger] = useState(0);
     const [showRegistration, setShowRegistration] = useState(false);
     const [activeTab, setActiveTab] = useState('list'); // 'list' or 'stats'
@@ -52,7 +52,7 @@ const Ganar = () => {
                     <Users size={20} />
                     <span>Lista de Invitados</span>
                 </button>
-                {(user.role !== 'DISCIPULO') && (
+                {hasAnyRole(['SUPER_ADMIN', 'PASTOR', 'LIDER_DOCE', 'LIDER_CELULA']) && (
                     <button
                         onClick={() => {
                             setActiveTab('stats');

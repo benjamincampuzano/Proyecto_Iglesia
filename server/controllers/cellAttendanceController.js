@@ -51,10 +51,13 @@ const recordCellAttendance = async (req, res) => {
             return res.status(404).json({ error: 'Cell not found' });
         }
 
-        const userRole = req.user.role;
+        const userRoles = req.user.roles || [];
         const userId = req.user.id;
+        const isSuperAdmin = userRoles.includes('SUPER_ADMIN');
+        const isPastor = userRoles.includes('PASTOR');
+        const isLiderDoce = userRoles.includes('LIDER_DOCE');
 
-        if (userRole !== 'SUPER_ADMIN' && userRole !== 'LIDER_DOCE' && userRole !== 'PASTOR' && cell.leaderId !== userId) {
+        if (!isSuperAdmin && !isLiderDoce && !isPastor && cell.leaderId !== userId) {
             return res.status(403).json({ error: 'Not authorized to record attendance for this cell' });
         }
 
@@ -90,7 +93,7 @@ const recordCellAttendance = async (req, res) => {
 const getCellAttendance = async (req, res) => {
     try {
         const { cellId, date } = req.params;
-        const userRole = req.user.role;
+        const userRoles = req.user.roles || [];
         const userId = req.user.id;
 
         // Check authorization
@@ -107,7 +110,11 @@ const getCellAttendance = async (req, res) => {
             where: { id: userId, cellId: parseInt(cellId) }
         });
 
-        if (userRole !== 'SUPER_ADMIN' && userRole !== 'LIDER_DOCE' && userRole !== 'PASTOR' && cell.leaderId !== userId && !isMember) {
+        const isSuperAdmin = userRoles.includes('SUPER_ADMIN');
+        const isPastor = userRoles.includes('PASTOR');
+        const isLiderDoce = userRoles.includes('LIDER_DOCE');
+
+        if (!isSuperAdmin && !isLiderDoce && !isPastor && cell.leaderId !== userId && !isMember) {
             return res.status(403).json({ error: 'Not authorized to view this cell attendance' });
         }
 
@@ -122,18 +129,29 @@ const getCellAttendance = async (req, res) => {
                         id: true,
                         fullName: true,
                         email: true,
-                        role: true
+                        roles: { include: { role: true } }
                     }
                 }
             },
             orderBy: {
                 user: {
-                    fullName: 'asc'
+                    profile: {
+                        fullName: 'asc'
+                    }
                 }
             }
         });
 
-        res.json(attendances);
+        // Map roles to simple array for frontend consistency if needed
+        const formattedAttendances = attendances.map(a => ({
+            ...a,
+            user: {
+                ...a.user,
+                roles: a.user.roles.map(r => r.role.name) // transform UserRole[] to string[]
+            }
+        }));
+
+        res.json(formattedAttendances);
     } catch (error) {
         console.error('Error fetching cell attendance:', error);
         res.status(500).json({ error: 'Error fetching cell attendance' });
@@ -143,25 +161,27 @@ const getCellAttendance = async (req, res) => {
 // Get cells (filtered by role)
 const getCells = async (req, res) => {
     try {
-        const userRole = req.user.role;
+        const userRoles = req.user.roles || [];
         const userId = req.user.id;
 
         let where = {};
 
-        if (userRole === 'LIDER_CELULA') {
-            // LIDER_CELULA can only see their own cells
-            where.leaderId = userId;
-        } else if (userRole === 'LIDER_DOCE' || userRole === 'PASTOR') {
+        if (userRoles.includes('SUPER_ADMIN') || userRoles.includes('ADMIN')) {
+            // SUPER_ADMIN sees all cells (no filter)
+            where = {};
+        } else if (userRoles.includes('LIDER_DOCE') || userRoles.includes('PASTOR')) {
             // LIDER_DOCE y PASTOR pueden ver todas las células de su red
             const networkUserIds = await getUserNetwork(userId);
             where.leaderId = { in: networkUserIds };
-        } else if (userRole === 'DISCIPULO') {
-            // Miembro can only see cells they belong to
+        } else if (userRoles.includes('LIDER_CELULA')) {
+            // LIDER_CELULA can only see their own cells
+            where.leaderId = userId;
+        } else {
+            // Members/Discipulos can only see cells they belong to
             where.members = {
                 some: { id: userId }
             };
         }
-        // SUPER_ADMIN sees all cells (no filter)
 
         const cells = await prisma.cell.findMany({
             where,
@@ -181,21 +201,21 @@ const getCells = async (req, res) => {
                 leader: {
                     select: {
                         id: true,
-                        fullName: true,
+                        profile: { select: { fullName: true } },
                         email: true
                     }
                 },
                 host: {
                     select: {
                         id: true,
-                        fullName: true,
+                        profile: { select: { fullName: true } },
                         email: true
                     }
                 },
                 liderDoce: {
                     select: {
                         id: true,
-                        fullName: true,
+                        profile: { select: { fullName: true } },
                         email: true
                     }
                 },
@@ -210,10 +230,18 @@ const getCells = async (req, res) => {
             }
         });
 
-        res.json(cells);
+        // Flatten nested objects for easier frontend consumption
+        const formattedCells = cells.map(cell => ({
+            ...cell,
+            leader: cell.leader ? { ...cell.leader, fullName: cell.leader.profile?.fullName } : null,
+            host: cell.host ? { ...cell.host, fullName: cell.host.profile?.fullName } : null,
+            liderDoce: cell.liderDoce ? { ...cell.liderDoce, fullName: cell.liderDoce.profile?.fullName } : null,
+        }));
+
+        res.json(formattedCells);
     } catch (error) {
         console.error('Error fetching cells:', error);
-        res.status(500).json({ error: 'Error fetching cells' });
+        res.status(500).json({ error: 'Error fetching cells: ' + error.message });
     }
 };
 
@@ -221,7 +249,7 @@ const getCells = async (req, res) => {
 const getCellMembers = async (req, res) => {
     try {
         const { cellId } = req.params;
-        const userRole = req.user.role;
+        const userRoles = req.user.roles || [];
         const userId = req.user.id;
 
         const cell = await prisma.cell.findUnique({
@@ -231,9 +259,9 @@ const getCellMembers = async (req, res) => {
                 members: {
                     select: {
                         id: true,
-                        fullName: true,
+                        profile: { select: { fullName: true } },
                         email: true,
-                        role: true
+                        roles: { include: { role: true } }
                     }
                 }
             }
@@ -244,12 +272,20 @@ const getCellMembers = async (req, res) => {
         }
 
         const isMember = cell.members.some(m => m.id === userId);
+        const isAuthorized = userRoles.some(r => ['SUPER_ADMIN', 'LIDER_DOCE', 'PASTOR'].includes(r));
 
-        if (userRole !== 'SUPER_ADMIN' && userRole !== 'LIDER_DOCE' && userRole !== 'PASTOR' && cell.leaderId !== userId && !isMember) {
+        if (!isAuthorized && cell.leaderId !== userId && !isMember) {
             return res.status(403).json({ error: 'Not authorized to view this cell' });
         }
 
-        res.json(cell.members);
+        const formattedMembers = cell.members.map(m => ({
+            id: m.id,
+            fullName: m.profile?.fullName,
+            email: m.email,
+            roles: m.roles.map(r => r.role.name)
+        }));
+
+        res.json(formattedMembers);
     } catch (error) {
         console.error('Error fetching cell members:', error);
         res.status(500).json({ error: 'Error fetching cell members' });
@@ -260,7 +296,7 @@ const getCellMembers = async (req, res) => {
 const getAttendanceStats = async (req, res) => {
     try {
         const { startDate, endDate, cellId } = req.query;
-        const userRole = req.user.role;
+        const userRoles = req.user.roles || [];
         const userId = req.user.id;
 
         // Default to last 30 days if no date range provided
@@ -282,25 +318,26 @@ const getAttendanceStats = async (req, res) => {
             }
 
             // Check authorization
-            if (userRole === 'LIDER_CELULA' && cell.leaderId !== userId) {
+            if (userRoles.includes('LIDER_CELULA') && cell.leaderId !== userId) {
                 return res.status(403).json({ error: 'Not authorized to view this cell' });
-            } else if (userRole === 'LIDER_DOCE' || userRole === 'PASTOR') {
+            } else if (userRoles.includes('LIDER_DOCE') || userRoles.includes('PASTOR')) {
                 const networkUserIds = await getUserNetwork(userId);
                 if (!networkUserIds.includes(cell.leaderId)) {
                     return res.status(403).json({ error: 'Not authorized to view this cell' });
                 }
             }
+            // SUPER_ADMIN has access
 
             cellFilter.cellId = parseInt(cellId);
         } else {
             // Filter all cells based on role
-            if (userRole === 'LIDER_CELULA') {
+            if (userRoles.includes('LIDER_CELULA')) {
                 const userCells = await prisma.cell.findMany({
                     where: { leaderId: userId },
                     select: { id: true }
                 });
                 cellFilter.cellId = { in: userCells.map(c => c.id) };
-            } else if (userRole === 'LIDER_DOCE' || userRole === 'PASTOR') {
+            } else if (userRoles.includes('LIDER_DOCE') || userRoles.includes('PASTOR')) {
                 const networkUserIds = await getUserNetwork(userId);
                 const networkCells = await prisma.cell.findMany({
                     where: { leaderId: { in: networkUserIds } },
@@ -348,7 +385,7 @@ const getAttendanceStats = async (req, res) => {
         res.json(stats);
     } catch (error) {
         console.error('Error fetching attendance stats:', error);
-        res.status(500).json({ error: 'Error fetching attendance stats' });
+        res.status(500).json({ error: 'Error fetching attendance stats ' + error.message });
     }
 };
 
