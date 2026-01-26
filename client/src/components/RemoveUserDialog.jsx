@@ -72,7 +72,7 @@ const RemoveUserDialog = ({ isOpen, onClose, user, onUserRemoved }) => {
                             <p className="text-sm text-gray-600">{user.email}</p>
                             <span className={`
                                 inline-block mt-2 px-2 py-1 text-xs font-medium rounded-full
-                                ${user.roles?.includes('SUPER_ADMIN') ? 'bg-red-100 text-red-800' :
+                                ${user.roles?.includes('ADMIN') ? 'bg-red-100 text-red-800' :
                                     user.roles?.includes('PASTOR') ? 'bg-green-100 text-green-800' :
                                         user.roles?.includes('LIDER_DOCE') ? 'bg-purple-100 text-purple-800' :
                                             user.roles?.includes('LIDER_CELULA') ? 'bg-blue-100 text-blue-800' :

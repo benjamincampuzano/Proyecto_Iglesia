@@ -138,7 +138,7 @@ describe('Módulo de Red - Frontend', () => {
 
         test('debería validar restricciones de asignación', async () => {
             const invalidAssignment = {
-                userId: 1, // SUPER_ADMIN
+                userId: 1, // ADMIN
                 leaderId: 2  // LIDER_CELULA
             };
 
@@ -146,7 +146,7 @@ describe('Módulo de Red - Frontend', () => {
                 ok: false,
                 status: 400,
                 json: async () => ({ 
-                    message: 'No se puede asignar SUPER_ADMIN a LIDER_CELULA' 
+                    message: 'No se puede asignar ADMIN a LIDER_CELULA' 
                 })
             };
             
@@ -155,7 +155,7 @@ describe('Módulo de Red - Frontend', () => {
             const result = await assignUserToLeader(invalidAssignment);
 
             expect(result.success).toBe(false);
-            expect(result.error).toContain('SUPER_ADMIN');
+            expect(result.error).toContain('ADMIN');
         });
 
         test('debería prevenir ciclos en la jerarquía', async () => {
@@ -247,7 +247,7 @@ describe('Módulo de Red - Frontend', () => {
                 totalUsers: 50,
                 networkDepth: 4,
                 byRole: {
-                    'SUPER_ADMIN': 1,
+                    'ADMIN': 1,
                     'LIDER_DOCE': 5,
                     'LIDER_CELULA': 15,
                     'DISCIPULO': 29
@@ -400,7 +400,7 @@ describe('Módulo de Red - Frontend', () => {
 
         test('debería detectar asignación inválida por rol', async () => {
             const invalidHierarchy = {
-                userId: 1, // SUPER_ADMIN
+                userId: 1, // ADMIN
                 leaderId: 2  // LIDER_CELULA
             };
 
@@ -408,7 +408,7 @@ describe('Módulo de Red - Frontend', () => {
                 ok: true,
                 json: async () => ({ 
                     valid: false,
-                    message: 'SUPER_ADMIN no puede tener líder asignado'
+                    message: 'ADMIN no puede tener líder asignado'
                 })
             };
             
@@ -613,7 +613,7 @@ describe('Integración con UI - Gestión de Red', () => {
         // Simular función que aplica colores según rol
         const getRoleColor = (role) => {
             const colors = {
-                'SUPER_ADMIN': '#DC2626',    // Rojo
+                'ADMIN': '#DC2626',    // Rojo
                 'LIDER_DOCE': '#7C3AED',   // Púrpura
                 'LIDER_CELULA': '#2563EB', // Azul
                 'DISCIPULO': '#16A34A'       // Verde

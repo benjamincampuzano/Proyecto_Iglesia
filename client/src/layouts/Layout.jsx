@@ -4,7 +4,6 @@ import { useAuth } from '../context/AuthContext';
 import { Home, Users, UserPlus, Heart, Send, Calendar, BookOpen, LogOut, Network, Activity, ChevronLeft, ChevronRight, Target } from 'lucide-react';
 import UserMenu from '../components/UserMenu';
 import UserProfileModal from '../components/UserProfileModal';
-import UserManagementModal from '../components/UserManagementModal';
 import logo from '../assets/logo.jpg';
 
 const SidebarItem = ({ to, icon: Icon, label, active }) => (
@@ -25,13 +24,12 @@ const Layout = () => {
     const location = useLocation();
     const [isCollapsed, setIsCollapsed] = useState(true);
     const [showProfileModal, setShowProfileModal] = useState(false);
-    const [showUserManagementModal, setShowUserManagementModal] = useState(false);
 
     if (!user) return <Outlet />;
 
     const navItems = [
         { to: '/', icon: Home, label: 'Home' },
-        ...(hasAnyRole(['SUPER_ADMIN', 'PASTOR', 'LIDER_DOCE']) ? [{ to: '/metas', icon: Target, label: 'Metas' }] : []),
+        ...(hasAnyRole(['ADMIN', 'PASTOR', 'LIDER_DOCE']) ? [{ to: '/metas', icon: Target, label: 'Metas' }] : []),
         { to: '/ganar', icon: UserPlus, label: 'Ganar' },
         { to: '/consolidar', icon: Heart, label: 'Consolidar' },
         { to: '/discipular', icon: BookOpen, label: 'Discipular' },
@@ -125,7 +123,6 @@ const Layout = () => {
                     <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Dashboard</h2>
                     <UserMenu
                         onOpenProfile={() => setShowProfileModal(true)}
-                        onOpenUserManagement={() => setShowUserManagementModal(true)}
                     />
                 </header>
 
@@ -139,10 +136,6 @@ const Layout = () => {
             <UserProfileModal
                 isOpen={showProfileModal}
                 onClose={() => setShowProfileModal(false)}
-            />
-            <UserManagementModal
-                isOpen={showUserManagementModal}
-                onClose={() => setShowUserManagementModal(false)}
             />
         </div>
     );

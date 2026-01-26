@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
-import { useAuth } from '../context/AuthContext';
+import { Target, Plus, Clock, CheckCircle2, XCircle, Edit2, Trash2, FileText } from 'lucide-react';
 import api from '../utils/api';
-import { Target, TrendingUp, Plus, Edit2, Trash2, Calendar, FileText, CheckCircle2, XCircle, Clock } from 'lucide-react';
 import GoalForm from '../components/GoalForm';
+import { ROLES, ROLE_GROUPS } from '../constants/roles';
+import { useAuth } from '../context/AuthContext';
 
 const Metas = () => {
     const { hasAnyRole } = useAuth();
@@ -11,19 +12,16 @@ const Metas = () => {
     const [showGoalForm, setShowGoalForm] = useState(false);
     const [editingGoal, setEditingGoal] = useState(null);
 
-    const isEditor = hasAnyRole(['SUPER_ADMIN', 'PASTOR']);
+    const isEditor = hasAnyRole(ROLE_GROUPS.CAN_MANAGE_GOALS);
 
     const handleDelete = async (id) => {
         if (window.confirm('¿Estás seguro de que deseas eliminar esta meta?')) {
             try {
-                setLoading(true);
                 await api.delete(`/metas/${id}`);
-                fetchGoals();
+                await fetchGoals();
             } catch (error) {
                 console.error('Error deleting goal:', error);
                 alert('Error al eliminar la meta');
-            } finally {
-                setLoading(false);
             }
         }
     };

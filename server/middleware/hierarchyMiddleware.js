@@ -49,7 +49,7 @@ function withinHierarchy(param = "userId") {
             const roles = req.user.roles || [];
 
             // Super Admin bypass
-            if (roles.includes('SUPER_ADMIN') || roles.includes('ADMIN')) {
+            if (roles.includes('ADMIN') || roles.includes('ADMIN')) {
                 return next();
             }
 

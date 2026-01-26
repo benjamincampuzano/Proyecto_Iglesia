@@ -26,6 +26,8 @@ const getConventions = async (req, res) => {
                 year: true,
                 theme: true,
                 cost: true,
+                transportCost: true,
+                accommodationCost: true,
                 startDate: true,
                 endDate: true,
                 _count: {
@@ -47,7 +49,7 @@ const getConventions = async (req, res) => {
         });
 
         // Filter for specific roles: Only show conventions they are registered for if they are not leaders/admin
-        const isLeaderOrAdmin = roles.some(r => ['SUPER_ADMIN', 'PASTOR', 'LIDER_DOCE', 'LIDER_CELULA'].includes(r));
+        const isLeaderOrAdmin = roles.some(r => ['ADMIN', 'PASTOR', 'LIDER_DOCE', 'LIDER_CELULA'].includes(r));
 
         let filteredConventions = conventions;
         if (!isLeaderOrAdmin) {
@@ -110,6 +112,8 @@ const getConventionById = async (req, res) => {
                 year: true,
                 theme: true,
                 cost: true,
+                transportCost: true,
+                accommodationCost: true,
                 startDate: true,
                 endDate: true,
                 registrations: {
@@ -117,7 +121,7 @@ const getConventionById = async (req, res) => {
                         user: {
                             roles: {
                                 none: {
-                                    role: { name: 'SUPER_ADMIN' }
+                                    role: { name: 'ADMIN' }
                                 }
                             }
                         }
@@ -152,7 +156,7 @@ const getConventionById = async (req, res) => {
         // Filter registrations based on Role & Network
         let visibleRegistrations = convention.registrations || [];
 
-        if (roles.includes('SUPER_ADMIN') || roles.includes('ADMIN')) {
+        if (roles.includes('ADMIN') || roles.includes('ADMIN')) {
             // See all
         } else if (roles.some(r => ['LIDER_DOCE', 'LIDER_CELULA', 'PASTOR'].includes(r))) {
             if (currentUserId) {
@@ -175,9 +179,29 @@ const getConventionById = async (req, res) => {
 
         // Enhance registrations with balance info
         const registrationsWithBalance = visibleRegistrations.map(reg => {
-            const totalPaid = reg.payments?.reduce((sum, p) => sum + p.amount, 0) || 0;
-            const initialCost = convention.cost;
-            const finalCost = initialCost * (1 - ((reg.discountPercentage || 0) / 100));
+            // Calcular pagos por tipo
+            const paymentsByType = {
+                CONVENTION: 0,
+                TRANSPORT: 0,
+                ACCOMMODATION: 0
+            };
+            
+            reg.payments?.forEach(payment => {
+                if (paymentsByType[payment.paymentType] !== undefined) {
+                    paymentsByType[payment.paymentType] += payment.amount;
+                }
+            });
+            
+            const totalPaid = Object.values(paymentsByType).reduce((sum, amount) => sum + amount, 0);
+            
+            // Calcular costo base con descuento
+            const baseCost = convention.cost * (1 - ((reg.discountPercentage || 0) / 100));
+            
+            // Calcular costos adicionales según necesidades
+            const transportCost = reg.needsTransport ? convention.transportCost : 0;
+            const accommodationCost = reg.needsAccommodation ? convention.accommodationCost : 0;
+            
+            const finalCost = baseCost + transportCost + accommodationCost;
             const balance = finalCost - totalPaid;
 
             return {
@@ -187,9 +211,13 @@ const getConventionById = async (req, res) => {
                     fullName: reg.user.profile?.fullName,
                     email: reg.user.email
                 },
+                baseCost,
+                transportCost,
+                accommodationCost,
                 totalPaid,
                 finalCost,
-                balance
+                balance,
+                paymentsByType
             };
         });
 
@@ -205,10 +233,10 @@ const createConvention = async (req, res) => {
         const roles = req.user?.roles || [];
         const userId = req.user?.id;
 
-        if (!roles.includes('SUPER_ADMIN') && !roles.includes('ADMIN')) {
+        if (!roles.includes('ADMIN') && !roles.includes('ADMIN')) {
             return res.status(403).json({ error: 'Not authorized' });
         }
-        const { type, year, theme, cost, startDate, endDate, liderDoceIds } = req.body;
+        const { type, year, theme, cost, transportCost, accommodationCost, startDate, endDate, liderDoceIds } = req.body;
 
         const existing = await prisma.convention.findUnique({
             where: {
@@ -230,6 +258,8 @@ const createConvention = async (req, res) => {
                 year: parseInt(year),
                 theme,
                 cost: parseFloat(cost),
+                transportCost: parseFloat(transportCost || 0),
+                accommodationCost: parseFloat(accommodationCost || 0),
                 startDate: new Date(startDate),
                 endDate: new Date(endDate),
                 leaders: {
@@ -255,17 +285,19 @@ const updateConvention = async (req, res) => {
         const roles = req.user?.roles || [];
         const userId = req.user?.id;
 
-        if (!roles.some(r => ['SUPER_ADMIN', 'LIDER_DOCE', 'PASTOR'].includes(r))) {
+        if (!roles.some(r => ['ADMIN', 'LIDER_DOCE', 'PASTOR'].includes(r))) {
             return res.status(403).json({ error: 'Not authorized' });
         }
 
-        const { type, year, theme, cost, startDate, endDate, liderDoceIds } = req.body;
+        const { type, year, theme, cost, transportCost, accommodationCost, startDate, endDate, liderDoceIds } = req.body;
 
         const updateData = {};
         if (type !== undefined) updateData.type = type;
         if (year !== undefined) updateData.year = parseInt(year);
         if (theme !== undefined) updateData.theme = theme;
         if (cost !== undefined) updateData.cost = parseFloat(cost);
+        if (transportCost !== undefined) updateData.transportCost = parseFloat(transportCost);
+        if (accommodationCost !== undefined) updateData.accommodationCost = parseFloat(accommodationCost);
         if (startDate !== undefined) updateData.startDate = new Date(startDate);
         if (endDate !== undefined) updateData.endDate = new Date(endDate);
         if (liderDoceIds !== undefined) {
@@ -299,8 +331,8 @@ const registerUser = async (req, res) => {
         const roles = req.user?.roles || [];
         const currentUserId = req.user?.id;
 
-        // Restriction: Only SUPER_ADMIN, ADMIN, PASTOR, or LIDER_DOCE
-        if (!roles.some(r => ['SUPER_ADMIN', 'PASTOR', 'LIDER_DOCE'].includes(r))) {
+        // Restriction: Only ADMIN, ADMIN, PASTOR, or LIDER_DOCE
+        if (!roles.some(r => ['ADMIN', 'PASTOR', 'LIDER_DOCE'].includes(r))) {
             return res.status(403).json({ error: 'No tienes permisos para registrar participantes en convenciones' });
         }
 
@@ -359,12 +391,12 @@ const registerUser = async (req, res) => {
 const addPayment = async (req, res) => {
     try {
         const { registrationId } = req.params;
-        const { amount, notes } = req.body;
+        const { amount, notes, paymentType } = req.body;
         const roles = req.user?.roles || [];
         const userId = req.user?.id;
 
-        // Restriction: Only SUPER_ADMIN, ADMIN, PASTOR, or LIDER_DOCE
-        if (!roles.some(r => ['SUPER_ADMIN', 'PASTOR', 'LIDER_DOCE'].includes(r))) {
+        // Restriction: Only ADMIN, ADMIN, PASTOR, or LIDER_DOCE
+        if (!roles.some(r => ['ADMIN', 'PASTOR', 'LIDER_DOCE'].includes(r))) {
             return res.status(403).json({ error: 'No tienes permisos para agregar pagos' });
         }
 
@@ -372,6 +404,7 @@ const addPayment = async (req, res) => {
             data: {
                 registrationId: parseInt(registrationId),
                 amount: parseFloat(amount),
+                paymentType: paymentType || 'CONVENTION',
                 notes
             }
         });
@@ -393,7 +426,7 @@ const deleteRegistration = async (req, res) => {
         const roles = req.user?.roles || [];
         const userId = req.user?.id;
 
-        if (!roles.includes('SUPER_ADMIN') && !roles.includes('ADMIN')) {
+        if (!roles.includes('ADMIN') && !roles.includes('ADMIN')) {
             return res.status(403).json({ error: 'Not authorized to delete registrations' });
         }
 
@@ -419,7 +452,7 @@ const deleteConvention = async (req, res) => {
         const roles = req.user?.roles || [];
         const userId = req.user?.id;
 
-        if (!roles.includes('SUPER_ADMIN') && !roles.includes('ADMIN')) {
+        if (!roles.includes('ADMIN') && !roles.includes('ADMIN')) {
             return res.status(403).json({ error: 'Not authorized to delete conventions' });
         }
 
@@ -449,11 +482,15 @@ const getConventionBalanceReport = async (req, res) => {
             where: { id: parseInt(id) },
             select: {
                 cost: true,
+                transportCost: true,
+                accommodationCost: true,
                 registrations: {
                     select: {
                         id: true,
                         userId: true,
                         discountPercentage: true,
+                        needsTransport: true,
+                        needsAccommodation: true,
                         user: {
                             include: {
                                 profile: true,
@@ -467,6 +504,7 @@ const getConventionBalanceReport = async (req, res) => {
                         payments: {
                             select: {
                                 amount: true,
+                                paymentType: true,
                                 date: true,
                                 notes: true
                             }
@@ -482,7 +520,7 @@ const getConventionBalanceReport = async (req, res) => {
 
         // Apply Network Filter
         let visibleRegistrations = convention.registrations || [];
-        if (roles.includes('SUPER_ADMIN') || roles.includes('ADMIN')) {
+        if (roles.includes('ADMIN') || roles.includes('ADMIN')) {
             // All
         } else if (roles.some(r => ['PASTOR', 'LIDER_DOCE', 'LIDER_CELULA'].includes(r))) {
             if (userId) {
@@ -506,9 +544,29 @@ const getConventionBalanceReport = async (req, res) => {
 
         // Transform Data for Report
         const reportData = visibleRegistrations.map(reg => {
-            const totalPaid = reg.payments?.reduce((sum, p) => sum + p.amount, 0) || 0;
-            const initialCost = convention.cost;
-            const finalCost = initialCost * (1 - ((reg.discountPercentage || 0) / 100));
+            // Calcular pagos por tipo
+            const paymentsByType = {
+                CONVENTION: 0,
+                TRANSPORT: 0,
+                ACCOMMODATION: 0
+            };
+            
+            reg.payments?.forEach(payment => {
+                if (paymentsByType[payment.paymentType] !== undefined) {
+                    paymentsByType[payment.paymentType] += payment.amount;
+                }
+            });
+            
+            const totalPaid = Object.values(paymentsByType).reduce((sum, amount) => sum + amount, 0);
+            
+            // Calcular costo base con descuento
+            const baseCost = convention.cost * (1 - ((reg.discountPercentage || 0) / 100));
+            
+            // Calcular costos adicionales según necesidades
+            const transportCost = reg.needsTransport ? convention.transportCost : 0;
+            const accommodationCost = reg.needsAccommodation ? convention.accommodationCost : 0;
+            
+            const finalCost = baseCost + transportCost + accommodationCost;
             const balance = finalCost - totalPaid;
 
             // Simplified hierarchy display for the report
@@ -525,9 +583,13 @@ const getConventionBalanceReport = async (req, res) => {
                 liderDoceName: getParentName('LIDER_DOCE'),
                 liderCelulaName: getParentName('LIDER_CELULA'),
                 leaderName: getParentName('DISCIPULO'), // Direct discipler
+                baseCost,
+                transportCost,
+                accommodationCost,
                 cost: finalCost,
                 paid: totalPaid,
                 balance: balance,
+                paymentsByType,
                 paymentsDetails: reg.payments
             };
         });

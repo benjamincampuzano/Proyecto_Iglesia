@@ -46,7 +46,7 @@ const EncuentroDetails = ({ encuentro, onBack, onRefresh }) => {
     const [paymentAmount, setPaymentAmount] = useState('');
     const [paymentNotes, setPaymentNotes] = useState('');
 
-    const canModify = user.id === encuentro.coordinatorId || user.roles?.includes('SUPER_ADMIN');
+    const canModify = user.id === encuentro.coordinatorId || user.roles?.includes('ADMIN');
 
     useEffect(() => {
         if (activeTab === 'report') {

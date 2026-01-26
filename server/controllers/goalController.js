@@ -165,7 +165,7 @@ const getGoals = async (req, res) => {
 
         // Determine scope
         let scopeUserId = currentUserId;
-        if (userRoles.includes('SUPER_ADMIN') || userRoles.includes('PASTOR')) {
+        if (userRoles.includes('ADMIN') || userRoles.includes('PASTOR')) {
             scopeUserId = filteredUserId ? parseInt(filteredUserId) : null;
         }
 

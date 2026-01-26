@@ -9,7 +9,7 @@ const getGeneralStats = async (req, res) => {
         const currentUserId = req.user.id ? parseInt(req.user.id) : null;
 
         let networkIds = [];
-        const isSuperAdmin = userRoles.includes('SUPER_ADMIN');
+        const isSuperAdmin = userRoles.includes('ADMIN');
         const isAdmin = userRoles.includes('ADMIN');
         const isLeader = userRoles.some(r => ['LIDER_DOCE', 'PASTOR', 'LIDER_CELULA'].includes(r));
 
@@ -22,7 +22,7 @@ const getGeneralStats = async (req, res) => {
             const excludeCriteria = {
                 roles: {
                     none: {
-                        role: { name: 'SUPER_ADMIN' }
+                        role: { name: 'ADMIN' }
                     }
                 }
             };
@@ -37,7 +37,7 @@ const getGeneralStats = async (req, res) => {
 
             const conditions = [];
 
-            // 1. Exclude SUPER_ADMIN from the relevant entities
+            // 1. Exclude ADMIN from the relevant entities
             if (invitedKey && relationMap[invitedKey]) conditions.push({ [relationMap[invitedKey]]: excludeCriteria });
             if (assignedKey && relationMap[assignedKey]) conditions.push({ [relationMap[assignedKey]]: excludeCriteria });
             if (registeredKey && relationMap[registeredKey]) conditions.push({ [relationMap[registeredKey]]: excludeCriteria });
@@ -306,7 +306,7 @@ const getGeneralStats = async (req, res) => {
                         isDeleted: false,
                         roles: {
                             none: {
-                                role: { name: 'SUPER_ADMIN' }
+                                role: { name: 'ADMIN' }
                             }
                         }
                     }
@@ -326,7 +326,7 @@ const getSeminarStatsByLeader = async (req, res) => {
         const userRoles = req.user.roles || [];
         const currentUserId = req.user.id ? parseInt(req.user.id) : null;
         let networkIds = [];
-        const isSuperAdmin = userRoles.includes('SUPER_ADMIN');
+        const isSuperAdmin = userRoles.includes('ADMIN');
         const isLeader = userRoles.some(r => ['LIDER_DOCE', 'PASTOR', 'LIDER_CELULA'].includes(r));
         if (isLeader && currentUserId && !isSuperAdmin) {
             networkIds = await getUserNetwork(currentUserId);

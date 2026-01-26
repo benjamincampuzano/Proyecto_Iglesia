@@ -28,9 +28,9 @@ const ensureTestSeed = async (prisma) => {
     const users = {};
 
     users.superAdmin = await ensureUser(prisma, {
-        email: 'test_super_admin@tests.local',
+        email: 'test_ADMIN@tests.local',
         fullName: 'Test Super Admin',
-        role: 'SUPER_ADMIN'
+        role: 'ADMIN'
     });
 
     users.pastor = await ensureUser(prisma, {

@@ -15,7 +15,7 @@ Roles distribution: [
     "_count": {
       "_all": 1
     },
-    "role": "SUPER_ADMIN"
+    "role": "ADMIN"
   },
   {
     "_count": {

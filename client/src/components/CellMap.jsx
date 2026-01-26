@@ -3,6 +3,7 @@ import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 import { Users, Clock, MapPin } from 'lucide-react';
+import PropTypes from 'prop-types';
 
 // Fix for default marker icons in Leaflet with React
 import icon from 'leaflet/dist/images/marker-icon.png';
@@ -94,3 +95,7 @@ const CellMap = ({ cells = [] }) => {
 };
 
 export default CellMap;
+
+CellMap.propTypes = {
+    cells: PropTypes.array,
+};

@@ -16,7 +16,7 @@ const getLosDoce = async (req, res) => {
                         }
                     },
                     none: {
-                        role: { name: 'SUPER_ADMIN' }
+                        role: { name: 'ADMIN' }
                     }
                 }
             },
@@ -89,7 +89,7 @@ const getNetwork = async (req, res) => {
                 id: { in: allIds },
                 roles: {
                     none: {
-                        role: { name: 'SUPER_ADMIN' }
+                        role: { name: 'ADMIN' }
                     }
                 }
             },
@@ -177,7 +177,7 @@ const getAvailableUsers = async (req, res) => {
         // Auth middleware populates roles array `req.user.roles`
         const userRoles = req.user.roles || [];
         // Determine primary role for logic (simplification)
-        const primaryRole = userRoles.includes('SUPER_ADMIN') ? 'SUPER_ADMIN' :
+        const primaryRole = userRoles.includes('ADMIN') ? 'ADMIN' :
             userRoles.includes('PASTOR') ? 'PASTOR' :
                 userRoles.includes('LIDER_DOCE') ? 'LIDER_DOCE' :
                     userRoles.includes('LIDER_CELULA') ? 'LIDER_CELULA' : 'DISCIPULO';
@@ -191,7 +191,7 @@ const getAvailableUsers = async (req, res) => {
             id: { not: parseInt(leaderId) }
         };
 
-        if (primaryRole !== 'SUPER_ADMIN' && primaryRole !== 'PASTOR') {
+        if (primaryRole !== 'ADMIN' && primaryRole !== 'PASTOR') {
             // Constrain to network
             const networkIds = await getUserNetwork(requesterId);
             whereClause.id.in = [...networkIds];
@@ -293,7 +293,7 @@ const removeUserFromNetwork = async (req, res) => {
         if (requesterRoles.includes('LIDER_CELULA')) targetRole = 'LIDER_CELULA';
         else if (requesterRoles.includes('LIDER_DOCE')) targetRole = 'LIDER_DOCE';
         else if (requesterRoles.includes('PASTOR')) targetRole = 'PASTOR';
-        else if (requesterRoles.includes('SUPER_ADMIN')) {
+        else if (requesterRoles.includes('ADMIN')) {
             // Admin can remove anything, maybe pass as query param?
             // For now, remove all? Dangerous.
             // Let's assume we remove all parents for now to "reset" assignment.
@@ -326,7 +326,7 @@ const getPastores = async (req, res) => {
     try {
         const pastores = await prisma.user.findMany({
             where: {
-                roles: { some: { role: { name: { in: ['PASTOR', 'SUPER_ADMIN'] } } } }
+                roles: { some: { role: { name: { in: ['PASTOR', 'ADMIN'] } } } }
             },
             select: {
                 id: true,

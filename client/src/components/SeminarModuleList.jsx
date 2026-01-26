@@ -92,7 +92,7 @@ const SeminarModuleList = () => {
         }
     };
 
-    const canDelete = hasAnyRole(['SUPER_ADMIN', 'LIDER_DOCE']);
+    const canDelete = hasAnyRole(['ADMIN', 'LIDER_DOCE']);
 
     return (
         <div className="space-y-6">

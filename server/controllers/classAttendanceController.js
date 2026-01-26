@@ -79,7 +79,7 @@ const getStudentProgress = async (req, res) => {
 
         // RBAC Check
         const isSelf = requestingUser.id === targetUserId;
-        const isAdmin = requestingUser.role === 'SUPER_ADMIN';
+        const isAdmin = requestingUser.role === 'ADMIN';
         const isPastor = requestingUser.role === 'PASTOR';
 
         // For Leaders, we'd need to check the network. 

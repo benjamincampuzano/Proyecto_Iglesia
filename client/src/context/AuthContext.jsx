@@ -3,6 +3,19 @@ import api from '../utils/api';
 
 const AuthContext = createContext();
 
+const normalizeRoleName = (role) => {
+    return String(role || '').toUpperCase().replace(/-/g, '_');
+};
+
+const normalizeUserRoles = (u) => {
+    if (!u) return u;
+    if (!Array.isArray(u.roles)) return u;
+    return {
+        ...u,
+        roles: u.roles.map(normalizeRoleName)
+    };
+};
+
 export const AuthProvider = ({ children }) => {
     const [user, setUser] = useState(null);
     const [loading, setLoading] = useState(true);
@@ -26,8 +39,9 @@ export const AuthProvider = ({ children }) => {
                 try {
                     const res = await api.get('/users/profile');
                     if (res.data.user) {
-                        setUser(res.data.user);
-                        localStorage.setItem('user', JSON.stringify(res.data.user));
+                        const normalizedUser = normalizeUserRoles(res.data.user);
+                        setUser(normalizedUser);
+                        localStorage.setItem('user', JSON.stringify(normalizedUser));
                     }
                 } catch (error) {
                     console.error('Error fetching user profile:', error);
@@ -37,7 +51,7 @@ export const AuthProvider = ({ children }) => {
                     } else {
                         // Fallback to stored user if server fails but not 401/404
                         const storedUser = JSON.parse(localStorage.getItem('user'));
-                        if (storedUser) setUser(storedUser);
+                        if (storedUser) setUser(normalizeUserRoles(storedUser));
                     }
                 }
             }
@@ -51,8 +65,9 @@ export const AuthProvider = ({ children }) => {
         try {
             const res = await api.post('/auth/login', { email, password });
             localStorage.setItem('token', res.data.token);
-            localStorage.setItem('user', JSON.stringify(res.data.user));
-            setUser(res.data.user);
+            const normalizedUser = normalizeUserRoles(res.data.user);
+            localStorage.setItem('user', JSON.stringify(normalizedUser));
+            setUser(normalizedUser);
             return { success: true };
         } catch (error) {
             return { success: false, message: error.response?.data?.message || 'Login failed' };
@@ -63,8 +78,9 @@ export const AuthProvider = ({ children }) => {
         try {
             const res = await api.post('/auth/register', userData);
             localStorage.setItem('token', res.data.token);
-            localStorage.setItem('user', JSON.stringify(res.data.user));
-            setUser(res.data.user);
+            const normalizedUser = normalizeUserRoles(res.data.user);
+            localStorage.setItem('user', JSON.stringify(normalizedUser));
+            setUser(normalizedUser);
             return { success: true };
         } catch (error) {
             return { success: false, message: error.response?.data?.message || 'Registration failed' };
@@ -75,8 +91,9 @@ export const AuthProvider = ({ children }) => {
         try {
             const res = await api.post('/auth/setup', userData);
             localStorage.setItem('token', res.data.token);
-            localStorage.setItem('user', JSON.stringify(res.data.user));
-            setUser(res.data.user);
+            const normalizedUser = normalizeUserRoles(res.data.user);
+            localStorage.setItem('user', JSON.stringify(normalizedUser));
+            setUser(normalizedUser);
             setIsInitialized(true);
             return { success: true };
         } catch (error) {
@@ -91,26 +108,30 @@ export const AuthProvider = ({ children }) => {
     };
 
     const updateProfile = (updatedUser) => {
-        setUser(updatedUser);
-        localStorage.setItem('user', JSON.stringify(updatedUser));
+        const normalizedUser = normalizeUserRoles(updatedUser);
+        setUser(normalizedUser);
+        localStorage.setItem('user', JSON.stringify(normalizedUser));
     };
 
     const hasRole = (roleName) => {
         if (!user || !user.roles) return false;
-        return user.roles.includes(roleName);
+        const normalized = normalizeRoleName(roleName);
+        const roles = Array.isArray(user.roles) ? user.roles.map(normalizeRoleName) : [];
+        return roles.includes(normalized);
     };
 
     const hasAnyRole = (roleNames = []) => {
         if (!user || !user.roles) return false;
-        return roleNames.some(role => user.roles.includes(role));
+        const roles = Array.isArray(user.roles) ? user.roles.map(normalizeRoleName) : [];
+        return (roleNames || []).some(role => roles.includes(normalizeRoleName(role)));
     };
 
     const isAdmin = () => {
-        return hasAnyRole(['SUPER_ADMIN', 'PASTOR', 'LIDER_DOCE']);
+        return hasAnyRole(['ADMIN', 'PASTOR', 'LIDER_DOCE']);
     };
 
     const isSuperAdmin = () => {
-        return hasRole('SUPER_ADMIN');
+        return hasRole('ADMIN');
     };
 
     return (

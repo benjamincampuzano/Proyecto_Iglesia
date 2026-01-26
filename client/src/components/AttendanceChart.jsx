@@ -1,19 +1,20 @@
 import { useState, useEffect } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-import api from '../utils/api';
+import useAttendance from '../hooks/useAttendance';
 import { Calendar, TrendingUp } from 'lucide-react';
 
 const AttendanceChart = () => {
-    const [stats, setStats] = useState([]);
-    const [cells, setCells] = useState([]);
-    const [selectedCell, setSelectedCell] = useState('');
-    const [startDate, setStartDate] = useState(() => {
-        const date = new Date();
-        date.setDate(date.getDate() - 30);
-        return date.toISOString().split('T')[0];
-    });
-    const [endDate, setEndDate] = useState(new Date().toISOString().split('T')[0]);
-    const [loading, setLoading] = useState(false);
+    const {
+        stats,
+        cells,
+        selectedCell,
+        setSelectedCell,
+        startDate,
+        setStartDate,
+        endDate,
+        setEndDate,
+        loading,
+    } = useAttendance();
     const [isDarkMode, setIsDarkMode] = useState(false);
 
     useEffect(() => {
@@ -27,51 +28,6 @@ const AttendanceChart = () => {
 
         return () => observer.disconnect();
     }, []);
-
-    useEffect(() => {
-        fetchCells();
-    }, []);
-
-    useEffect(() => {
-        fetchStats();
-    }, [startDate, endDate, selectedCell]);
-
-    const fetchCells = async () => {
-        try {
-            const response = await api.get('/enviar/cells');
-            const data = response.data;
-            if (Array.isArray(data)) {
-                setCells(data);
-            } else {
-                setCells([]);
-            }
-        } catch (error) {
-            console.error('Error fetching cells:', error);
-        }
-    };
-
-    const fetchStats = async () => {
-        try {
-            setLoading(true);
-            const response = await api.get('/enviar/cell-attendance/stats', {
-                params: {
-                    startDate,
-                    endDate,
-                    ...(selectedCell && { cellId: selectedCell })
-                }
-            });
-            const data = response.data;
-            if (Array.isArray(data)) {
-                setStats(data);
-            } else {
-                setStats([]);
-            }
-        } catch (error) {
-            console.error('Error fetching stats:', error);
-        } finally {
-            setLoading(false);
-        }
-    };
 
     const formatDate = (dateStr) => {
         const date = new Date(dateStr);

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { UserPlus, Search, Trash2, Edit, Save } from 'lucide-react';
-import api from './api';
+import api from '../utils/api';
 import UserSearchSelect from './UserSearchSelect';
 
 const EnrollmentPanel = () => {

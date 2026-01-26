@@ -3,7 +3,7 @@ const userController = require('../controllers/userController');
 
 const prisma = new PrismaClient();
 
-const mockRequest = (params = {}, body = {}, user = { role: 'SUPER_ADMIN', id: 1 }) => ({
+const mockRequest = (params = {}, body = {}, user = { role: 'ADMIN', id: 1 }) => ({
     params,
     body,
     user

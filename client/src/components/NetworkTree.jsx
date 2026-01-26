@@ -124,7 +124,7 @@ const NetworkNode = ({ node, level, currentUser, onAddUser, onRemoveUser }) => {
 
     /**
      * Determine if the current user can add users to this node
-     * SUPER_ADMIN: Can manage all nodes
+     * ADMIN: Can manage all nodes
      * LIDER_DOCE: Can add to their own node and to LIDER_CELULA in their network
      * LIDER_CELULA: Can add to their own node
      * DISCIPULO: Cannot manage
@@ -134,8 +134,8 @@ const NetworkNode = ({ node, level, currentUser, onAddUser, onRemoveUser }) => {
 
         const userRoles = currentUser.roles || [];
 
-        // SUPER_ADMIN can manage all nodes
-        if (userRoles.includes('SUPER_ADMIN')) return true;
+        // ADMIN can manage all nodes
+        if (userRoles.includes('ADMIN')) return true;
 
         // LIDER_DOCE can add to their own node or to LIDER_CELULA in their network
         if (userRoles.includes('LIDER_DOCE')) {
@@ -158,7 +158,7 @@ const NetworkNode = ({ node, level, currentUser, onAddUser, onRemoveUser }) => {
 
     /**
      * Determine if the current user can remove this node
-     * SUPER_ADMIN: Can remove any node (except root)
+     * ADMIN: Can remove any node (except root)
      * LIDER_DOCE: Can remove any disciple in their network (any level)
      * LIDER_CELULA: Can remove any disciple in their network (any level)
      * DISCIPULO: Cannot remove users
@@ -168,8 +168,8 @@ const NetworkNode = ({ node, level, currentUser, onAddUser, onRemoveUser }) => {
 
         const userRoles = currentUser.roles || [];
 
-        // SUPER_ADMIN can remove any node (except root)
-        if (userRoles.includes('SUPER_ADMIN')) return true;
+        // ADMIN can remove any node (except root)
+        if (userRoles.includes('ADMIN')) return true;
 
         // LIDER_DOCE can remove anyone in their network (any level >= 1)
         if (userRoles.includes('LIDER_DOCE') && level >= 1) {
@@ -217,13 +217,13 @@ const NetworkNode = ({ node, level, currentUser, onAddUser, onRemoveUser }) => {
                             <div className="flex items-center gap-2">
                                 <span className={`
                                     inline-block px-1.5 py-0.5 text-[10px] font-bold uppercase rounded-full tracking-wide
-                                    ${node.roles?.includes('SUPER_ADMIN') ? 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300' :
+                                    ${node.roles?.includes('ADMIN') ? 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300' :
                                         node.roles?.includes('PASTOR') ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' :
                                             node.roles?.includes('LIDER_DOCE') ? 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300' :
                                                 node.roles?.includes('LIDER_CELULA') ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300' :
                                                     'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'}
                                 `}>
-                                    {node.roles?.includes('SUPER_ADMIN') ? 'Super Admin' :
+                                    {node.roles?.includes('ADMIN') ? 'Super Admin' :
                                         node.roles?.includes('PASTOR') ? 'Pastor' :
                                             node.roles?.includes('LIDER_DOCE') ? 'Doce' :
                                                 node.roles?.includes('LIDER_CELULA') ? 'Célula' : 'Discípulo'}

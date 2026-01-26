@@ -170,7 +170,7 @@ const deleteModule = async (req, res) => {
 
         const roles = user.roles || [];
         // Strict Role Check - NEW
-        if (!roles.includes('SUPER_ADMIN') && !roles.includes('ADMIN') && !roles.includes('LIDER_DOCE')) {
+        if (!roles.includes('ADMIN') && !roles.includes('ADMIN') && !roles.includes('LIDER_DOCE')) {
             return res.status(403).json({ error: 'No tienes permiso para eliminar módulos.' });
         }
 
@@ -193,7 +193,7 @@ const deleteEnrollment = async (req, res) => {
 
         const roles = user.roles || [];
         // Role Check: Only Admin or Lider Doce
-        if (!roles.includes('SUPER_ADMIN') && !roles.includes('ADMIN') && !roles.includes('LIDER_DOCE')) {
+        if (!roles.includes('ADMIN') && !roles.includes('ADMIN') && !roles.includes('LIDER_DOCE')) {
             return res.status(403).json({ error: 'No tienes permiso para eliminar inscripciones.' });
         }
 
@@ -253,14 +253,14 @@ const enrollStudent = async (req, res) => {
         const roles = requestingUser.roles || [];
         // --- Refinement: Role and Network Check ---
         // "Solo los lideres de 12 pueden inscribir"
-        // Also allow SUPER_ADMIN for testing/management
-        if (!roles.includes('LIDER_DOCE') && !roles.includes('SUPER_ADMIN') && !roles.includes('ADMIN')) {
+        // Also allow ADMIN for testing/management
+        if (!roles.includes('LIDER_DOCE') && !roles.includes('ADMIN') && !roles.includes('ADMIN')) {
             return res.status(403).json({ error: 'Solo los Líderes de 12 pueden inscribir estudiantes.' });
         }
 
         // "Personas de su red"
-        // If SUPER_ADMIN, bypass check.
-        if (roles.includes('LIDER_DOCE') && !roles.includes('SUPER_ADMIN') && !roles.includes('ADMIN')) {
+        // If ADMIN, bypass check.
+        if (roles.includes('LIDER_DOCE') && !roles.includes('ADMIN') && !roles.includes('ADMIN')) {
             const networkIds = await getUserNetwork(requestingUser.id);
             if (!networkIds.includes(parseInt(userId))) {
                 return res.status(403).json({ error: 'Solo puedes inscribir a personas de tu red.' });
@@ -317,7 +317,7 @@ const getModuleEnrollments = async (req, res) => {
 
         const roles = user.roles || [];
         // Security Filter
-        if (roles.includes('SUPER_ADMIN') || roles.includes('ADMIN')) {
+        if (roles.includes('ADMIN') || roles.includes('ADMIN')) {
             // See all
         } else if (roles.includes('LIDER_DOCE') || roles.includes('LIDER_CELULA')) {
             const userId = parseInt(user.id);

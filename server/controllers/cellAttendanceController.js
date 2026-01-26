@@ -53,7 +53,7 @@ const recordCellAttendance = async (req, res) => {
 
         const userRoles = req.user.roles || [];
         const userId = req.user.id;
-        const isSuperAdmin = userRoles.includes('SUPER_ADMIN');
+        const isSuperAdmin = userRoles.includes('ADMIN');
         const isPastor = userRoles.includes('PASTOR');
         const isLiderDoce = userRoles.includes('LIDER_DOCE');
 
@@ -110,7 +110,7 @@ const getCellAttendance = async (req, res) => {
             where: { id: userId, cellId: parseInt(cellId) }
         });
 
-        const isSuperAdmin = userRoles.includes('SUPER_ADMIN');
+        const isSuperAdmin = userRoles.includes('ADMIN');
         const isPastor = userRoles.includes('PASTOR');
         const isLiderDoce = userRoles.includes('LIDER_DOCE');
 
@@ -127,8 +127,12 @@ const getCellAttendance = async (req, res) => {
                 user: {
                     select: {
                         id: true,
-                        fullName: true,
                         email: true,
+                        profile: {
+                            select: {
+                                fullName: true
+                            }
+                        },
                         roles: { include: { role: true } }
                     }
                 }
@@ -166,8 +170,8 @@ const getCells = async (req, res) => {
 
         let where = {};
 
-        if (userRoles.includes('SUPER_ADMIN') || userRoles.includes('ADMIN')) {
-            // SUPER_ADMIN sees all cells (no filter)
+        if (userRoles.includes('ADMIN') || userRoles.includes('ADMIN')) {
+            // ADMIN sees all cells (no filter)
             where = {};
         } else if (userRoles.includes('LIDER_DOCE') || userRoles.includes('PASTOR')) {
             // LIDER_DOCE y PASTOR pueden ver todas las células de su red
@@ -272,7 +276,7 @@ const getCellMembers = async (req, res) => {
         }
 
         const isMember = cell.members.some(m => m.id === userId);
-        const isAuthorized = userRoles.some(r => ['SUPER_ADMIN', 'LIDER_DOCE', 'PASTOR'].includes(r));
+        const isAuthorized = userRoles.some(r => ['ADMIN', 'LIDER_DOCE', 'PASTOR'].includes(r));
 
         if (!isAuthorized && cell.leaderId !== userId && !isMember) {
             return res.status(403).json({ error: 'Not authorized to view this cell' });
@@ -326,7 +330,7 @@ const getAttendanceStats = async (req, res) => {
                     return res.status(403).json({ error: 'Not authorized to view this cell' });
                 }
             }
-            // SUPER_ADMIN has access
+            // ADMIN has access
 
             cellFilter.cellId = parseInt(cellId);
         } else {
@@ -345,7 +349,7 @@ const getAttendanceStats = async (req, res) => {
                 });
                 cellFilter.cellId = { in: networkCells.map(c => c.id) };
             }
-            // SUPER_ADMIN sees all cells (no filter)
+            // ADMIN sees all cells (no filter)
         }
 
         // Fetch attendance records within date range

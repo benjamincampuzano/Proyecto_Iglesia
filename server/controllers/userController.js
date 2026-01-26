@@ -189,7 +189,7 @@ const getAllUsers = async (req, res) => {
 
         // Security Filter based on RBAC and Hierarchy
         // Note: currentUser.roles is an array from the token
-        if (currentUser.roles.includes('SUPER_ADMIN')) {
+        if (currentUser.roles.includes('ADMIN')) {
             where = {};
         } else if (currentUser.roles.some(r => ['PASTOR', 'LIDER_DOCE', 'LIDER_CELULA'].includes(r))) {
             const networkIds = await getUserNetwork(currentUser.id);
@@ -197,7 +197,7 @@ const getAllUsers = async (req, res) => {
                 id: { in: [...networkIds, currentUser.id] },
                 roles: {
                     none: {
-                        role: { name: 'SUPER_ADMIN' }
+                        role: { name: 'ADMIN' }
                     }
                 }
             };
@@ -315,7 +315,7 @@ const updateUser = async (req, res) => {
         }
 
         // Security: LIDER_DOCE or PASTOR can only update their network
-        if (req.user.roles.some(r => ['LIDER_DOCE', 'PASTOR'].includes(r)) && !req.user.roles.includes('SUPER_ADMIN')) {
+        if (req.user.roles.some(r => ['LIDER_DOCE', 'PASTOR'].includes(r)) && !req.user.roles.includes('ADMIN')) {
             const networkIds = await getUserNetwork(req.user.id);
             if (!networkIds.includes(userId) && userId !== req.user.id) {
                 return res.status(403).json({ message: 'You can only update users in your network' });

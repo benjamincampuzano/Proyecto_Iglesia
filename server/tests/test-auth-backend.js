@@ -76,7 +76,7 @@ async function testAuthModule() {
     console.log('\nTest 3: Validación de token JWT');
     try {
         const adminUser = await prisma.user.findFirst({
-            where: { role: 'SUPER_ADMIN' }
+            where: { role: 'ADMIN' }
         });
 
         if (adminUser) {

@@ -21,7 +21,7 @@ const CapacitacionDestino = () => {
             <div className="bg-purple-50 border-l-4 border-purple-500 p-4 rounded">
                 <h2 className="text-lg font-semibold text-purple-900">Capacitación Destino</h2>
                 <p className="text-sm text-purple-700 mt-1">
-                    Sistema de gestión de seminarios con 6 módulos y 10 clases por módulo
+                    Sistema de gestión de seminario bíblico
                 </p>
             </div>
 

@@ -1,88 +1,47 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Search, Filter, Edit2, Trash2, UserPlus, Loader, X, Save, UserCheck } from 'lucide-react';
+import PropTypes from 'prop-types';
 import UserSearchSelect from './UserSearchSelect';
-import api from '../utils/api';
+import useGuestManagement from '../hooks/useGuestManagement';
 
 const GuestList = ({ refreshTrigger }) => {
-    const [guests, setGuests] = useState([]);
-    const [loading, setLoading] = useState(false);
-    const [error, setError] = useState('');
-    const [searchTerm, setSearchTerm] = useState('');
-    const [statusFilter, setStatusFilter] = useState('');
-    const [invitedByFilter, setInvitedByFilter] = useState(null);
-    const [liderDoceFilter, setLiderDoceFilter] = useState(null); // New Filter
+    const {
+        guests,
+        loading,
+        error,
+        setError,
+        searchTerm,
+        setSearchTerm,
+        statusFilter,
+        setStatusFilter,
+        invitedByFilter,
+        setInvitedByFilter,
+        liderDoceFilter,
+        setLiderDoceFilter,
+        currentUser,
+        fetchGuests,
+        updateGuest,
+        deleteGuest,
+        convertGuestToMember,
+    } = useGuestManagement({ refreshTrigger });
+
     const [editingGuest, setEditingGuest] = useState(null);
-    const [currentUser, setCurrentUser] = useState(null);
     const [convertingGuest, setConvertingGuest] = useState(null);
     const [conversionEmail, setConversionEmail] = useState('');
     const [conversionPassword, setConversionPassword] = useState('');
-
-    useEffect(() => {
-        const user = JSON.parse(localStorage.getItem('user'));
-        setCurrentUser(user);
-    }, []);
-
-    useEffect(() => {
-        fetchGuests();
-    }, [refreshTrigger, statusFilter, invitedByFilter, liderDoceFilter]);
-
-    // Debounce search term
-    useEffect(() => {
-        const delayDebounceFn = setTimeout(() => {
-            fetchGuests();
-        }, 500);
-
-        return () => clearTimeout(delayDebounceFn);
-    }, [searchTerm]);
-
-    const fetchGuests = async () => {
-        setLoading(true);
-        setError('');
-        try {
-            const params = new URLSearchParams();
-
-            if (statusFilter) params.append('status', statusFilter);
-            if (invitedByFilter) params.append('invitedById', invitedByFilter);
-            if (liderDoceFilter) params.append('liderDoceId', liderDoceFilter);
-            if (searchTerm) params.append('search', searchTerm);
-
-            const res = await api.get('/guests', {
-                params: Object.fromEntries(params)
-            });
-
-            setGuests(res.data.guests);
-        } catch (err) {
-            setError(err.response?.data?.message || 'Error al cargar invitados');
-        } finally {
-            setLoading(false);
-        }
-    };
 
     const handleSearch = () => {
         fetchGuests();
     };
 
     const handleUpdateGuest = async (guestId, updates) => {
-        try {
-            await api.put(`/guests/${guestId}`, updates);
-
-            setEditingGuest(null);
-            fetchGuests();
-        } catch (err) {
-            setError(err.response?.data?.message || 'Error al actualizar invitado');
-        }
+        const res = await updateGuest(guestId, updates);
+        if (res.success) setEditingGuest(null);
     };
 
     const handleDeleteGuest = async (guestId) => {
         if (!confirm('¿Estás seguro de que deseas eliminar este invitado?')) return;
-
-        try {
-            await api.delete(`/guests/${guestId}`);
-
-            fetchGuests();
-        } catch (err) {
-            setError(err.response?.data?.message || 'Error al eliminar invitado');
-        }
+        await deleteGuest(guestId);
     };
 
     const handleConvertToMember = async () => {
@@ -91,20 +50,13 @@ const GuestList = ({ refreshTrigger }) => {
             return;
         }
 
-        try {
-            await api.post(
-                `/guests/${convertingGuest.id}/convert-to-member`,
-                { email: conversionEmail, password: conversionPassword }
-            );
+        const res = await convertGuestToMember(convertingGuest.id, { email: conversionEmail, password: conversionPassword });
+        if (!res.success) return;
 
-            setConvertingGuest(null);
-            setConversionEmail('');
-            setConversionPassword('');
-            fetchGuests();
-            alert('Invitado consolidado a Discípulo exitosamente');
-        } catch (err) {
-            setError(err.response?.data?.message || 'Error al convertir invitado');
-        }
+        setConvertingGuest(null);
+        setConversionEmail('');
+        setConversionPassword('');
+        alert('Invitado consolidado a Discípulo exitosamente');
     };
 
     const getStatusBadgeColor = (status) => {
@@ -130,12 +82,12 @@ const GuestList = ({ refreshTrigger }) => {
     // Funciones auxiliares de permisos
     const canEditAllFields = (guest) => {
         const roles = currentUser?.roles || [];
-        return roles.includes('SUPER_ADMIN') || roles.includes('LIDER_DOCE') || roles.includes('PASTOR');
+        return roles.includes('ADMIN') || roles.includes('LIDER_DOCE') || roles.includes('PASTOR');
     };
 
     const canDelete = (guest) => {
         const roles = currentUser?.roles || [];
-        if (roles.includes('SUPER_ADMIN') || roles.includes('LIDER_DOCE') || roles.includes('PASTOR')) {
+        if (roles.includes('ADMIN') || roles.includes('LIDER_DOCE') || roles.includes('PASTOR')) {
             return true;
         }
         // LIDER_CELULA/DISCIPULO solo pueden eliminar invitados que invitaron
@@ -442,3 +394,7 @@ const GuestList = ({ refreshTrigger }) => {
 };
 
 export default GuestList;
+
+GuestList.propTypes = {
+    refreshTrigger: PropTypes.any,
+};

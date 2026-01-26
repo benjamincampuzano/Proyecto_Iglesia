@@ -123,7 +123,7 @@ const getAllMembers = async (req, res) => {
             where = {
                 id: { in: allIds }
             };
-        } else if (!userRoles.includes('SUPER_ADMIN') && !userRoles.includes('ADMIN')) {
+        } else if (!userRoles.includes('ADMIN') && !userRoles.includes('ADMIN')) {
             // Regular members only see themselves
             where = { id: userId };
         }
@@ -178,15 +178,15 @@ const getAttendanceStats = async (req, res) => {
             const networkIds = await getUserNetwork(id);
             networkIds.push(id);
             where.userId = { in: networkIds };
-        } else if (!userRoles.includes('SUPER_ADMIN')) {
+        } else if (!userRoles.includes('ADMIN')) {
             where.userId = id;
         }
 
-        // Always exclude SUPER_ADMIN from reports
+        // Always exclude ADMIN from reports
         where.user = {
             roles: {
                 none: {
-                    role: { name: 'SUPER_ADMIN' }
+                    role: { name: 'ADMIN' }
                 }
             }
         };
@@ -230,15 +230,15 @@ const getDailyStats = async (req, res) => {
             const networkIds = await getUserNetwork(id);
             networkIds.push(id);
             where.userId = { in: networkIds };
-        } else if (!userRoles.includes('SUPER_ADMIN')) {
+        } else if (!userRoles.includes('ADMIN')) {
             where.userId = id;
         }
 
-        // Always exclude SUPER_ADMIN from reports
+        // Always exclude ADMIN from reports
         where.user = {
             roles: {
                 none: {
-                    role: { name: 'SUPER_ADMIN' }
+                    role: { name: 'ADMIN' }
                 }
             }
         };

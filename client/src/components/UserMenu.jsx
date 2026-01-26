@@ -1,12 +1,12 @@
 import { useState, useRef, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { User, Settings, Users, LogOut, UserPlus } from 'lucide-react';
+import { User, Settings, Users, LogOut } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import ThemeToggle from './ThemeToggle';
 
-const UserMenu = ({ onOpenProfile, onOpenUserManagement }) => {
+const UserMenu = ({ onOpenProfile }) => {
     const [isOpen, setIsOpen] = useState(false);
-    const { user, logout, hasAnyRole, isAdmin: contextIsAdmin } = useAuth();
+    const { user, logout, isAdmin: contextIsAdmin } = useAuth();
     const menuRef = useRef(null);
 
     const isAdmin = contextIsAdmin();
@@ -75,13 +75,6 @@ const UserMenu = ({ onOpenProfile, onOpenUserManagement }) => {
                                 <Users size={18} className="text-gray-500 dark:text-gray-400" />
                                 <span className="text-sm text-gray-700 dark:text-gray-200">Gestionar Usuarios</span>
                             </Link>
-                            <button
-                                onClick={() => handleMenuItemClick(onOpenUserManagement)}
-                                className="w-full flex items-center space-x-3 px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors text-left"
-                            >
-                                <UserPlus size={18} className="text-gray-500 dark:text-gray-400" />
-                                <span className="text-sm text-gray-700 dark:text-gray-200">Crear Usuario</span>
-                            </button>
                         </>
                     )}
 

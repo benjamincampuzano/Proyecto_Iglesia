@@ -20,7 +20,7 @@ router.get('/profile', authenticate, getProfile);
 router.put('/profile', authenticate, updateProfile);
 router.put('/password', authenticate, changePassword);
 
-// Admin routes (SUPER_ADMIN and LIDER_DOCE only)
+// Admin routes (ADMIN and LIDER_DOCE only)
 router.get('/', authenticate, isAdmin, getAllUsers);
 router.get('/:id', authenticate, isAdmin, getUserById);
 router.put('/:id', authenticate, isAdmin, updateUser);

@@ -17,7 +17,7 @@ const ConsolidatedStatsReport = ({ simpleMode = false }) => {
     const [loading, setLoading] = useState(false);
 
     // Access Control
-    const ALLOWED_ROLES = ['PASTOR', 'LIDER_DOCE', 'SUPER_ADMIN'];
+    const ALLOWED_ROLES = ['PASTOR', 'LIDER_DOCE', 'ADMIN'];
     const hasAccess = hasAnyRole(ALLOWED_ROLES);
 
     useEffect(() => {

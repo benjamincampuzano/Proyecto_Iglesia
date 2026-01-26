@@ -3,7 +3,7 @@ const networkController = require('../controllers/networkController');
 
 const prisma = new PrismaClient();
 
-const mockRequest = (params = {}, user = { role: 'SUPER_ADMIN', id: 1 }) => ({
+const mockRequest = (params = {}, user = { role: 'ADMIN', id: 1 }) => ({
     params,
     user
 });

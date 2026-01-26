@@ -22,7 +22,7 @@ const GoalForm = ({ isOpen, onClose, onSuccess, initialData = null }) => {
     const [fetching, setFetching] = useState(false);
     const [error, setError] = useState('');
 
-    const isPastorOrAdmin = hasAnyRole(['SUPER_ADMIN', 'PASTOR']);
+    const isPastorOrAdmin = hasAnyRole(['ADMIN', 'PASTOR']);
 
     useEffect(() => {
         if (initialData) {

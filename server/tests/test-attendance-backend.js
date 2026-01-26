@@ -31,7 +31,7 @@ async function testAttendanceModule() {
     console.log('Test 1: Registrar asistencia a servicio de iglesia');
     try {
         const adminUser = await prisma.user.findFirst({
-            where: { role: 'SUPER_ADMIN' }
+            where: { role: 'ADMIN' }
         });
 
         const memberUser = await prisma.user.findFirst({
@@ -87,7 +87,7 @@ async function testAttendanceModule() {
     console.log('\nTest 2: Validación de duplicación de asistencia a iglesia');
     try {
         const adminUser = await prisma.user.findFirst({
-            where: { role: 'SUPER_ADMIN' }
+            where: { role: 'ADMIN' }
         });
 
         const memberUser = await prisma.user.findFirst({
@@ -132,7 +132,7 @@ async function testAttendanceModule() {
     console.log('\nTest 3: Obtener asistencias de iglesia');
     try {
         const adminUser = await prisma.user.findFirst({
-            where: { role: 'SUPER_ADMIN' }
+            where: { role: 'ADMIN' }
         });
 
         const req = mockRequest({}, {}, adminUser);
@@ -162,7 +162,7 @@ async function testAttendanceModule() {
     console.log('\nTest 4: Registrar asistencia a célula');
     try {
         const adminUser = await prisma.user.findFirst({
-            where: { role: 'SUPER_ADMIN' }
+            where: { role: 'ADMIN' }
         });
 
         const leaderUser = await prisma.user.findFirst({
@@ -233,7 +233,7 @@ async function testAttendanceModule() {
     console.log('\nTest 5: Validación de campos requeridos en asistencia');
     try {
         const adminUser = await prisma.user.findFirst({
-            where: { role: 'SUPER_ADMIN' }
+            where: { role: 'ADMIN' }
         });
 
         const memberUser = await prisma.user.findFirst({
@@ -257,7 +257,7 @@ async function testAttendanceModule() {
     console.log('\nTest 6: Actualizar asistencia');
     try {
         const adminUser = await prisma.user.findFirst({
-            where: { role: 'SUPER_ADMIN' }
+            where: { role: 'ADMIN' }
         });
 
         const memberUser = await prisma.user.findFirst({
@@ -307,7 +307,7 @@ async function testAttendanceModule() {
     console.log('\nTest 7: Estadísticas de asistencia');
     try {
         const adminUser = await prisma.user.findFirst({
-            where: { role: 'SUPER_ADMIN' }
+            where: { role: 'ADMIN' }
         });
 
         const req = mockRequest({}, {}, adminUser);
@@ -367,7 +367,7 @@ async function testAttendanceModule() {
     console.log('\nTest 9: Asistencia múltiple (batch)');
     try {
         const adminUser = await prisma.user.findFirst({
-            where: { role: 'SUPER_ADMIN' }
+            where: { role: 'ADMIN' }
         });
 
         const memberUsers = await prisma.user.findMany({
@@ -412,7 +412,7 @@ async function testAttendanceModule() {
     console.log('\nTest 10: Eliminar asistencia');
     try {
         const adminUser = await prisma.user.findFirst({
-            where: { role: 'SUPER_ADMIN' }
+            where: { role: 'ADMIN' }
         });
 
         const memberUser = await prisma.user.findFirst({

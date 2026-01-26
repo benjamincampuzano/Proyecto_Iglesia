@@ -48,7 +48,7 @@ const SchoolLeaderStats = () => {
                     <h2 className="text-2xl font-bold text-gray-800 dark:text-white">Reporte Estadístico por Líder</h2>
                     <p className="text-gray-500 dark:text-gray-400">Desempeño de estudiantes agrupado por Líder de 12</p>
                 </div>
-                {hasAnyRole(['SUPER_ADMIN', 'LIDER_DOCE']) && (
+                {hasAnyRole(['ADMIN', 'LIDER_DOCE']) && (
                     <button
                         onClick={downloadExcel}
                         className="flex items-center px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg shadow transition-all"

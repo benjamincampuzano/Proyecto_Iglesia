@@ -35,7 +35,7 @@ const resolveLeaderName = (userWithParents) => {
 const createModule = async (req, res) => {
     try {
         const roles = req.user.roles || [];
-        const isAdmin = roles.includes('SUPER_ADMIN');
+        const isAdmin = roles.includes('ADMIN');
         const isProfesorRole = roles.includes('PROFESOR');
 
         if (!isAdmin && !isProfesorRole && !roles.includes('LIDER_DOCE')) {
@@ -80,7 +80,7 @@ const getModules = async (req, res) => {
 
         const roles = user.roles || [];
         // Filtering based on role
-        if (roles.includes('SUPER_ADMIN') || roles.includes('PASTOR') || roles.includes('ADMIN')) {
+        if (roles.includes('ADMIN') || roles.includes('PASTOR') || roles.includes('ADMIN')) {
             // See all
         } else if (roles.includes('LIDER_DOCE') || roles.includes('LIDER_CELULA')) {
             // See classes where they are Professor OR Auxiliar OR have disciples enrolled
@@ -138,7 +138,7 @@ const updateModule = async (req, res) => {
         const { name, description, moduleId, professorId, startDate, endDate, auxiliarIds } = req.body;
 
         const roles = req.user.roles || [];
-        const isAdmin = roles.includes('SUPER_ADMIN') || roles.includes('ADMIN');
+        const isAdmin = roles.includes('ADMIN') || roles.includes('ADMIN');
         const isProfesorRole = roles.includes('PROFESOR');
 
         if (!isAdmin && !isProfesorRole && !roles.includes('LIDER_DOCE')) {
@@ -178,7 +178,7 @@ const deleteModule = async (req, res) => {
         const { id } = req.params;
         const moduleId = parseInt(id);
         const roles = req.user.roles || [];
-        const isAdmin = roles.includes('SUPER_ADMIN') || roles.includes('ADMIN');
+        const isAdmin = roles.includes('ADMIN') || roles.includes('ADMIN');
         const isProfesorRole = roles.includes('PROFESOR');
 
         if (!isAdmin && !isProfesorRole && !roles.includes('LIDER_DOCE')) {
@@ -266,7 +266,7 @@ const unenrollStudent = async (req, res) => {
         const { enrollmentId } = req.params;
 
         const roles = req.user.roles || [];
-        if (!roles.includes('SUPER_ADMIN') && !roles.includes('LIDER_DOCE')) {
+        if (!roles.includes('ADMIN') && !roles.includes('LIDER_DOCE')) {
             return res.status(403).json({ error: 'Not authorized to remove students' });
         }
 
@@ -307,7 +307,7 @@ const getModuleMatrix = async (req, res) => {
 
         // Access Control
         const roles = user.roles || [];
-        const isProfessor = moduleData.professorId === user.id || roles.includes('SUPER_ADMIN');
+        const isProfessor = moduleData.professorId === user.id || roles.includes('ADMIN');
         const isAuxiliar = moduleData.auxiliaries.some(a => a.id === user.id);
         const isDisciple = roles.includes('DISCIPULO');
 
@@ -411,7 +411,7 @@ const updateMatrixCell = async (req, res) => {
 
         // Permission Check
         const roles = user.roles || [];
-        const isAdmin = roles.includes('SUPER_ADMIN') || roles.includes('ADMIN');
+        const isAdmin = roles.includes('ADMIN') || roles.includes('ADMIN');
         const isProfesorRole = roles.includes('PROFESOR');
         const isAuxiliarRole = roles.includes('AUXILIAR');
 
@@ -620,7 +620,7 @@ const updateClassMaterial = async (req, res) => {
         if (!moduleData) return res.status(404).json({ error: 'Module not found' });
 
         const roles = user.roles || [];
-        const isAdmin = roles.includes('SUPER_ADMIN') || roles.includes('ADMIN');
+        const isAdmin = roles.includes('ADMIN') || roles.includes('ADMIN');
         const isProfesorRole = roles.includes('PROFESOR');
         const isModuleProfessor = moduleData.professorId === user.id || isAdmin || isProfesorRole;
 

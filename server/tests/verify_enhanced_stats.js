@@ -3,7 +3,7 @@ const consolidarStatsController = require('../controllers/consolidarStatsControl
 
 const prisma = new PrismaClient();
 
-const mockRequest = (query = {}, user = { role: 'SUPER_ADMIN', id: 1 }) => ({
+const mockRequest = (query = {}, user = { role: 'ADMIN', id: 1 }) => ({
     query,
     user
 });

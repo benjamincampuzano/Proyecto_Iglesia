@@ -94,7 +94,7 @@ async function migrateData() {
                 }
 
             } else if (user.role === 'LIDER_DOCE') {
-                if (leader.role === 'PASTOR' || leader.role === 'SUPER_ADMIN') {
+                if (leader.role === 'PASTOR' || leader.role === 'ADMIN') {
                     // LIDER_DOCE under PASTOR
                     // pastorId = current leaderId
 

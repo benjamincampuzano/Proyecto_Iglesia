@@ -45,6 +45,7 @@ const ConventionDetails = ({ convention, onBack, onRefresh }) => {
     // Payment Form State
     const [paymentAmount, setPaymentAmount] = useState('');
     const [paymentNotes, setPaymentNotes] = useState('');
+    const [paymentType, setPaymentType] = useState('CONVENTION');
 
     useEffect(() => {
         if (activeTab === 'report') {
@@ -166,12 +167,14 @@ const ConventionDetails = ({ convention, onBack, onRefresh }) => {
         try {
             await api.post(`/convenciones/registrations/${selectedRegistration.id}/payments`, {
                 amount: parseFloat(paymentAmount),
+                paymentType,
                 notes: paymentNotes
             });
             setShowPaymentModal(false);
             setSelectedRegistration(null);
             setPaymentAmount('');
             setPaymentNotes('');
+            setPaymentType('CONVENTION');
             onRefresh();
             // Refresh report if active
             if (activeTab === 'report') fetchReport();
@@ -284,7 +287,7 @@ const ConventionDetails = ({ convention, onBack, onRefresh }) => {
                 <>
                     {/* Actions */}
                     <div className="flex justify-end gap-3">
-                        {hasAnyRole(['SUPER_ADMIN', 'LIDER_DOCE']) && (
+                        {hasAnyRole(['ADMIN', 'LIDER_DOCE']) && (
                             <button
                                 onClick={handleExportToExcel}
                                 className="flex items-center px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors"
@@ -293,7 +296,16 @@ const ConventionDetails = ({ convention, onBack, onRefresh }) => {
                                 Exportar Excel
                             </button>
                         )}
-                        {hasAnyRole(['SUPER_ADMIN', 'PASTOR', 'LIDER_DOCE']) && (
+                        {hasAnyRole(['ADMIN']) && (
+                            <button
+                                onClick={openEditModal}
+                                className="flex items-center px-4 py-2 bg-yellow-600 hover:bg-yellow-700 text-white rounded-lg transition-colors"
+                            >
+                                <Edit2 size={20} className="mr-2" />
+                                Editar Convención
+                            </button>
+                        )}
+                        {hasAnyRole(['ADMIN', 'PASTOR', 'LIDER_DOCE']) && (
                             <button
                                 onClick={() => setShowRegisterModal(true)}
                                 className="flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
@@ -349,7 +361,7 @@ const ConventionDetails = ({ convention, onBack, onRefresh }) => {
                                                 {formatCurrency(reg.balance)}
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium flex items-center justify-end space-x-3">
-                                                {hasAnyRole(['SUPER_ADMIN', 'PASTOR', 'LIDER_DOCE']) && (
+                                                {hasAnyRole(['ADMIN', 'PASTOR', 'LIDER_DOCE']) && (
                                                     <button
                                                         onClick={() => openPaymentModal(reg)}
                                                         className="text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-300 inline-flex items-center"
@@ -359,7 +371,7 @@ const ConventionDetails = ({ convention, onBack, onRefresh }) => {
                                                         Abonar
                                                     </button>
                                                 )}
-                                                {hasAnyRole(['SUPER_ADMIN', 'PASTOR', 'LIDER_DOCE']) && (
+                                                {hasAnyRole(['ADMIN', 'PASTOR', 'LIDER_DOCE']) && (
                                                     <button
                                                         onClick={() => handleDelete(reg.id)}
                                                         className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300 inline-flex items-center"
@@ -508,6 +520,20 @@ const ConventionDetails = ({ convention, onBack, onRefresh }) => {
                             </div>
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                    Tipo de Pago
+                                </label>
+                                <select
+                                    value={paymentType}
+                                    onChange={(e) => setPaymentType(e.target.value)}
+                                    className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500"
+                                >
+                                    <option value="CONVENTION">Convención</option>
+                                    <option value="TRANSPORT">Transporte</option>
+                                    <option value="ACCOMMODATION">Hospedaje</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                                     Notas (Opcional)
                                 </label>
                                 <textarea
@@ -549,9 +575,15 @@ const ConventionDetails = ({ convention, onBack, onRefresh }) => {
                                     {selectedHistoryRegistration.payments.map((payment) => (
                                         <div key={payment.id} className="bg-gray-50 dark:bg-gray-700/50 p-4 rounded-lg border border-gray-100 dark:border-gray-700">
                                             <div className="flex justify-between items-center mb-2">
-                                                <span className="font-bold text-green-600 dark:text-green-400">
-                                                    {formatCurrency(payment.amount)}
-                                                </span>
+                                                <div>
+                                                    <span className="font-bold text-green-600 dark:text-green-400">
+                                                        {formatCurrency(payment.amount)}
+                                                    </span>
+                                                    <span className="ml-2 text-xs px-2 py-1 bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300 rounded">
+                                                        {payment.paymentType === 'CONVENTION' ? 'Convención' : 
+                                                         payment.paymentType === 'TRANSPORT' ? 'Transporte' : 'Hospedaje'}
+                                                    </span>
+                                                </div>
                                                 <span className="text-xs text-gray-500 dark:text-gray-400">
                                                     {new Date(payment.date).toLocaleDateString()}
                                                 </span>
@@ -576,6 +608,128 @@ const ConventionDetails = ({ convention, onBack, onRefresh }) => {
                                 <span className="font-bold text-green-600 dark:text-green-400">{formatCurrency(selectedHistoryRegistration.totalPaid)}</span>
                             </div>
                         </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Edit Convention Modal */}
+            {showEditModal && (
+                <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+                    <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl w-full max-w-lg overflow-hidden">
+                        <div className="p-6 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
+                            <h3 className="text-lg font-bold text-gray-900 dark:text-white">Editar Convención</h3>
+                            <button onClick={() => setShowEditModal(false)} className="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300">
+                                <XCircle size={24} />
+                            </button>
+                        </div>
+                        <form onSubmit={handleUpdateConvention} className="p-6 space-y-4">
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Tipo</label>
+                                    <select
+                                        value={editData.type}
+                                        onChange={(e) => setEditData({ ...editData, type: e.target.value })}
+                                        className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500"
+                                    >
+                                        <option value="FAMILIAS">FAMILIAS</option>
+                                        <option value="MUJERES">MUJERES</option>
+                                        <option value="JOVENES">JOVENES</option>
+                                        <option value="HOMBRES">HOMBRES</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Año</label>
+                                    <input
+                                        type="number"
+                                        value={editData.year}
+                                        onChange={(e) => setEditData({ ...editData, year: parseInt(e.target.value) })}
+                                        className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500"
+                                    />
+                                </div>
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Lema / Tema</label>
+                                <input
+                                    type="text"
+                                    value={editData.theme}
+                                    onChange={(e) => setEditData({ ...editData, theme: e.target.value })}
+                                    className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500"
+                                />
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Costo Total Convencion ($)</label>
+                                <input
+                                    type="number"
+                                    value={editData.cost}
+                                    onChange={(e) => setEditData({ ...editData, cost: e.target.value })}
+                                    className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500"
+                                    required
+                                />
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Costo Transporte ($)</label>
+                                    <input
+                                        type="number"
+                                        value={editData.transportCost}
+                                        onChange={(e) => setEditData({ ...editData, transportCost: e.target.value })}
+                                        className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Costo Hospedaje ($)</label>
+                                    <input
+                                        type="number"
+                                        value={editData.accommodationCost}
+                                        onChange={(e) => setEditData({ ...editData, accommodationCost: e.target.value })}
+                                        className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500"
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Fecha Inicio</label>
+                                    <input
+                                        type="date"
+                                        value={editData.startDate}
+                                        onChange={(e) => setEditData({ ...editData, startDate: e.target.value })}
+                                        className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500"
+                                        required
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Fecha Fin</label>
+                                    <input
+                                        type="date"
+                                        value={editData.endDate}
+                                        onChange={(e) => setEditData({ ...editData, endDate: e.target.value })}
+                                        className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500"
+                                        required
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="pt-4 flex space-x-3">
+                                <button
+                                    type="button"
+                                    onClick={() => setShowEditModal(false)}
+                                    className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+                                >
+                                    Cancelar
+                                </button>
+                                <button
+                                    type="submit"
+                                    disabled={loading}
+                                    className="flex-1 px-4 py-2 bg-yellow-600 hover:bg-yellow-700 text-white rounded-lg font-medium transition-colors disabled:opacity-50"
+                                >
+                                    {loading ? 'Actualizando...' : 'Actualizar Convención'}
+                                </button>
+                            </div>
+                        </form>
                     </div>
                 </div>
             )}

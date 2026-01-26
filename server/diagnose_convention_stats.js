@@ -21,7 +21,7 @@ async function diagnose() {
         });
         console.log('Non-cancelled Registrations:', activeRegs);
 
-        // Simulate the controller query for SUPER_ADMIN
+        // Simulate the controller query for ADMIN
         const end = new Date();
         const start = new Date();
         start.setFullYear(start.getFullYear() - 5);

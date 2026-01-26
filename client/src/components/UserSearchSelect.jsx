@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { Search, ChevronDown, X } from 'lucide-react';
+import PropTypes from 'prop-types';
 import api from '../utils/api';
 
 const UserSearchSelect = ({ value, onChange, label, placeholder = "Buscar usuario...", roleFilter }) => {
@@ -165,3 +166,11 @@ const UserSearchSelect = ({ value, onChange, label, placeholder = "Buscar usuari
 };
 
 export default UserSearchSelect;
+
+UserSearchSelect.propTypes = {
+    value: PropTypes.any,
+    onChange: PropTypes.func.isRequired,
+    label: PropTypes.string,
+    placeholder: PropTypes.string,
+    roleFilter: PropTypes.string,
+};

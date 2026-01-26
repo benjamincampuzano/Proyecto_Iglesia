@@ -30,11 +30,11 @@ async function testCellsModule() {
     // Evitar llamadas externas en geocoding
     axios.get = async () => ({ data: [{ lat: '0', lon: '0' }] });
 
-    // Test 1: Obtener líderes elegibles (como SUPER_ADMIN)
-    console.log('Test 1: Obtener líderes elegibles (como SUPER_ADMIN)');
+    // Test 1: Obtener líderes elegibles (como ADMIN)
+    console.log('Test 1: Obtener líderes elegibles (como ADMIN)');
     try {
         const adminUser = await prisma.user.findFirst({
-            where: { role: 'SUPER_ADMIN' }
+            where: { role: 'ADMIN' }
         });
 
         if (!adminUser) {
@@ -61,7 +61,7 @@ async function testCellsModule() {
     console.log('\nTest 2: Crear nueva célula');
     try {
         const adminUser = await prisma.user.findFirst({
-            where: { role: 'SUPER_ADMIN' }
+            where: { role: 'ADMIN' }
         });
 
         const leaderUser = await prisma.user.findFirst({
@@ -117,7 +117,7 @@ async function testCellsModule() {
     console.log('\nTest 3: Validación de campos requeridos');
     try {
         const adminUser = await prisma.user.findFirst({
-            where: { role: 'SUPER_ADMIN' }
+            where: { role: 'ADMIN' }
         });
 
         const req = mockRequest({}, {}, adminUser); // Sin datos requeridos
@@ -137,7 +137,7 @@ async function testCellsModule() {
     console.log('\nTest 4: Actualizar coordenadas de célula');
     try {
         const adminUser = await prisma.user.findFirst({
-            where: { role: 'SUPER_ADMIN' }
+            where: { role: 'ADMIN' }
         });
 
         const leaderUser = await prisma.user.findFirst({
@@ -184,10 +184,10 @@ async function testCellsModule() {
         console.log('❌ Error en test de actualizar coordenadas:', error.message);
     }
 
-    // Test 5: Obtener miembros elegibles (como SUPER_ADMIN)
-    console.log('\nTest 5: Obtener miembros elegibles (como SUPER_ADMIN)');
+    // Test 5: Obtener miembros elegibles (como ADMIN)
+    console.log('\nTest 5: Obtener miembros elegibles (como ADMIN)');
     try {
-        const adminUser = await prisma.user.findFirst({ where: { role: 'SUPER_ADMIN' } });
+        const adminUser = await prisma.user.findFirst({ where: { role: 'ADMIN' } });
         const req = mockRequest({}, {}, adminUser);
         const res = mockResponse();
         await cellController.getEligibleMembers(req, res);
@@ -206,7 +206,7 @@ async function testCellsModule() {
     console.log('\nTest 6: Asignar miembro a célula');
     try {
         const adminUser = await prisma.user.findFirst({
-            where: { role: 'SUPER_ADMIN' }
+            where: { role: 'ADMIN' }
         });
 
         const leaderUser = await prisma.user.findFirst({
@@ -273,7 +273,7 @@ async function testCellsModule() {
     console.log('\nTest 7: Eliminar célula');
     try {
         const adminUser = await prisma.user.findFirst({
-            where: { role: 'SUPER_ADMIN' }
+            where: { role: 'ADMIN' }
         });
 
         const leaderUser = await prisma.user.findFirst({

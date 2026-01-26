@@ -30,7 +30,7 @@ async function testSeminarsModule() {
     console.log('Test 1: Obtener todos los módulos de seminario');
     try {
         const adminUser = await prisma.user.findFirst({
-            where: { role: 'SUPER_ADMIN' }
+            where: { role: 'ADMIN' }
         });
 
         if (!adminUser) {
@@ -67,7 +67,7 @@ async function testSeminarsModule() {
     console.log('\nTest 2: Crear nuevo módulo de seminario');
     try {
         const adminUser = await prisma.user.findFirst({
-            where: { role: 'SUPER_ADMIN' }
+            where: { role: 'ADMIN' }
         });
 
         const professorUser = await prisma.user.findFirst({
@@ -117,7 +117,7 @@ async function testSeminarsModule() {
     console.log('\nTest 3: Validación de campos requeridos');
     try {
         const adminUser = await prisma.user.findFirst({
-            where: { role: 'SUPER_ADMIN' }
+            where: { role: 'ADMIN' }
         });
 
         const req = mockRequest({}, {}, adminUser); // Sin datos requeridos
@@ -137,7 +137,7 @@ async function testSeminarsModule() {
     console.log('\nTest 4: Actualizar módulo');
     try {
         const adminUser = await prisma.user.findFirst({
-            where: { role: 'SUPER_ADMIN' }
+            where: { role: 'ADMIN' }
         });
 
         // Crear módulo para actualizar
@@ -185,7 +185,7 @@ async function testSeminarsModule() {
     console.log('\nTest 5: Inscribir usuario en módulo');
     try {
         const adminUser = await prisma.user.findFirst({
-            where: { role: 'SUPER_ADMIN' }
+            where: { role: 'ADMIN' }
         });
 
         const studentUser = await prisma.user.findFirst({
@@ -244,7 +244,7 @@ async function testSeminarsModule() {
     console.log('\nTest 6: Validación de duplicación de inscripción');
     try {
         const adminUser = await prisma.user.findFirst({
-            where: { role: 'SUPER_ADMIN' }
+            where: { role: 'ADMIN' }
         });
 
         const studentUser = await prisma.user.findFirst({
@@ -294,7 +294,7 @@ async function testSeminarsModule() {
     console.log('\nTest 7: Obtener inscripciones de un módulo');
     try {
         const adminUser = await prisma.user.findFirst({
-            where: { role: 'SUPER_ADMIN' }
+            where: { role: 'ADMIN' }
         });
 
         const testModule = await prisma.seminarModule.create({
@@ -324,7 +324,7 @@ async function testSeminarsModule() {
     console.log('\nTest 9: Eliminar módulo');
     try {
         const adminUser = await prisma.user.findFirst({
-            where: { role: 'SUPER_ADMIN' }
+            where: { role: 'ADMIN' }
         });
 
         // Crear módulo para eliminar

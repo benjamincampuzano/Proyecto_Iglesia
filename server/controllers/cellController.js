@@ -46,12 +46,12 @@ const createCell = async (req, res) => {
         }
 
         const { roles, id } = req.user;
-        const isAuthorized = roles.some(r => ['SUPER_ADMIN', 'LIDER_DOCE', 'PASTOR'].includes(r));
+        const isAuthorized = roles.some(r => ['ADMIN', 'LIDER_DOCE', 'PASTOR'].includes(r));
         if (!isAuthorized) {
             return res.status(403).json({ error: 'Not authorized to create cells' });
         }
 
-        if (!roles.includes('SUPER_ADMIN') && !roles.includes('ADMIN')) {
+        if (!roles.includes('ADMIN') && !roles.includes('ADMIN')) {
             const networkIds = await getUserNetwork(id);
             if (!networkIds.includes(requestedLeaderId) && requestedLeaderId !== parseInt(id)) {
                 return res.status(400).json({ error: 'Leader not in your network' });
@@ -128,7 +128,7 @@ const getEligibleLeaders = async (req, res) => {
         const userId = parseInt(id);
         let where = {};
 
-        if (roles.includes('SUPER_ADMIN')) {
+        if (roles.includes('ADMIN')) {
             where = {
                 roles: {
                     some: {
@@ -137,7 +137,7 @@ const getEligibleLeaders = async (req, res) => {
                         }
                     },
                     none: {
-                        role: { name: 'SUPER_ADMIN' }
+                        role: { name: 'ADMIN' }
                     }
                 }
             };
@@ -152,7 +152,7 @@ const getEligibleLeaders = async (req, res) => {
                         }
                     },
                     none: {
-                        role: { name: 'SUPER_ADMIN' }
+                        role: { name: 'ADMIN' }
                     }
                 }
             };
@@ -192,13 +192,13 @@ const getEligibleHosts = async (req, res) => {
             id: { in: ids },
             roles: {
                 none: {
-                    role: { name: 'SUPER_ADMIN' }
+                    role: { name: 'ADMIN' }
                 }
             }
         };
 
         // PASTOR requirement: only LIDER_DOCE can be hosts in their network cells
-        if (req.user.roles.includes('PASTOR') && !req.user.roles.includes('SUPER_ADMIN')) {
+        if (req.user.roles.includes('PASTOR') && !req.user.roles.includes('ADMIN')) {
             where.roles = {
                 some: {
                     role: { name: 'LIDER_DOCE' }
@@ -251,7 +251,7 @@ const getEligibleMembers = async (req, res) => {
             id: { in: networkIds },
             roles: {
                 none: {
-                    role: { name: 'SUPER_ADMIN' }
+                    role: { name: 'ADMIN' }
                 }
             }
         };
@@ -313,7 +313,7 @@ const deleteCell = async (req, res) => {
         const { roles, id: userId } = req.user;
 
         // 1. Permission check
-        const isAuthorized = roles.some(r => ['SUPER_ADMIN', 'LIDER_DOCE'].includes(r));
+        const isAuthorized = roles.some(r => ['ADMIN', 'LIDER_DOCE'].includes(r));
         if (!isAuthorized) {
             return res.status(403).json({ error: 'Not authorized to delete cells' });
         }
@@ -328,7 +328,7 @@ const deleteCell = async (req, res) => {
         }
 
         // If LIDER_DOCE or PASTOR, verify cell is in their network
-        if (!roles.includes('SUPER_ADMIN') && !roles.includes('ADMIN')) {
+        if (!roles.includes('ADMIN') && !roles.includes('ADMIN')) {
             // Check if cell leader is in their network or is themselves
             const networkIds = await getUserNetwork(userId);
             if (!networkIds.includes(cell.leaderId) && cell.leaderId !== userId) {
@@ -420,7 +420,7 @@ const updateCell = async (req, res) => {
         }
 
         // Permission check
-        if (!roles.includes('SUPER_ADMIN') && !roles.includes('ADMIN')) {
+        if (!roles.includes('ADMIN') && !roles.includes('ADMIN')) {
             const networkIds = await getUserNetwork(userId);
             if (!networkIds.includes(existingCell.leaderId) && existingCell.leaderId !== userId) {
                 return res.status(403).json({ error: 'No autorizado para editar esta célula' });
@@ -490,7 +490,7 @@ const getEligibleDoceLeaders = async (req, res) => {
             where.roles = { some: { role: { name: 'PASTOR' } } };
         } else if (roles.includes('LIDER_DOCE')) {
             where.id = parseInt(id);
-        } else if (roles.includes('SUPER_ADMIN')) {
+        } else if (roles.includes('ADMIN')) {
             where.roles = { some: { role: { name: 'LIDER_DOCE' } } };
         } else {
             return res.json([]);

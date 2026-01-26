@@ -6,7 +6,7 @@ const { getUserNetwork } = require('../utils/networkUtils');
 // Crear nuevo invitado
 const createGuest = async (req, res) => {
     try {
-        let { name, phone, address, city, prayerRequest, invitedById, called, callObservation, visited, visitObservation, documentType, documentNumber, birthDate, sex } = req.body;
+        let { name, phone, address, city, prayerRequest, invitedById, assignedToId, called, callObservation, visited, visitObservation, documentType, documentNumber, birthDate, sex } = req.body;
         const { roles, id: currentUserId } = req.user;
 
         if (!name || !phone) {
@@ -14,8 +14,8 @@ const createGuest = async (req, res) => {
         }
 
         // Security: PASTOR only consumes network data, doesn't create guests directly (optional historical rule)
-        // Allow SUPER_ADMIN and ADMIN to bypass this
-        const isAdmin = roles.includes('SUPER_ADMIN');
+        // Allow ADMIN and ADMIN to bypass this
+        const isAdmin = roles.includes('ADMIN');
         if (roles.includes('PASTOR') && !isAdmin) {
             return res.status(403).json({
                 message: 'Los usuarios con rol PASTOR no pueden crear invitados directamente. Los invitados deben ser creados por LIDER_DOCE, LIDER_CELULA o DISCIPULO.'
@@ -36,6 +36,7 @@ const createGuest = async (req, res) => {
                 city,
                 prayerRequest,
                 invitedById: parseInt(invitedById),
+                assignedToId: assignedToId ? parseInt(assignedToId) : null,
                 called: called || false,
                 callObservation,
                 visited: visited || false,
@@ -73,8 +74,8 @@ const getAllGuests = async (req, res) => {
         let securityFilter = {};
 
         // Aplicar visibilidad basada en roles
-        // Allow ADMIN to see everything like SUPER_ADMIN
-        if (roles.includes('SUPER_ADMIN')) {
+        // Allow ADMIN to see everything like ADMIN
+        if (roles.includes('ADMIN')) {
             securityFilter = {};
         } else if (roles.some(r => ['PASTOR', 'LIDER_DOCE', 'LIDER_CELULA'].includes(r))) {
             const networkUserIds = await getUserNetwork(currentUserId);
@@ -241,7 +242,7 @@ const updateGuest = async (req, res) => {
         }
 
         let updateData = {};
-        const isAdminValue = roles.includes('SUPER_ADMIN');
+        const isAdminValue = roles.includes('ADMIN');
         const isNetworkLeader = roles.some(r => ['PASTOR', 'LIDER_DOCE', 'LIDER_CELULA'].includes(r));
 
         if (isAdminValue || isNetworkLeader) {
@@ -329,7 +330,7 @@ const deleteGuest = async (req, res) => {
             return res.status(404).json({ message: 'Guest not found' });
         }
 
-        const isAdminValue = roles.includes('SUPER_ADMIN');
+        const isAdminValue = roles.includes('ADMIN');
         const isNetworkLeader = roles.some(r => ['PASTOR', 'LIDER_DOCE', 'LIDER_CELULA'].includes(r));
 
         if (!isAdminValue) {

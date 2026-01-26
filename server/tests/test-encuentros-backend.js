@@ -31,7 +31,7 @@ async function testEncuentrosModule() {
     console.log('Test 1: Obtener todos los encuentros');
     try {
         const adminUser = await prisma.user.findFirst({
-            where: { role: 'SUPER_ADMIN' }
+            where: { role: 'ADMIN' }
         });
 
         if (!adminUser) {
@@ -67,11 +67,11 @@ async function testEncuentrosModule() {
     console.log('\nTest 2: Crear nuevo encuentro');
     try {
         const adminUser = await prisma.user.findFirst({
-            where: { role: 'SUPER_ADMIN' }
+            where: { role: 'ADMIN' }
         });
 
         const coordinatorUser = await prisma.user.findFirst({
-            where: { role: { in: ['SUPER_ADMIN', 'LIDER_DOCE'] } }
+            where: { role: { in: ['ADMIN', 'LIDER_DOCE'] } }
         });
 
         const testEncuentroData = {
@@ -116,7 +116,7 @@ async function testEncuentrosModule() {
     console.log('\nTest 3: Validación de campos requeridos');
     try {
         const adminUser = await prisma.user.findFirst({
-            where: { role: 'SUPER_ADMIN' }
+            where: { role: 'ADMIN' }
         });
 
         const req = mockRequest({}, {}, adminUser); // Sin datos requeridos
@@ -136,7 +136,7 @@ async function testEncuentrosModule() {
     console.log('\nTest 4: Actualizar encuentro');
     try {
         const adminUser = await prisma.user.findFirst({
-            where: { role: 'SUPER_ADMIN' }
+            where: { role: 'ADMIN' }
         });
 
         // Crear encuentro para actualizar
@@ -186,7 +186,7 @@ async function testEncuentrosModule() {
     console.log('\nTest 5: Inscribir invitado en encuentro');
     try {
         const adminUser = await prisma.user.findFirst({
-            where: { role: 'SUPER_ADMIN' }
+            where: { role: 'ADMIN' }
         });
 
         // Crear encuentro para inscripción
@@ -255,7 +255,7 @@ async function testEncuentrosModule() {
     console.log('\nTest 6: Validación de duplicación de inscripción');
     try {
         const adminUser = await prisma.user.findFirst({
-            where: { role: 'SUPER_ADMIN' }
+            where: { role: 'ADMIN' }
         });
 
         // Crear encuentro
@@ -315,7 +315,7 @@ async function testEncuentrosModule() {
     console.log('\nTest 7: Registrar asistencia a clase de encuentro');
     try {
         const adminUser = await prisma.user.findFirst({
-            where: { role: 'SUPER_ADMIN' }
+            where: { role: 'ADMIN' }
         });
 
         // Crear encuentro e inscripción
@@ -392,7 +392,7 @@ async function testEncuentrosModule() {
     console.log('\nTest 8: Obtener inscripciones de un encuentro');
     try {
         const adminUser = await prisma.user.findFirst({
-            where: { role: 'SUPER_ADMIN' }
+            where: { role: 'ADMIN' }
         });
 
         // Crear encuentro con inscripciones
@@ -436,7 +436,7 @@ async function testEncuentrosModule() {
     console.log('\nTest 9: Eliminar encuentro');
     try {
         const adminUser = await prisma.user.findFirst({
-            where: { role: 'SUPER_ADMIN' }
+            where: { role: 'ADMIN' }
         });
 
         // Crear encuentro para eliminar
@@ -480,7 +480,7 @@ async function testEncuentrosModule() {
     console.log('\nTest 10: Estadísticas de encuentros');
     try {
         const adminUser = await prisma.user.findFirst({
-            where: { role: 'SUPER_ADMIN' }
+            where: { role: 'ADMIN' }
         });
 
         const req = mockRequest({}, {}, adminUser);

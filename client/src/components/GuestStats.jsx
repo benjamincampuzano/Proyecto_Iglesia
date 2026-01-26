@@ -143,7 +143,7 @@ const GuestStats = () => {
                             className="w-full px-4 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:border-blue-500"
                         />
                     </div>
-                    {currentUser?.roles?.some(r => ['SUPER_ADMIN', 'LIDER_DOCE', 'PASTOR'].includes(r)) && (
+                    {currentUser?.roles?.some(r => ['ADMIN', 'LIDER_DOCE', 'PASTOR'].includes(r)) && (
                         <div className="flex items-end">
                             <button
                                 onClick={exportToExcel}

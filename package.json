@@ -22,6 +22,7 @@
     "vite": "^7.3.0"
   },
   "dependencies": {
+    "@prisma/client": "6.6.0",
     "@tailwindcss/postcss": "^4.1.18",
     "axios": "^1.13.2",
     "compresion": "^1.7.11",
@@ -29,12 +30,12 @@
     "helmet": "^8.1.0",
     "leaflet": "^1.9.4",
     "lucide-react": "^0.562.0",
+    "prisma": "6.6.0",
+    "prop-types": "^15.8.1",
     "react": "^19.2.3",
     "react-dom": "^19.2.3",
     "react-router-dom": "^7.11.0",
     "recharts": "^3.6.0",
-    "xlsx": "^0.18.5",
-    "@prisma/client": "6.6.0",
-    "prisma": "6.6.0"
+    "xlsx": "^0.18.5"
   }
 }

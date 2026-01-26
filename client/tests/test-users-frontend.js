@@ -293,7 +293,7 @@ describe('Módulo de Usuarios - Frontend', () => {
 
         test('debería validar restricciones de asignación', async () => {
             const invalidAssignment = {
-                userId: 1, // SUPER_ADMIN
+                userId: 1, // ADMIN
                 leaderId: 2  // LIDER_CELULA
             };
 
@@ -301,7 +301,7 @@ describe('Módulo de Usuarios - Frontend', () => {
                 ok: false,
                 status: 400,
                 json: async () => ({ 
-                    message: 'No se puede asignar líder a SUPER_ADMIN' 
+                    message: 'No se puede asignar líder a ADMIN' 
                 })
             };
             
@@ -310,7 +310,7 @@ describe('Módulo de Usuarios - Frontend', () => {
             const result = await assignLeader(invalidAssignment);
 
             expect(result.success).toBe(false);
-            expect(result.error).toContain('SUPER_ADMIN');
+            expect(result.error).toContain('ADMIN');
         });
     });
 

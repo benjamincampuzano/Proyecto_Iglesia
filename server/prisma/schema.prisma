@@ -99,6 +99,12 @@ enum RegistrationStatus {
   ATTENDED
 }
 
+enum ConventionPaymentType {
+  CONVENTION
+  TRANSPORT
+  ACCOMMODATION
+}
+
 enum EncuentroType {
   MUJERES
   HOMBRES
@@ -507,6 +513,7 @@ model ConventionPayment {
   registrationId Int
   registration   ConventionRegistration @relation(fields: [registrationId], references: [id], onDelete: Cascade)
   amount         Float
+  paymentType    ConventionPaymentType  @default(CONVENTION)
   date           DateTime               @default(now()) @db.Timestamptz
   notes          String?
   createdAt      DateTime               @default(now()) @db.Timestamptz

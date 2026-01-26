@@ -64,7 +64,7 @@ async function testNetworkModule() {
     console.log('\nTest 2: Asignar usuario a líder');
     try {
         const adminUser = await prisma.user.findFirst({
-            where: { role: 'SUPER_ADMIN' }
+            where: { role: 'ADMIN' }
         });
 
         const leaderUser = await prisma.user.findFirst({
@@ -115,11 +115,11 @@ async function testNetworkModule() {
         console.log('❌ Error en test de asignar usuario:', error.message);
     }
 
-    // Test 3: Validación de asignación - no se puede asignar a SUPER_ADMIN
-    console.log('\nTest 3: Validación - no se puede asignar líder a SUPER_ADMIN');
+    // Test 3: Validación de asignación - no se puede asignar a ADMIN
+    console.log('\nTest 3: Validación - no se puede asignar líder a ADMIN');
     try {
         const adminUser = await prisma.user.findFirst({
-            where: { role: 'SUPER_ADMIN' }
+            where: { role: 'ADMIN' }
         });
 
         const leaderUser = await prisma.user.findFirst({
@@ -136,9 +136,9 @@ async function testNetworkModule() {
             await networkController.assignUserToLeader(req, res);
 
             if (res.statusCode === 400) {
-                console.log('✅ Rechazó correctamente asignar SUPER_ADMIN a líder');
+                console.log('✅ Rechazó correctamente asignar ADMIN a líder');
             } else {
-                console.log('❌ No rechazó asignar SUPER_ADMIN a líder');
+                console.log('❌ No rechazó asignar ADMIN a líder');
             }
         } else {
             console.log('⚠️  No hay suficientes usuarios para probar validación');
@@ -151,7 +151,7 @@ async function testNetworkModule() {
     console.log('\nTest 4: Remover usuario de la red');
     try {
         const adminUser = await prisma.user.findFirst({
-            where: { role: 'SUPER_ADMIN' }
+            where: { role: 'ADMIN' }
         });
 
         const leaderUser = await prisma.user.findFirst({
@@ -292,7 +292,7 @@ async function testNetworkModule() {
     console.log('\nTest 7: Obtener estadísticas de red');
     try {
         const adminUser = await prisma.user.findFirst({
-            where: { role: 'SUPER_ADMIN' }
+            where: { role: 'ADMIN' }
         });
 
         const req = mockRequest({}, {}, adminUser);
@@ -321,7 +321,7 @@ async function testNetworkModule() {
     console.log('\nTest 8: Validación de jerarquía - previene ciclos');
     try {
         const adminUser = await prisma.user.findFirst({
-            where: { role: 'SUPER_ADMIN' }
+            where: { role: 'ADMIN' }
         });
 
         const leaderUser = await prisma.user.findFirst({

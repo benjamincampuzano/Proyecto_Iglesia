@@ -147,7 +147,7 @@ const getAvailableUsers = async (req, res) => {
         const requesterRole = req.user.role;
 
         // Permission check
-        if (!['SUPER_ADMIN', 'PASTOR', 'LIDER_DOCE', 'LIDER_CELULA'].includes(requesterRole)) {
+        if (!['ADMIN', 'PASTOR', 'LIDER_DOCE', 'LIDER_CELULA'].includes(requesterRole)) {
             return res.status(403).json({ error: 'No tienes permisos para gestionar redes' });
         }
 
@@ -163,8 +163,8 @@ const getAvailableUsers = async (req, res) => {
 
         let whereClause;
 
-        if (requesterRole === 'SUPER_ADMIN') {
-            // SUPER_ADMIN can see all users except the leader themselves
+        if (requesterRole === 'ADMIN') {
+            // ADMIN can see all users except the leader themselves
             whereClause = {
                 id: { not: parseInt(leaderId) }
             };
@@ -185,7 +185,7 @@ const getAvailableUsers = async (req, res) => {
             whereClause = {
                 AND: [
                     { id: { not: parseInt(leaderId) } },
-                    { role: { not: 'SUPER_ADMIN' } },
+                    { role: { not: 'ADMIN' } },
                     { role: { not: 'PASTOR' } },
                     {
                         OR: [
@@ -213,7 +213,7 @@ const getAvailableUsers = async (req, res) => {
                 AND: [
                     { id: { not: parseInt(leaderId) } },
                     { role: { not: 'LIDER_DOCE' } },
-                    { role: { not: 'SUPER_ADMIN' } },
+                    { role: { not: 'ADMIN' } },
                     { role: { not: 'PASTOR' } },
                     {
                         OR: [
@@ -246,7 +246,7 @@ const getAvailableUsers = async (req, res) => {
                     { id: { not: parseInt(leaderId) } },
                     { role: { not: 'LIDER_CELULA' } },
                     { role: { not: 'LIDER_DOCE' } },
-                    { role: { not: 'SUPER_ADMIN' } },
+                    { role: { not: 'ADMIN' } },
                     { role: { not: 'PASTOR' } },
                     {
                         OR: [

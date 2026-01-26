@@ -5,7 +5,7 @@ const { getUserNetwork } = require('../utils/networkUtils');
 
 // Helper to check if user has modification access to an encuentro
 const checkEncuentroAccess = async (user, encuentroId) => {
-    if (user.roles.includes('SUPER_ADMIN')) return true;
+    if (user.roles.includes('ADMIN')) return true;
 
     const encuentro = await prisma.encuentro.findUnique({
         where: { id: parseInt(encuentroId) },
@@ -77,7 +77,7 @@ const getEncuentroById = async (req, res) => {
         // Visibility Filtering
         let filteredRegistrations = encuentro.registrations;
 
-        const isAdmin = roles.includes('SUPER_ADMIN');
+        const isAdmin = roles.includes('ADMIN');
         const isCoordinator = encuentro.coordinatorId === parseInt(currentUserId);
 
         if (!isAdmin && !isCoordinator) {
@@ -135,7 +135,7 @@ const getEncuentroById = async (req, res) => {
 const createEncuentro = async (req, res) => {
     try {
         const { roles, id: userId } = req.user;
-        if (!roles.includes('SUPER_ADMIN') && !roles.includes('ADMIN')) {
+        if (!roles.includes('ADMIN') && !roles.includes('ADMIN')) {
             return res.status(403).json({ error: 'Not authorized' });
         }
         const { type, name, description, cost, startDate, endDate, liderDoceIds, coordinatorId } = req.body;
@@ -168,7 +168,7 @@ const deleteEncuentro = async (req, res) => {
         const { id } = req.params;
         const { roles, id: userId } = req.user;
 
-        if (!roles.includes('SUPER_ADMIN') && !roles.includes('ADMIN')) {
+        if (!roles.includes('ADMIN') && !roles.includes('ADMIN')) {
             return res.status(403).json({ error: 'Not authorized' });
         }
         const encuentro = await prisma.encuentro.delete({
@@ -189,7 +189,7 @@ const updateEncuentro = async (req, res) => {
         const { id } = req.params;
         const { roles, id: userId } = req.user;
 
-        // Restriction: Only SUPER_ADMIN or Coordinator
+        // Restriction: Only ADMIN or Coordinator
         const hasAccess = await checkEncuentroAccess(req.user, id);
         if (!hasAccess) {
             return res.status(403).json({ error: 'No tienes permisos para modificar este encuentro. Solo el coordinador asignado o un administrador pueden hacerlo.' });
@@ -233,7 +233,7 @@ const registerParticipant = async (req, res) => {
         const { guestId, userId, discountPercentage } = req.body;
         const { roles, id: currentUserId } = req.user;
 
-        // Restriction: Only SUPER_ADMIN or Coordinator
+        // Restriction: Only ADMIN or Coordinator
         const hasAccess = await checkEncuentroAccess(req.user, encuentroId);
         if (!hasAccess) {
             return res.status(403).json({ error: 'No tienes permisos para registrar participantes en este encuentro.' });
@@ -317,7 +317,7 @@ const deleteRegistration = async (req, res) => {
             return res.status(404).json({ error: 'Registration not found' });
         }
 
-        // Restriction: Only SUPER_ADMIN or Coordinator
+        // Restriction: Only ADMIN or Coordinator
         const hasAccess = await checkEncuentroAccess(req.user, registration.encuentroId);
         if (!hasAccess) {
             return res.status(403).json({ error: 'No tienes permisos para eliminar inscripciones en este encuentro.' });
@@ -354,7 +354,7 @@ const addPayment = async (req, res) => {
             return res.status(404).json({ error: 'Registration not found' });
         }
 
-        // Restriction: Only SUPER_ADMIN or Coordinator
+        // Restriction: Only ADMIN or Coordinator
         const hasAccess = await checkEncuentroAccess(req.user, registration.encuentroId);
         if (!hasAccess) {
             return res.status(403).json({ error: 'No tienes permisos para agregar pagos en este encuentro.' });
@@ -391,7 +391,7 @@ const updateClassAttendance = async (req, res) => {
             return res.status(404).json({ error: 'Registration not found' });
         }
 
-        // Restriction: Only SUPER_ADMIN or Coordinator
+        // Restriction: Only ADMIN or Coordinator
         const hasAccess = await checkEncuentroAccess(req.user, registration.encuentroId);
         if (!hasAccess) {
             return res.status(403).json({ error: 'No tienes permisos para actualizar asistencia en este encuentro.' });
@@ -436,7 +436,7 @@ const getEncuentroBalanceReport = async (req, res) => {
                     where: {
                         OR: [
                             { guest: { isNot: null } }, // Guests are fine
-                            { user: { roles: { none: { role: { name: 'SUPER_ADMIN' } } } } }
+                            { user: { roles: { none: { role: { name: 'ADMIN' } } } } }
                         ]
                     },
                     include: {
@@ -481,7 +481,7 @@ const getEncuentroBalanceReport = async (req, res) => {
         // Apply Network Filter
         let visibleRegistrations = encuentro.registrations;
 
-        const isAdmin = roles.includes('SUPER_ADMIN');
+        const isAdmin = roles.includes('ADMIN');
         const isCoordinator = encuentro.coordinatorId === parseInt(userId);
 
         if (!isAdmin && !isCoordinator) {

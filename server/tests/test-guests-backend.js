@@ -26,11 +26,11 @@ const mockResponse = () => {
 async function testGuestsModule() {
     console.log('=== PRUEBAS DEL MÓDULO DE INVITADOS ===\n');
 
-    // Test 1: Obtener todos los invitados (como SUPER_ADMIN)
-    console.log('Test 1: Obtener todos los invitados (como SUPER_ADMIN)');
+    // Test 1: Obtener todos los invitados (como ADMIN)
+    console.log('Test 1: Obtener todos los invitados (como ADMIN)');
     try {
         const adminUser = await prisma.user.findFirst({
-            where: { role: 'SUPER_ADMIN' }
+            where: { role: 'ADMIN' }
         });
 
         if (!adminUser) {
@@ -66,7 +66,7 @@ async function testGuestsModule() {
     console.log('\nTest 2: Crear nuevo invitado');
     try {
         const liderUser = await prisma.user.findFirst({
-            where: { role: { in: ['LIDER_DOCE', 'LIDER_CELULA', 'SUPER_ADMIN'] } }
+            where: { role: { in: ['LIDER_DOCE', 'LIDER_CELULA', 'ADMIN'] } }
         });
 
         if (!liderUser) {
@@ -113,7 +113,7 @@ async function testGuestsModule() {
     console.log('\nTest 3: Validación de campos requeridos');
     try {
         const liderUser = await prisma.user.findFirst({
-            where: { role: { in: ['LIDER_DOCE', 'LIDER_CELULA', 'SUPER_ADMIN'] } }
+            where: { role: { in: ['LIDER_DOCE', 'LIDER_CELULA', 'ADMIN'] } }
         });
 
         const req = mockRequest({}, {}, liderUser); // Sin datos requeridos
@@ -133,7 +133,7 @@ async function testGuestsModule() {
     console.log('\nTest 4: Actualizar estado de invitado');
     try {
         const liderUser = await prisma.user.findFirst({
-            where: { role: { in: ['LIDER_DOCE', 'LIDER_CELULA', 'SUPER_ADMIN'] } }
+            where: { role: { in: ['LIDER_DOCE', 'LIDER_CELULA', 'ADMIN'] } }
         });
 
         // Crear invitado para actualizar
@@ -213,7 +213,7 @@ async function testGuestsModule() {
     console.log('\nTest 6: Asignar invitado a otro usuario');
     try {
         const adminUser = await prisma.user.findFirst({
-            where: { role: 'SUPER_ADMIN' }
+            where: { role: 'ADMIN' }
         });
 
         const targetUser = await prisma.user.findFirst({
@@ -268,7 +268,7 @@ async function testGuestsModule() {
     console.log('\nTest 7: Eliminar invitado');
     try {
         const adminUser = await prisma.user.findFirst({
-            where: { role: 'SUPER_ADMIN' }
+            where: { role: 'ADMIN' }
         });
 
         // Crear invitado para eliminar
@@ -311,7 +311,7 @@ async function testGuestsModule() {
     console.log('\nTest 8: Estadísticas de invitados');
     try {
         const adminUser = await prisma.user.findFirst({
-            where: { role: 'SUPER_ADMIN' }
+            where: { role: 'ADMIN' }
         });
 
         const req = mockRequest({}, {}, adminUser);

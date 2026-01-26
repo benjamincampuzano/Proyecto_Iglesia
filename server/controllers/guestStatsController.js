@@ -54,7 +54,7 @@ const getGuestStats = async (req, res) => {
         const { startDate, endDate } = req.query;
         const currentUserId = parseInt(req.user.id);
         const userRoles = req.user.roles || [];
-        const isSuperAdmin = userRoles.includes('SUPER_ADMIN');
+        const isSuperAdmin = userRoles.includes('ADMIN');
         const isPastor = userRoles.includes('PASTOR');
         const isLiderDoce = userRoles.includes('LIDER_DOCE');
 

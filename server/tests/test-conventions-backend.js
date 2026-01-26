@@ -30,7 +30,7 @@ async function testConventionsModule() {
     console.log('Test 1: Obtener todas las convenciones');
     try {
         const adminUser = await prisma.user.findFirst({
-            where: { role: 'SUPER_ADMIN' }
+            where: { role: 'ADMIN' }
         });
 
         if (!adminUser) {
@@ -66,7 +66,7 @@ async function testConventionsModule() {
     console.log('\nTest 2: Crear nueva convención');
     try {
         const adminUser = await prisma.user.findFirst({
-            where: { role: 'SUPER_ADMIN' }
+            where: { role: 'ADMIN' }
         });
 
         const testConventionData = {
@@ -111,7 +111,7 @@ async function testConventionsModule() {
     console.log('\nTest 3: Validación de campos requeridos');
     try {
         const adminUser = await prisma.user.findFirst({
-            where: { role: 'SUPER_ADMIN' }
+            where: { role: 'ADMIN' }
         });
 
         const req = mockRequest({}, {}, adminUser); // Sin datos requeridos
@@ -131,7 +131,7 @@ async function testConventionsModule() {
     console.log('\nTest 4: Validación de duplicación (mismo tipo y año)');
     try {
         const adminUser = await prisma.user.findFirst({
-            where: { role: 'SUPER_ADMIN' }
+            where: { role: 'ADMIN' }
         });
 
         const currentYear = new Date().getFullYear();
@@ -177,7 +177,7 @@ async function testConventionsModule() {
     console.log('\nTest 5: Actualizar convención');
     try {
         const adminUser = await prisma.user.findFirst({
-            where: { role: 'SUPER_ADMIN' }
+            where: { role: 'ADMIN' }
         });
 
         // Crear convención para actualizar
@@ -227,7 +227,7 @@ async function testConventionsModule() {
     console.log('\nTest 6: Inscribir usuario en convención');
     try {
         const adminUser = await prisma.user.findFirst({
-            where: { role: 'SUPER_ADMIN' }
+            where: { role: 'ADMIN' }
         });
 
         const memberUser = await prisma.user.findFirst({
@@ -291,7 +291,7 @@ async function testConventionsModule() {
     console.log('\nTest 7: Validación de duplicación de inscripción');
     try {
         const adminUser = await prisma.user.findFirst({
-            where: { role: 'SUPER_ADMIN' }
+            where: { role: 'ADMIN' }
         });
 
         const memberUser = await prisma.user.findFirst({
@@ -344,7 +344,7 @@ async function testConventionsModule() {
     console.log('\nTest 8: Obtener inscripciones de una convención');
     try {
         const adminUser = await prisma.user.findFirst({
-            where: { role: 'SUPER_ADMIN' }
+            where: { role: 'ADMIN' }
         });
 
         // Crear convención con inscripciones
@@ -388,7 +388,7 @@ async function testConventionsModule() {
     console.log('\nTest 9: Registrar pago de convención');
     try {
         const adminUser = await prisma.user.findFirst({
-            where: { role: 'SUPER_ADMIN' }
+            where: { role: 'ADMIN' }
         });
 
         const memberUser = await prisma.user.findFirst({
@@ -455,7 +455,7 @@ async function testConventionsModule() {
     console.log('\nTest 10: Eliminar convención');
     try {
         const adminUser = await prisma.user.findFirst({
-            where: { role: 'SUPER_ADMIN' }
+            where: { role: 'ADMIN' }
         });
 
         // Crear convención para eliminar
@@ -499,7 +499,7 @@ async function testConventionsModule() {
     console.log('\nTest 11: Estadísticas de convenciones');
     try {
         const adminUser = await prisma.user.findFirst({
-            where: { role: 'SUPER_ADMIN' }
+            where: { role: 'ADMIN' }
         });
 
         const req = mockRequest({}, {}, adminUser);

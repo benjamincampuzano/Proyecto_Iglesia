@@ -113,7 +113,7 @@ Monitorización de actividades y cambios en el sistema.
 
 ## Roles de Usuario
 El sistema implementa un control de acceso basado en roles (RBAC):
-*   `SUPER_ADMIN`: Control total del sistema.
+*   `ADMIN`: Control total del sistema.
 *   `PASTOR`: Gestión de su red completa.
 *   `LIDER_DOCE`: Líder principal de red.
 *   `LIDER_CELULA`: Líder de grupo pequeño.

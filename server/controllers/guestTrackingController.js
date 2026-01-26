@@ -13,7 +13,7 @@ const getGuestTrackingStats = async (req, res) => {
 
         let networkIds = [];
         // Check if user has relevant leadership roles
-        const isSuperAdmin = userRoles.includes('SUPER_ADMIN');
+        const isSuperAdmin = userRoles.includes('ADMIN');
         const isAdmin = userRoles.includes('ADMIN');
         const isLeader = userRoles.some(r => ['LIDER_DOCE', 'PASTOR', 'LIDER_CELULA'].includes(r));
 
@@ -27,7 +27,7 @@ const getGuestTrackingStats = async (req, res) => {
                 invitedBy: {
                     roles: {
                         none: {
-                            role: { name: 'SUPER_ADMIN' }
+                            role: { name: 'ADMIN' }
                         }
                     }
                 }

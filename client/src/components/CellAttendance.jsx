@@ -1,132 +1,37 @@
 import { useState, useEffect } from 'react';
 import { Calendar, Check, X, Users, Map as MapIcon } from 'lucide-react';
-import api from '../utils/api';
+import useCellAttendance from '../hooks/useCellAttendance';
 import CellMap from './CellMap';
 
 const CellAttendance = () => {
-    const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
-    const [cells, setCells] = useState([]);
-    const [selectedCell, setSelectedCell] = useState(null);
-    const [members, setMembers] = useState([]);
-    const [attendances, setAttendances] = useState({});
-    const [loading, setLoading] = useState(false);
-    const [saving, setSaving] = useState(false);
+    const {
+        date,
+        setDate,
+        cells,
+        selectedCell,
+        setSelectedCell,
+        members,
+        attendances,
+        toggleAttendance,
+        loading,
+        saving,
+        saveAttendance,
+    } = useCellAttendance();
     const [showMap, setShowMap] = useState(false);
     const [user, setUser] = useState(null);
 
     useEffect(() => {
         const storedUser = JSON.parse(localStorage.getItem('user'));
         setUser(storedUser);
-        fetchCells();
     }, []);
 
-    useEffect(() => {
-        if (selectedCell) {
-            fetchCellMembers();
-            fetchCellAttendance();
-        }
-    }, [selectedCell, date]);
-
-    const fetchCells = async () => {
-        try {
-            const response = await api.get('/enviar/cells');
-            const data = response.data;
-            if (Array.isArray(data)) {
-                setCells(data);
-                if (data.length > 0) {
-                    setSelectedCell(data[0].id);
-                }
-            } else {
-                setCells([]);
-            }
-        } catch (error) {
-            console.error('Error fetching cells:', error);
-            setCells([]); // Ensure it's an array even on error
-        }
-    };
-
-    const fetchCellMembers = async () => {
-        try {
-            setLoading(true);
-            const response = await api.get(`/enviar/cells/${selectedCell}/members`);
-            const data = response.data;
-            if (Array.isArray(data)) {
-                setMembers(data);
-            } else {
-                setMembers([]);
-                console.error('Members data is not an array:', data);
-            }
-        } catch (error) {
-            console.error('Error fetching cell members:', error);
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    const fetchCellAttendance = async () => {
-        try {
-            const response = await api.get(`/enviar/cell-attendance/${selectedCell}/${date}`);
-            const data = response.data;
-
-            const attendanceMap = {};
-            if (Array.isArray(data)) {
-                data.forEach(att => {
-                    attendanceMap[att.userId] = att.status;
-                });
-            } else {
-                console.error('Attendance data is not an array:', data);
-            }
-            setAttendances(attendanceMap);
-        } catch (error) {
-            console.error('Error fetching cell attendance:', error);
-        }
-    };
-
-    const handleAttendanceChange = (userId, status) => {
-        setAttendances(prev => {
-            const currentStatus = prev[userId];
-            // Si hace click en el mismo estado, lo desmarca (vuelve a vacío)
-            if (currentStatus === status) {
-                const newState = { ...prev };
-                delete newState[userId];
-                return newState;
-            }
-            return {
-                ...prev,
-                [userId]: status
-            };
-        });
-    };
-
     const handleSubmit = async () => {
-        try {
-            setSaving(true);
-            const token = localStorage.getItem('token');
-
-            // Solo enviar registros que tengan estado definido
-            const attendanceData = Object.entries(attendances).map(([userId, status]) => ({
-                userId: parseInt(userId),
-                status
-            }));
-
-            if (attendanceData.length === 0) {
-                alert('No hay registros de asistencia para guardar');
-                return;
-            }
-
-            await api.post('/enviar/cell-attendance', {
-                date,
-                cellId: selectedCell,
-                attendances: attendanceData
-            });
-
+        const res = await saveAttendance();
+        if (res.success) {
             alert('Asistencia de célula guardada exitosamente');
-        } catch (error) {
-            console.error('Error saving cell attendance:', error);
-            alert('Error al guardar asistencia');
-        } finally {
-            setSaving(false);
+            return;
         }
+        alert(res.message || 'Error al guardar asistencia');
     };
 
     return (
@@ -223,7 +128,7 @@ const CellAttendance = () => {
                                         <td className="px-6 py-4 whitespace-nowrap text-center">
                                             <div className="flex justify-center gap-2">
                                                 <button
-                                                    onClick={() => handleAttendanceChange(member.id, 'PRESENTE')}
+                                                    onClick={() => toggleAttendance(member.id, 'PRESENTE')}
                                                     disabled={user?.role === 'DISCIPULO'}
                                                     className={`
                                                       inline-flex items-center gap-2 px-3 py-1.5 rounded-lg font-medium transition-colors
@@ -238,7 +143,7 @@ const CellAttendance = () => {
                                                     Presente
                                                 </button>
                                                 <button
-                                                    onClick={() => handleAttendanceChange(member.id, 'AUSENTE')}
+                                                    onClick={() => toggleAttendance(member.id, 'AUSENTE')}
                                                     disabled={user?.role === 'DISCIPULO'}
                                                     className={`
                                                       inline-flex items-center gap-2 px-3 py-1.5 rounded-lg font-medium transition-colors

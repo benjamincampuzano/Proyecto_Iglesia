@@ -157,7 +157,7 @@ const getPublicLeaders = async (req, res) => {
                 roles: {
                     some: {
                         role: {
-                            name: { in: ['PASTOR', 'LIDER_DOCE', 'SUPER_ADMIN'] }
+                            name: { in: ['PASTOR', 'LIDER_DOCE', 'ADMIN'] }
                         }
                     }
                 }
@@ -210,9 +210,9 @@ const registerSetup = async (req, res) => {
 
         const user = await prisma.$transaction(async (tx) => {
             const adminRole = await tx.role.upsert({
-                where: { name: 'SUPER_ADMIN' },
+                where: { name: 'ADMIN' },
                 update: {},
-                create: { name: 'SUPER_ADMIN' }
+                create: { name: 'ADMIN' }
             });
 
             const newUser = await tx.user.create({
@@ -245,12 +245,12 @@ const registerSetup = async (req, res) => {
             return newUser;
         });
 
-        const roles = ['SUPER_ADMIN'];
+        const roles = ['ADMIN'];
         const token = jwt.sign({ userId: user.id, roles }, process.env.JWT_SECRET, {
             expiresIn: '1d',
         });
 
-        await logActivity(user.id, 'CREATE', 'USER', user.id, { message: 'Inicialización del sistema: Primer Usuario (SUPER_ADMIN)' }, req.ip, req.headers['user-agent']);
+        await logActivity(user.id, 'CREATE', 'USER', user.id, { message: 'Inicialización del sistema: Primer Usuario (ADMIN)' }, req.ip, req.headers['user-agent']);
 
         res.status(201).json({
             token,

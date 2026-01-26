@@ -27,11 +27,11 @@ const mockResponse = () => {
 async function testUsersModule() {
     console.log('=== PRUEBAS DEL MÓDULO DE USUARIOS ===\n');
 
-    // Test 1: Obtener todos los usuarios (como SUPER_ADMIN)
-    console.log('Test 1: Obtener todos los usuarios (como SUPER_ADMIN)');
+    // Test 1: Obtener todos los usuarios (como ADMIN)
+    console.log('Test 1: Obtener todos los usuarios (como ADMIN)');
     try {
         const adminUser = await prisma.user.findFirst({
-            where: { role: 'SUPER_ADMIN' }
+            where: { role: 'ADMIN' }
         });
 
         if (!adminUser) {
@@ -65,7 +65,7 @@ async function testUsersModule() {
     console.log('\nTest 2: Obtener usuarios con filtro de rol');
     try {
         const adminUser = await prisma.user.findFirst({
-            where: { role: 'SUPER_ADMIN' }
+            where: { role: 'ADMIN' }
         });
 
         const req = mockRequest({ role: 'LIDER_DOCE' }, {}, adminUser);
@@ -90,7 +90,7 @@ async function testUsersModule() {
     console.log('\nTest 3: Crear nuevo usuario');
     try {
         const adminUser = await prisma.user.findFirst({
-            where: { role: 'SUPER_ADMIN' }
+            where: { role: 'ADMIN' }
         });
 
         const testUserEmail = `testuser_${Date.now()}@test.com`;
@@ -125,7 +125,7 @@ async function testUsersModule() {
     console.log('\nTest 4: Validación de email único');
     try {
         const adminUser = await prisma.user.findFirst({
-            where: { role: 'SUPER_ADMIN' }
+            where: { role: 'ADMIN' }
         });
 
         // Intentar crear usuario con email existente
@@ -151,7 +151,7 @@ async function testUsersModule() {
     console.log('\nTest 5: Actualizar usuario');
     try {
         const adminUser = await prisma.user.findFirst({
-            where: { role: 'SUPER_ADMIN' }
+            where: { role: 'ADMIN' }
         });
 
         // Crear usuario para actualizar
@@ -209,7 +209,7 @@ async function testUsersModule() {
 
             if (res.statusCode === 200 && res.data.users) {
                 // Verificar que solo ve usuarios de su red
-                const canSeeAll = res.data.users.some(user => user.role === 'SUPER_ADMIN');
+                const canSeeAll = res.data.users.some(user => user.role === 'ADMIN');
                 if (!canSeeAll) {
                     console.log('✅ LIDER_DOCE no ve usuarios fuera de su red');
                 } else {
@@ -227,7 +227,7 @@ async function testUsersModule() {
     console.log('\nTest 7: Eliminar usuario');
     try {
         const adminUser = await prisma.user.findFirst({
-            where: { role: 'SUPER_ADMIN' }
+            where: { role: 'ADMIN' }
         });
 
         // Crear usuario para eliminar

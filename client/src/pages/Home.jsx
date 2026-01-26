@@ -74,8 +74,8 @@ const Home = () => {
         );
     }
 
-    const canViewNetwork = hasAnyRole(['SUPER_ADMIN', 'PASTOR', 'LIDER_DOCE', 'LIDER_CELULA', 'DISCIPULO']);
-    const canViewReport = hasAnyRole(['SUPER_ADMIN', 'PASTOR', 'LIDER_DOCE']);
+    const canViewNetwork = hasAnyRole(['ADMIN', 'PASTOR', 'LIDER_DOCE', 'LIDER_CELULA', 'DISCIPULO']);
+    const canViewReport = hasAnyRole(['ADMIN', 'PASTOR', 'LIDER_DOCE']);
 
     return (
         <div className="space-y-8">

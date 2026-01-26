@@ -140,7 +140,7 @@ const CourseManagement = () => {
         <div className="space-y-6">
             <div className="flex justify-between items-center">
                 <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-100">Escuelas de Discipulado</h2>
-                {hasAnyRole(['SUPER_ADMIN', 'PROFESOR', 'LIDER_DOCE']) && (
+                {hasAnyRole(['ADMIN', 'PROFESOR', 'LIDER_DOCE']) && (
                     <button
                         onClick={() => { setShowCreateModal(true); setFormData({ ...formData, name: '' }); }}
                         className="flex items-center px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg"
@@ -160,7 +160,7 @@ const CourseManagement = () => {
                     >
                         <div className="flex justify-between items-start mb-4">
                             <h3 className="text-xl font-semibold text-gray-800 dark:text-white">{course.name}</h3>
-                            {hasAnyRole(['SUPER_ADMIN', 'PROFESOR', 'LIDER_DOCE']) && (
+                            {hasAnyRole(['ADMIN', 'PROFESOR', 'LIDER_DOCE']) && (
                                 <div className="flex space-x-2">
                                     <button
                                         onClick={(e) => openEditModal(e, course)}

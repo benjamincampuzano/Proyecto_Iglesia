@@ -28,7 +28,7 @@ describe('Módulo de Autenticación - Frontend', () => {
                         id: 1,
                         email: 'admin@example.com',
                         fullName: 'Administrador',
-                        role: 'SUPER_ADMIN'
+                        role: 'ADMIN'
                     }
                 })
             };

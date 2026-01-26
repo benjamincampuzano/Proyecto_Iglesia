@@ -3,6 +3,8 @@ import api from '../utils/api';
 import { Plus, Calendar, Users, DollarSign, ChevronRight, Trash2 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import ConventionDetails from '../components/ConventionDetails';
+import ActionModal from '../components/ActionModal';
+import { Button, Modal, Skeleton } from '../components/ui';
 
 const Convenciones = () => {
     const { user, hasAnyRole } = useAuth();
@@ -17,6 +19,8 @@ const Convenciones = () => {
         year: new Date().getFullYear(),
         theme: '',
         cost: '',
+        transportCost: '',
+        accommodationCost: '',
         startDate: '',
         endDate: ''
     });
@@ -52,7 +56,9 @@ const Convenciones = () => {
         try {
             await api.post('/convenciones', {
                 ...formData,
-                cost: parseFloat(formData.cost)
+                cost: parseFloat(formData.cost),
+                transportCost: parseFloat(formData.transportCost || 0),
+                accommodationCost: parseFloat(formData.accommodationCost || 0)
             });
             setShowCreateModal(false);
             fetchConventions();
@@ -62,6 +68,8 @@ const Convenciones = () => {
                 year: new Date().getFullYear(),
                 theme: '',
                 cost: '',
+                transportCost: '',
+                accommodationCost: '',
                 startDate: '',
                 endDate: ''
             });
@@ -95,13 +103,13 @@ const Convenciones = () => {
         );
     }
 
-    const canModify = hasAnyRole(['SUPER_ADMIN', 'PASTOR', 'LIDER_DOCE']);
+    const canModify = hasAnyRole(['ADMIN', 'PASTOR', 'LIDER_DOCE']);
 
     return (
         <div className="space-y-6">
             <div className="flex justify-between items-center">
                 <div>
-                    <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
+                    <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-blue-400 bg-clip-text text-transparent">
                         Convenciones
                     </h1>
                     <p className="text-gray-500 dark:text-gray-400 mt-1">
@@ -109,19 +117,21 @@ const Convenciones = () => {
                     </p>
                 </div>
                 {canModify && (
-                    <button
+                    <Button
                         onClick={() => setShowCreateModal(true)}
-                        className="flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors shadow-lg shadow-blue-500/30"
+                        icon={Plus}
+                        className="shadow-lg shadow-blue-500/30"
                     >
-                        <Plus size={20} className="mr-2" />
                         Nueva Convención
-                    </button>
+                    </Button>
                 )}
             </div>
 
             {loading ? (
-                <div className="flex justify-center py-12">
-                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <Skeleton variant="card" lines={4} />
+                    <Skeleton variant="card" lines={4} />
+                    <Skeleton variant="card" lines={4} />
                 </div>
             ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -131,7 +141,7 @@ const Convenciones = () => {
                             onClick={() => fetchConventionDetails(conv.id)}
                             className="group bg-white dark:bg-gray-800 rounded-xl shadow-md hover:shadow-xl transition-all duration-300 border border-gray-100 dark:border-gray-700 cursor-pointer overflow-hidden relative"
                         >
-                            <div className="absolute top-0 left-0 w-2 h-full bg-blue-500 group-hover:bg-indigo-500 transition-colors"></div>
+                            <div className="absolute top-0 left-0 w-2 h-full bg-blue-500 group-hover:bg-blue-600 transition-colors"></div>
                             <div className="p-6 pl-8">
                                 <div className="flex justify-between items-start mb-4">
                                     <div>
@@ -190,103 +200,126 @@ const Convenciones = () => {
             )}
 
             {/* Create Modal */}
-            {showCreateModal && (
-                <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-                    <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl w-full max-w-lg overflow-hidden">
-                        <div className="p-6 border-b border-gray-200 dark:border-gray-700">
-                            <h3 className="text-xl font-bold text-gray-900 dark:text-white">Nueva Convención</h3>
+            <Modal
+                isOpen={showCreateModal}
+                title="Nueva Convención"
+                onClose={() => setShowCreateModal(false)}
+                size="lg"
+            >
+                <form onSubmit={handleCreate} className="space-y-4">
+                    <div className="grid grid-cols-2 gap-4">
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Tipo</label>
+                            <select
+                                value={formData.type}
+                                onChange={(e) => setFormData({ ...formData, type: e.target.value })}
+                                className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500"
+                            >
+                                <option value="FAMILIAS">FAMILIAS</option>
+                                <option value="MUJERES">MUJERES</option>
+                                <option value="JOVENES">JOVENES</option>
+                                <option value="HOMBRES">HOMBRES</option>
+                            </select>
                         </div>
-                        <form onSubmit={handleCreate} className="p-6 space-y-4">
-                            <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Tipo</label>
-                                    <select
-                                        value={formData.type}
-                                        onChange={(e) => setFormData({ ...formData, type: e.target.value })}
-                                        className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500"
-                                    >
-                                        <option value="FAMILIAS">FAMILIAS</option>
-                                        <option value="MUJERES">MUJERES</option>
-                                        <option value="JOVENES">JOVENES</option>
-                                        <option value="HOMBRES">HOMBRES</option>
-                                    </select>
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Año</label>
-                                    <input
-                                        type="number"
-                                        value={formData.year}
-                                        onChange={(e) => setFormData({ ...formData, year: parseInt(e.target.value) })}
-                                        className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500"
-                                    />
-                                </div>
-                            </div>
-
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Lema / Tema</label>
-                                <input
-                                    type="text"
-                                    value={formData.theme}
-                                    onChange={(e) => setFormData({ ...formData, theme: e.target.value })}
-                                    className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500"
-                                    placeholder="Ej: Levántate y Resplandece"
-                                />
-                            </div>
-
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Costo Total ($)</label>
-                                <input
-                                    type="number"
-                                    value={formData.cost}
-                                    onChange={(e) => setFormData({ ...formData, cost: e.target.value })}
-                                    className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500"
-                                    placeholder="0.00"
-                                    required
-                                />
-                            </div>
-
-                            <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Fecha Inicio</label>
-                                    <input
-                                        type="date"
-                                        value={formData.startDate}
-                                        onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
-                                        className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500"
-                                        required
-                                    />
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Fecha Fin</label>
-                                    <input
-                                        type="date"
-                                        value={formData.endDate}
-                                        onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
-                                        className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500"
-                                        required
-                                    />
-                                </div>
-                            </div>
-
-                            <div className="pt-4 flex space-x-3">
-                                <button
-                                    type="button"
-                                    onClick={() => setShowCreateModal(false)}
-                                    className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
-                                >
-                                    Cancelar
-                                </button>
-                                <button
-                                    type="submit"
-                                    className="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors"
-                                >
-                                    Crear Convención
-                                </button>
-                            </div>
-                        </form>
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Año</label>
+                            <input
+                                type="number"
+                                value={formData.year}
+                                onChange={(e) => setFormData({ ...formData, year: parseInt(e.target.value) })}
+                                className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500"
+                            />
+                        </div>
                     </div>
-                </div>
-            )}
+
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Lema / Tema</label>
+                        <input
+                            type="text"
+                            value={formData.theme}
+                            onChange={(e) => setFormData({ ...formData, theme: e.target.value })}
+                            className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500"
+                        />
+                    </div>
+
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Costo Total ($)</label>
+                        <input
+                            type="number"
+                            value={formData.cost}
+                            onChange={(e) => setFormData({ ...formData, cost: e.target.value })}
+                            className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500"
+                            required
+                        />
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Costo Transporte ($)</label>
+                            <input
+                                type="number"
+                                value={formData.transportCost}
+                                onChange={(e) => setFormData({ ...formData, transportCost: e.target.value })}
+                                className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500"
+                                placeholder="0.00"
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Costo Hospedaje ($)</label>
+                            <input
+                                type="number"
+                                value={formData.accommodationCost}
+                                onChange={(e) => setFormData({ ...formData, accommodationCost: e.target.value })}
+                                className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500"
+                                placeholder="0.00"
+                            />
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Fecha Inicio</label>
+                            <input
+                                type="date"
+                                value={formData.startDate}
+                                onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
+                                className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500"
+                                required
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Fecha Fin</label>
+                            <input
+                                type="date"
+                                value={formData.endDate}
+                                onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
+                                className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500"
+                                required
+                            />
+                        </div>
+                    </div>
+
+                    <Modal.Footer>
+                        <div className="flex space-x-3">
+                            <Button
+                                type="button"
+                                variant="secondary"
+                                onClick={() => setShowCreateModal(false)}
+                                className="flex-1"
+                            >
+                                Cancelar
+                            </Button>
+                            <Button
+                                type="submit"
+                                loading={loading}
+                                className="flex-1"
+                            >
+                                Crear Convención
+                            </Button>
+                        </div>
+                    </Modal.Footer>
+                </form>
+            </Modal>
         </div>
     );
 };

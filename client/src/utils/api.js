@@ -18,4 +18,17 @@ api.interceptors.request.use(
     }
 );
 
+api.interceptors.response.use(
+    (response) => response,
+    (error) => {
+        const messageFromApi = error?.response?.data?.message;
+        const messageFromNetwork = error?.message;
+        const userMessage = messageFromApi || messageFromNetwork || 'Error inesperado';
+
+        error.userMessage = userMessage;
+
+        return Promise.reject(error);
+    }
+);
+
 export default api;

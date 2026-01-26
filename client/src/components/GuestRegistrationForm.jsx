@@ -15,6 +15,7 @@ const GuestRegistrationForm = ({ onGuestCreated }) => {
         city: '',
         prayerRequest: '',
         invitedById: null,
+        assignedToId: null,
     });
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
@@ -45,7 +46,7 @@ const GuestRegistrationForm = ({ onGuestCreated }) => {
         setSuccess('');
 
         const roles = currentUser?.roles || [];
-        if (roles.some(r => ['SUPER_ADMIN', 'LIDER_DOCE'].includes(r)) && !formData.invitedById) {
+        if (roles.some(r => ['ADMIN', 'LIDER_DOCE'].includes(r)) && !formData.invitedById) {
             // Let it pass, backend handles defaults
         }
 
@@ -63,6 +64,7 @@ const GuestRegistrationForm = ({ onGuestCreated }) => {
                 city: '',
                 prayerRequest: '',
                 invitedById: null,
+                assignedToId: null,
             });
 
             if (onGuestCreated) {
@@ -87,6 +89,7 @@ const GuestRegistrationForm = ({ onGuestCreated }) => {
             city: '',
             prayerRequest: '',
             invitedById: null,
+            assignedToId: null,
         });
         setError('');
         setSuccess('');
@@ -248,7 +251,7 @@ const GuestRegistrationForm = ({ onGuestCreated }) => {
                     </div>
                 </div>
 
-                {currentUser?.roles?.some(r => ['SUPER_ADMIN', 'LIDER_DOCE'].includes(r)) && (
+                {currentUser?.roles?.some(r => ['ADMIN', 'LIDER_DOCE'].includes(r)) && (
                     <div>
                         <UserSearchSelect
                             label={<>Invitado Por <span className="text-red-400">*</span></>}
@@ -258,6 +261,15 @@ const GuestRegistrationForm = ({ onGuestCreated }) => {
                         />
                     </div>
                 )}
+
+                <div>
+                    <UserSearchSelect
+                        label="Asignado a"
+                        value={formData.assignedToId}
+                        onChange={(userId) => setFormData({ ...formData, assignedToId: userId })}
+                        placeholder="Seleccionar Líder responsable..."
+                    />
+                </div>
 
                 <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">

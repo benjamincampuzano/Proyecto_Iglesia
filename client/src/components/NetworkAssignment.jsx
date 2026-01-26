@@ -92,7 +92,7 @@ const NetworkAssignment = () => {
             return roles.join(', ').replace(/_/g, ' ');
         }
         const labels = {
-            SUPER_ADMIN: 'Super Admin',
+            ADMIN: 'Super Admin',
             LIDER_DOCE: 'Líder de 12',
             LIDER_CELULA: 'Líder de Célula',
             DISCIPULO: 'Discípulo',
@@ -133,7 +133,7 @@ const NetworkAssignment = () => {
                                             </span>
                                         )}
                                     </div>
-                                    {currentUser?.roles?.includes('SUPER_ADMIN') && (
+                                    {currentUser?.roles?.includes('ADMIN') && (
                                         <button
                                             onClick={() => handleAssignLeader(disciple.id, null)}
                                             className="text-red-400 hover:text-red-300 text-sm"
@@ -158,7 +158,7 @@ const NetworkAssignment = () => {
                                                         </span>
                                                     )}
                                                 </div>
-                                                {currentUser?.roles?.includes('SUPER_ADMIN') && (
+                                                {currentUser?.roles?.includes('ADMIN') && (
                                                     <button
                                                         onClick={() => handleAssignLeader(subDisciple.id, null)}
                                                         className="text-red-400 hover:text-red-300 text-xs"
@@ -201,8 +201,8 @@ const NetworkAssignment = () => {
                 </div>
             )}
 
-            {/* Usuarios sin líder - para SUPER_ADMIN y LIDER_DOCE */}
-            {(currentUser?.roles?.includes('SUPER_ADMIN') || currentUser?.roles?.includes('LIDER_DOCE')) && (
+            {/* Usuarios sin líder - para ADMIN y LIDER_DOCE */}
+            {(currentUser?.roles?.includes('ADMIN') || currentUser?.roles?.includes('LIDER_DOCE')) && (
                 <div className="bg-gray-800 rounded-lg p-6 border border-gray-700">
                     <h2 className="text-xl font-bold text-white mb-4">Usuarios sin Líder Asignado</h2>
 
